@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energy Solutions - Edison Business Partner</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <!-- React -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f0f9f4; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .btn-green { background: #4CAF50; color: white; }
+        .btn-green:hover { background: #45a049; }
+        .btn-white { background: white; color: #4CAF50; border: 2px solid #4CAF50; }
+        .btn-red { background: #f44336; color: white; }
+        .btn-gray { background: #ddd; }
+        .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid #4CAF50; }
+        .input { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; }
+        .input:focus { outline: none; border-color: #4CAF50; }
+        .label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; overflow-y: auto; }
+        .modal-content { background: white; border-radius: 16px; padding: 24px; width: 95%; max-width: 900px; max-height: 90vh; overflow-y: auto; margin: 20px 0; }
+        .badge { display: inline-block; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-right: 8px; }
+        .stato-calda { background: #FEF3C7; color: #92400E; }
+        .stato-fredda { background: #DBEAFE; color: #1E40AF; }
+        .stato-ko { background: #FEE2E2; color: #991B1B; }
+        .stato-ok { background: #D1FAE5; color: #065F46; }
+        .header { background: white; border-bottom: 3px solid #4CAF50; padding: 16px; margin-bottom: 24px; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; }
+        th { background: #4CAF50; color: white; padding: 14px; text-align: left; font-size: 13px; font-weight: 700; }
+        td { padding: 14px; border-top: 1px solid #ddd; }
+        tr:hover { background: #f9f9f9; }
+        .login-container { min-height: 100vh; background: linear-gradient(135deg, #f0f9f4 0%, #c8e6c9 100%); display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .login-card { background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(76, 175, 80, 0.3); padding: 40px; max-width: 500px; width: 100%; border-top: 6px solid #4CAF50; }
+        .logo { background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%); padding: 25px 30px; border-radius: 12px; color: white; text-align: center; margin-bottom: 24px; }
+        .logo h2 { font-size: 26px; margin: 0; font-weight: 700; letter-spacing: 1px; }
+        .logo p { font-size: 13px; margin: 8px 0 0 0; opacity: 0.95; letter-spacing: 0.5px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+        .section-title { font-size: 18px; font-weight: 700; color: #2E7D32; margin: 24px 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid #81C784; }
+        .mb { margin-bottom: 16px; }
+        .flex { display: flex; gap: 12px; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .total-row { background: #81C784 !important; font-weight: 700; }
+        .grand-total-row { background: #2E7D32 !important; color: white !important; font-weight: 700; }
+        textarea { resize: vertical; font-family: Arial, sans-serif; }
+        .loading { text-align: center; padding: 60px; color: #666; font-size: 18px; }
+        .sync-badge { position: fixed; top: 20px; right: 20px; background: #4CAF50; color: white; padding: 10px 20px; border-radius: 25px; font-size: 13px; font-weight: 700; z-index: 100; box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4); }
+        @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        // ====================================
+        // CONFIGURAZIONE FIREBASE - PRONTA!
+        // ====================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyAPdXkLXzz4zjScQX3_buEXGi2OytRfH2o",
+            authDomain: "bu-progetti-speciali.firebaseapp.com",
+            databaseURL: "https://bu-progetti-speciali-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "bu-progetti-speciali",
+            storageBucket: "bu-progetti-speciali.firebasestorage.app",
+            messagingSenderId: "86623187511",
+            appId: "1:86623187511:web:2a093d51719b458b4ec5b2"
+        };
+
+        // Inizializza Firebase
+        firebase.initializeApp(firebaseConfig);
+        console.log("✅ Firebase connesso!");
+        
+        const database = firebase.database();
+        const { useState, useEffect } = React;
+
+        const TIPOLOGIE_CLIENTE = ['P.A.', 'ETS NON COMMERCIALE', 'ETS COMMERCIALE', 'PRIVATO PMI', 'PRIVATO NON PMI', 'AZIENDA AGRICOLA'];
+        const TIPOLOGIE_INTERVENTO = {
+            'esco': { 
+                label: 'ESCO', 
+                voci: ['FTV', 'ILLUMINAZIONE', 'CENTRALE TERMICA', 'INFISSI', 'ISOLAMENTO', 'IMPIANTI INTERNI', 'BATTERIA DI ACCUMULO'] 
+            },
+            'conto_termico': { 
+                label: 'CONTO TERMICO 3.0', 
+                voci: ['FTV', 'ILLUMINAZIONE', 'CENTRALE TERMICA', 'INFISSI', 'ISOLAMENTO', 'IMPIANTI INTERNI', 'BATTERIA DI ACCUMULO', 'NZeb'] 
+            },
+            'industria_5': { 
+                label: 'INDUSTRIA 5.0', 
+                voci: ['FTV', 'IMPIANTI INTERNI'] 
+            },
+            'agrisolare': { 
+                label: 'AGRISOLARE 2026', 
+                voci: ['FTV', 'ACCUMULO', 'COLONNETTA RICARICA', 'INTERVENTI IN COPERTURA'] 
+            },
+            'cratere_2016': { 
+                label: 'CRATERE 2016', 
+                voci: ['LIVELLO OPERATIVO', 'DEMOLIZIONE E RICOSTRUZIONE', 'RISTRUTTURAZIONE', 'INTERVENTO SOLO IMPIANTI'] 
+            },
+            'cratere_2009': { 
+                label: 'CRATERE 2009', 
+                voci: ['LIVELLO OPERATIVO', 'DEMOLIZIONE E RICOSTRUZIONE', 'RISTRUTTURAZIONE', 'INTERVENTO SOLO IMPIANTI'] 
+            },
+            'privato': { 
+                label: 'PRIVATO', 
+                voci: [] 
+            }
+        };
+        const STATI = ['CALDA', 'FREDDA', 'KO', 'OK'];
+        const CONTRATTUALIZZAZIONE = ['entro 1 mese', 'entro 3 mesi', 'entro 6 mesi', 'entro 12 mesi'];
+        const TIPO_INTERVENTO = ['SINGOLO', 'MULTI INTERVENTO'];
+
+        // Formattatore numeri italiano
+        const formatNumber = (num) => {
+            if (!num) return '0';
+            return new Intl.NumberFormat('it-IT', { 
+                minimumFractionDigits: 2, 
+                maximumFractionDigits: 2 
+            }).format(num);
+        };
+
+        function App() {
+            const [user, setUser] = useState(null);
+            const [users, setUsers] = useState([]);
+            const [opps, setOpps] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [syncing, setSyncing] = useState(false);
+            const [showLogin, setShowLogin] = useState(true);
+            const [showOppForm, setShowOppForm] = useState(false);
+            const [showUserForm, setShowUserForm] = useState(false);
+            const [editOpp, setEditOpp] = useState(null);
+            const [editUser, setEditUser] = useState(null);
+            const [login, setLogin] = useState({ username: '', password: '' });
+            const [oppForm, setOppForm] = useState({
+                ragioneSociale: '', indirizzo: '', cap: '', citta: '', telefono: '', tipologiaCliente: '',
+                nomeReferente: '', ruoloReferente: '', telReferente: '', emailReferente: '',
+                viaIntervento: '', numeroIntervento: '', capIntervento: '', cittaIntervento: '',
+                hasTecnico: 'no', nomeStudioTecnico: '', referenteStudio: '', indirizzoStudio: '', telefonoStudio: '', emailStudio: '',
+                tipologiaIntervento: '', vociSelezionate: [], descrizioneIntervento: '', importoPresunto: '', stato: 'CALDA',
+                possibileContrattualizzazione: 'entro 3 mesi', tipoIntervento: 'SINGOLO'
+            });
+            const [filters, setFilters] = useState({ agenzia: '', tipologiaCliente: '', stato: '' });
+            const [searchTerm, setSearchTerm] = useState('');
+            const [userForm, setUserForm] = useState({ username: '', password: '', name: '', role: 'client' });
+
+            useEffect(() => {
+                const usersRef = database.ref('users');
+                const oppsRef = database.ref('opportunities');
+
+                usersRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        const usersArray = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+                        setUsers(usersArray);
+                    } else {
+                        const defaultUsers = {
+                            'user1': { username: 'admin', password: 'admin123', role: 'admin', name: 'Amministratore' },
+                            'user2': { username: 'agenzia1', password: 'ag123', role: 'client', name: 'Agenzia Roma' }
+                        };
+                        database.ref('users').set(defaultUsers);
+                    }
+                    setLoading(false);
+                });
+
+                oppsRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        const oppsArray = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+                        setOpps(oppsArray);
+                    }
+                    setSyncing(false);
+                });
+
+                return () => {
+                    usersRef.off();
+                    oppsRef.off();
+                };
+            }, []);
+
+            const doLogin = (e) => {
+                e.preventDefault();
+                const found = users.find(u => u.username === login.username && u.password === login.password);
+                if (found) {
+                    setUser(found);
+                    setShowLogin(false);
+                    setLogin({ username: '', password: '' });
+                } else {
+                    alert('Credenziali errate!');
+                }
+            };
+
+            const saveOpp = async (e) => {
+                e.preventDefault();
+                if (!oppForm.ragioneSociale || !oppForm.tipologiaCliente || !oppForm.tipologiaIntervento) {
+                    alert('Compila tutti i campi obbligatori');
+                    return;
+                }
+
+                setSyncing(true);
+                const oppData = {
+                    ...oppForm,
+                    agenzia: user.name,
+                    clientId: user.id,
+                    createdAt: editOpp ? editOpp.createdAt : new Date().toISOString()
+                };
+
+                try {
+                    if (editOpp) {
+                        await database.ref('opportunities/' + editOpp.id).set(oppData);
+                    } else {
+                        const newRef = database.ref('opportunities').push();
+                        await newRef.set(oppData);
+                    }
+                    
+                    setShowOppForm(false);
+                    setEditOpp(null);
+                    setOppForm({
+                        ragioneSociale: '', indirizzo: '', cap: '', citta: '', telefono: '', tipologiaCliente: '',
+                        nomeReferente: '', ruoloReferente: '', telReferente: '', emailReferente: '',
+                        viaIntervento: '', numeroIntervento: '', capIntervento: '', cittaIntervento: '',
+                        hasTecnico: 'no', nomeStudioTecnico: '', referenteStudio: '', indirizzoStudio: '', telefonoStudio: '', emailStudio: '',
+                        tipologiaIntervento: '', vociSelezionate: [], descrizioneIntervento: '', importoPresunto: '', stato: 'CALDA',
+                        possibileContrattualizzazione: 'entro 3 mesi', tipoIntervento: 'SINGOLO'
+                    });
+                } catch (error) {
+                    alert('Errore: ' + error.message);
+                    setSyncing(false);
+                }
+            };
+
+            const deleteOpp = async (id) => {
+                if (confirm('Eliminare?')) {
+                    setSyncing(true);
+                    try {
+                        await database.ref('opportunities/' + id).remove();
+                    } catch (error) {
+                        alert('Errore: ' + error.message);
+                        setSyncing(false);
+                    }
+                }
+            };
+
+            const saveUser = async (e) => {
+                e.preventDefault();
+                setSyncing(true);
+                try {
+                    if (editUser) {
+                        await database.ref('users/' + editUser.id).set(userForm);
+                    } else {
+                        const newRef = database.ref('users').push();
+                        await newRef.set(userForm);
+                    }
+                    setShowUserForm(false);
+                    setEditUser(null);
+                    setUserForm({ username: '', password: '', name: '', role: 'client' });
+                } catch (error) {
+                    alert('Errore: ' + error.message);
+                    setSyncing(false);
+                }
+            };
+
+            const deleteUser = async (id) => {
+                if (confirm('Eliminare questo utente?')) {
+                    setSyncing(true);
+                    try {
+                        await database.ref('users/' + id).remove();
+                    } catch (error) {
+                        alert('Errore: ' + error.message);
+                        setSyncing(false);
+                    }
+                }
+            };
+
+            const handleTipologiaChange = (tipologia) => {
+                setOppForm({ ...oppForm, tipologiaIntervento: tipologia, vociSelezionate: [] });
+            };
+
+            const toggleVoce = (voce) => {
+                const voci = oppForm.vociSelezionate || [];
+                if (voci.includes(voce)) {
+                    setOppForm({ ...oppForm, vociSelezionate: voci.filter(v => v !== voce) });
+                } else {
+                    setOppForm({ ...oppForm, vociSelezionate: [...voci, voce] });
+                }
+            };
+
+            const getFilteredOpps = () => {
+                let filtered = user?.role === 'admin' ? opps : opps.filter(o => o.clientId === user?.id);
+                if (filters.agenzia) filtered = filtered.filter(o => o.agenzia === filters.agenzia);
+                if (filters.tipologiaCliente) filtered = filtered.filter(o => o.tipologiaCliente === filters.tipologiaCliente);
+                if (filters.stato) filtered = filtered.filter(o => o.stato === filters.stato);
+                if (searchTerm) {
+                    filtered = filtered.filter(o => 
+                        o.ragioneSociale?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        o.nomeReferente?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        o.descrizioneIntervento?.toLowerCase().includes(searchTerm.toLowerCase())
+                    );
+                }
+                return filtered;
+            };
+
+            const getStatistiche = () => {
+                const agenzie = [...new Set(opps.map(o => o.agenzia))].filter(Boolean);
+                const stats = agenzie.map(ag => {
+                    const oppsAg = opps.filter(o => o.agenzia === ag);
+                    return {
+                        agenzia: ag,
+                        calda: oppsAg.filter(o => o.stato === 'CALDA').length,
+                        fredda: oppsAg.filter(o => o.stato === 'FREDDA').length,
+                        ko: oppsAg.filter(o => o.stato === 'KO').length,
+                        ok: oppsAg.filter(o => o.stato === 'OK').length,
+                        totale: oppsAg.length,
+                        importo: oppsAg.reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0),
+                        importoCalda: oppsAg.filter(o => o.stato === 'CALDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0),
+                        importoFredda: oppsAg.filter(o => o.stato === 'FREDDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0),
+                        importoKo: oppsAg.filter(o => o.stato === 'KO').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0),
+                        importoOk: oppsAg.filter(o => o.stato === 'OK').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0)
+                    };
+                });
+                const totali = {
+                    calda: opps.filter(o => o.stato === 'CALDA').length,
+                    fredda: opps.filter(o => o.stato === 'FREDDA').length,
+                    ko: opps.filter(o => o.stato === 'KO').length,
+                    ok: opps.filter(o => o.stato === 'OK').length,
+                    totale: opps.length,
+                    importo: opps.reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0),
+                    importoCalda: opps.filter(o => o.stato === 'CALDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0),
+                    importoFredda: opps.filter(o => o.stato === 'FREDDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0),
+                    importoKo: opps.filter(o => o.stato === 'KO').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0),
+                    importoOk: opps.filter(o => o.stato === 'OK').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0)
+                };
+                return { stats, totali };
+            };
+
+            if (loading) {
+                return <div className="loading">⏳ Connessione a Firebase...</div>;
+            }
+
+            if (showLogin) {
+                return (
+                    <div className="login-container">
+                        <div className="login-card">
+                            <div className="logo">
+                                <h2>ENERGY SOLUTIONS</h2>
+                                <p>EDISON Business Partner</p>
+                            </div>
+                            <h1 style={{textAlign: 'center', marginBottom: '8px', fontSize: '24px', color: '#2E7D32'}}>Gestione Opportunità</h1>
+                            <p style={{textAlign: 'center', marginBottom: '32px', color: '#666', fontSize: '14px'}}>Multiutenza Cloud 🔥</p>
+                            <form onSubmit={doLogin}>
+                                <div className="mb">
+                                    <label className="label">Username</label>
+                                    <input className="input" value={login.username} onChange={(e) => setLogin({...login, username: e.target.value})} required />
+                                </div>
+                                <div className="mb">
+                                    <label className="label">Password</label>
+                                    <input type="password" className="input" value={login.password} onChange={(e) => setLogin({...login, password: e.target.value})} required />
+                                </div>
+                                <button type="submit" className="btn btn-green" style={{width: '100%', padding: '14px', fontSize: '16px'}}>Accedi</button>
+                            </form>
+                            <div style={{marginTop: '24px', padding: '16px', background: '#f0f9f4', borderRadius: '8px'}}>
+                                <p style={{fontWeight: '600', fontSize: '13px', marginBottom: '8px'}}>Credenziali test:</p>
+                                <p style={{fontSize: '12px', color: '#666', marginBottom: '4px'}}><strong>Admin:</strong> admin / admin123</p>
+                                <p style={{fontSize: '12px', color: '#666'}}><strong>Agenzia:</strong> agenzia1 / ag123</p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            const filtered = getFilteredOpps();
+            const { stats, totali } = getStatistiche();
+
+            return (
+                <div style={{minHeight: '100vh', background: '#f0f9f4'}}>
+                    {syncing && <div className="sync-badge">🔄 Salvataggio...</div>}
+                    
+                    <div className="header">
+                        <div className="container flex-between">
+                            <div>
+                                <h1 style={{fontSize: '20px', fontWeight: '700', color: '#2E7D32'}}>Energy Solutions 🌐</h1>
+                                <p style={{fontSize: '14px', color: '#666'}}>{user?.name}</p>
+                            </div>
+                            <button className="btn btn-white" onClick={() => { setUser(null); setShowLogin(true); }}>Esci</button>
+                        </div>
+                    </div>
+
+                    <div className="container">
+                        {user?.role === 'admin' && (
+                            <div className="card mb">
+                                <h3 style={{fontSize: '18px', fontWeight: '700', marginBottom: '16px', color: '#2E7D32'}}>Filtri</h3>
+                                <div className="grid-3">
+                                    <div>
+                                        <label className="label">Agenzia</label>
+                                        <select className="input" value={filters.agenzia} onChange={(e) => setFilters({...filters, agenzia: e.target.value})}>
+                                            <option value="">Tutte</option>
+                                            {[...new Set(opps.map(o => o.agenzia))].filter(Boolean).map(ag => <option key={ag} value={ag}>{ag}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="label">Stato</label>
+                                        <select className="input" value={filters.stato} onChange={(e) => setFilters({...filters, stato: e.target.value})}>
+                                            <option value="">Tutti</option>
+                                            {STATI.map(s => <option key={s} value={s}>{s}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="label">Tipo Cliente</label>
+                                        <select className="input" value={filters.tipologiaCliente} onChange={(e) => setFilters({...filters, tipologiaCliente: e.target.value})}>
+                                            <option value="">Tutti</option>
+                                            {TIPOLOGIE_CLIENTE.map(tc => <option key={tc} value={tc}>{tc}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex mb">
+                            <button className="btn btn-green" onClick={() => setShowOppForm(true)}>+ Nuova Opportunità</button>
+                            {user?.role === 'admin' && (
+                                <button className="btn btn-white" onClick={() => setShowUserForm(true)}>+ Nuovo Utente</button>
+                            )}
+                        </div>
+
+                        {showOppForm && (
+                            <div className="modal" onClick={() => setShowOppForm(false)}>
+                                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                                    <h2 style={{fontSize: '24px', fontWeight: '700', marginBottom: '24px', color: '#2E7D32'}}>Nuova Opportunità</h2>
+                                    <form onSubmit={saveOpp}>
+                                        <div className="section-title">Dati Azienda</div>
+                                        <div className="grid-2 mb">
+                                            <div><label className="label">Ragione Sociale *</label><input className="input" value={oppForm.ragioneSociale} onChange={(e) => setOppForm({...oppForm, ragioneSociale: e.target.value})} required /></div>
+                                            <div><label className="label">Tipologia Cliente *</label><select className="input" value={oppForm.tipologiaCliente} onChange={(e) => setOppForm({...oppForm, tipologiaCliente: e.target.value})} required><option value="">Seleziona...</option>{TIPOLOGIE_CLIENTE.map(tc => <option key={tc} value={tc}>{tc}</option>)}</select></div>
+                                        </div>
+                                        <div className="grid-3 mb">
+                                            <div><label className="label">Indirizzo *</label><input className="input" value={oppForm.indirizzo} onChange={(e) => setOppForm({...oppForm, indirizzo: e.target.value})} required /></div>
+                                            <div><label className="label">CAP *</label><input className="input" value={oppForm.cap} onChange={(e) => setOppForm({...oppForm, cap: e.target.value})} required /></div>
+                                            <div><label className="label">Città *</label><input className="input" value={oppForm.citta} onChange={(e) => setOppForm({...oppForm, citta: e.target.value})} required /></div>
+                                        </div>
+                                        <div className="mb"><label className="label">Telefono *</label><input className="input" value={oppForm.telefono} onChange={(e) => setOppForm({...oppForm, telefono: e.target.value})} required /></div>
+
+                                        <div className="section-title">Referente</div>
+                                        <div className="grid-2 mb">
+                                            <div><label className="label">Nome *</label><input className="input" value={oppForm.nomeReferente} onChange={(e) => setOppForm({...oppForm, nomeReferente: e.target.value})} required /></div>
+                                            <div><label className="label">Ruolo *</label><input className="input" value={oppForm.ruoloReferente} onChange={(e) => setOppForm({...oppForm, ruoloReferente: e.target.value})} required /></div>
+                                        </div>
+                                        <div className="grid-2 mb">
+                                            <div><label className="label">Tel *</label><input className="input" value={oppForm.telReferente} onChange={(e) => setOppForm({...oppForm, telReferente: e.target.value})} required /></div>
+                                            <div><label className="label">Email *</label><input type="email" className="input" value={oppForm.emailReferente} onChange={(e) => setOppForm({...oppForm, emailReferente: e.target.value})} required /></div>
+                                        </div>
+
+                                        <div className="section-title">Ubicazione Intervento</div>
+                                        <div className="grid-2 mb">
+                                            <div><label className="label">Via *</label><input className="input" value={oppForm.viaIntervento} onChange={(e) => setOppForm({...oppForm, viaIntervento: e.target.value})} required /></div>
+                                            <div><label className="label">Numero *</label><input className="input" value={oppForm.numeroIntervento} onChange={(e) => setOppForm({...oppForm, numeroIntervento: e.target.value})} required /></div>
+                                        </div>
+                                        <div className="grid-2 mb">
+                                            <div><label className="label">CAP *</label><input className="input" value={oppForm.capIntervento} onChange={(e) => setOppForm({...oppForm, capIntervento: e.target.value})} required /></div>
+                                            <div><label className="label">Città *</label><input className="input" value={oppForm.cittaIntervento} onChange={(e) => setOppForm({...oppForm, cittaIntervento: e.target.value})} required /></div>
+                                        </div>
+
+                                        <div className="section-title">Tecnico</div>
+                                        <div className="mb"><label className="label">Ha Tecnico? *</label><select className="input" value={oppForm.hasTecnico} onChange={(e) => setOppForm({...oppForm, hasTecnico: e.target.value})}><option value="no">No</option><option value="si">Si</option></select></div>
+                                        {oppForm.hasTecnico === 'si' && (
+                                            <>
+                                                <div className="grid-2 mb">
+                                                    <div><label className="label">Studio *</label><input className="input" value={oppForm.nomeStudioTecnico} onChange={(e) => setOppForm({...oppForm, nomeStudioTecnico: e.target.value})} required /></div>
+                                                    <div><label className="label">Referente *</label><input className="input" value={oppForm.referenteStudio} onChange={(e) => setOppForm({...oppForm, referenteStudio: e.target.value})} required /></div>
+                                                </div>
+                                                <div className="grid-3 mb">
+                                                    <div><label className="label">Indirizzo *</label><input className="input" value={oppForm.indirizzoStudio} onChange={(e) => setOppForm({...oppForm, indirizzoStudio: e.target.value})} required /></div>
+                                                    <div><label className="label">Tel *</label><input className="input" value={oppForm.telefonoStudio} onChange={(e) => setOppForm({...oppForm, telefonoStudio: e.target.value})} required /></div>
+                                                    <div><label className="label">Email *</label><input type="email" className="input" value={oppForm.emailStudio} onChange={(e) => setOppForm({...oppForm, emailStudio: e.target.value})} required /></div>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        <div className="section-title">Intervento</div>
+                                        <div className="grid-2 mb">
+                                            <div>
+                                                <label className="label">Tipologia *</label>
+                                                <select className="input" value={oppForm.tipologiaIntervento} onChange={(e) => handleTipologiaChange(e.target.value)} required>
+                                                    <option value="">Seleziona...</option>
+                                                    {Object.keys(TIPOLOGIE_INTERVENTO).map(key => (<option key={key} value={key}>{TIPOLOGIE_INTERVENTO[key].label}</option>))}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="label">Tipo Intervento *</label>
+                                                <select className="input" value={oppForm.tipoIntervento || 'SINGOLO'} onChange={(e) => setOppForm({...oppForm, tipoIntervento: e.target.value})} required>
+                                                    {TIPO_INTERVENTO.map(ti => <option key={ti} value={ti}>{ti}</option>)}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        
+                                        {oppForm.tipologiaIntervento && TIPOLOGIE_INTERVENTO[oppForm.tipologiaIntervento].voci.length > 0 && (
+                                            <div style={{background: '#f0f9f4', border: '2px solid #4CAF50', borderRadius: '8px', padding: '16px', marginBottom: '16px'}}>
+                                                <div style={{fontWeight: '600', marginBottom: '12px', color: '#2E7D32'}}>Voci da includere:</div>
+                                                {TIPOLOGIE_INTERVENTO[oppForm.tipologiaIntervento].voci.map(voce => (
+                                                    <div key={voce} style={{display: 'flex', alignItems: 'center', padding: '8px 0'}}>
+                                                        <input 
+                                                            type="checkbox" 
+                                                            id={`voce-${voce}`} 
+                                                            checked={(oppForm.vociSelezionate || []).includes(voce)}
+                                                            onChange={() => toggleVoce(voce)}
+                                                            style={{marginRight: '10px', width: '18px', height: '18px', cursor: 'pointer'}}
+                                                        />
+                                                        <label htmlFor={`voce-${voce}`} style={{cursor: 'pointer', fontSize: '14px'}}>{voce}</label>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        
+                                        <div className="mb"><label className="label">Descrizione *</label><textarea className="input" rows="4" value={oppForm.descrizioneIntervento} onChange={(e) => setOppForm({...oppForm, descrizioneIntervento: e.target.value})} required /></div>
+                                        <div className="grid-2 mb">
+                                            <div><label className="label">Importo (€) *</label><input type="number" className="input" value={oppForm.importoPresunto} onChange={(e) => setOppForm({...oppForm, importoPresunto: e.target.value})} required /></div>
+                                            <div><label className="label">Stato *</label><select className="input" value={oppForm.stato} onChange={(e) => setOppForm({...oppForm, stato: e.target.value})} required>{STATI.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">Possibile Contrattualizzazione *</label>
+                                            <select className="input" value={oppForm.possibileContrattualizzazione || 'entro 3 mesi'} onChange={(e) => setOppForm({...oppForm, possibileContrattualizzazione: e.target.value})} required>
+                                                {CONTRATTUALIZZAZIONE.map(c => <option key={c} value={c}>{c}</option>)}
+                                            </select>
+                                        </div>
+
+                                        <div className="flex" style={{marginTop: '24px'}}>
+                                            <button type="submit" className="btn btn-green" style={{flex: 1}}>Salva</button>
+                                            <button type="button" className="btn btn-gray" onClick={() => setShowOppForm(false)}>Annulla</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        )}
+
+                        {showUserForm && (
+                            <div className="modal" onClick={() => setShowUserForm(false)}>
+                                <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{maxWidth: '500px'}}>
+                                    <h2 style={{fontSize: '24px', fontWeight: '700', marginBottom: '24px', color: '#2E7D32'}}>
+                                        {editUser ? 'Modifica' : 'Nuovo'} Utente
+                                    </h2>
+                                    <form onSubmit={saveUser}>
+                                        <div className="mb">
+                                            <label className="label">Nome Agenzia *</label>
+                                            <input className="input" value={userForm.name} onChange={(e) => setUserForm({...userForm, name: e.target.value})} required />
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">Username *</label>
+                                            <input className="input" value={userForm.username} onChange={(e) => setUserForm({...userForm, username: e.target.value})} required />
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">Password *</label>
+                                            <input type="password" className="input" value={userForm.password} onChange={(e) => setUserForm({...userForm, password: e.target.value})} required />
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">Ruolo *</label>
+                                            <select className="input" value={userForm.role} onChange={(e) => setUserForm({...userForm, role: e.target.value})}>
+                                                <option value="client">Agenzia</option>
+                                                <option value="admin">Amministratore</option>
+                                            </select>
+                                        </div>
+                                        <div className="flex" style={{marginTop: '24px'}}>
+                                            <button type="submit" className="btn btn-green" style={{flex: 1}}>Salva</button>
+                                            <button type="button" className="btn btn-gray" onClick={() => { setShowUserForm(false); setEditUser(null); }}>Annulla</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        )}
+
+                        <h2 style={{fontSize: '20px', fontWeight: '700', marginBottom: '16px', color: '#2E7D32'}}>Opportunità ({filtered.length})</h2>
+                        
+                        <div className="mb">
+                            <input 
+                                className="input" 
+                                type="text" 
+                                placeholder="🔍 Cerca per ragione sociale, referente o descrizione..." 
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                style={{maxWidth: '500px'}}
+                            />
+                        </div>
+                        
+                        {filtered.length === 0 ? (
+                            <div className="card" style={{textAlign: 'center', padding: '48px'}}><p style={{color: '#666'}}>Nessuna opportunità</p></div>
+                        ) : (
+                            filtered.map(o => (
+                                <div key={o.id} className="card">
+                                    <div style={{marginBottom: '12px', paddingBottom: '12px', borderBottom: '2px solid #e8f5e9'}}>
+                                        <div style={{fontSize: '16px', fontWeight: '700', color: '#2E7D32', marginBottom: '4px'}}>
+                                            🏢 {o.agenzia || 'N/D'}
+                                        </div>
+                                        <div style={{fontSize: '12px', color: '#666'}}>
+                                            📅 Inserita il: {new Date(o.createdAt).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                        </div>
+                                    </div>
+                                    <div className="flex-between mb">
+                                        <div>
+                                            <span className={`badge stato-${o.stato.toLowerCase()}`}>{o.stato}</span>
+                                            <span className="badge" style={{background: '#e8f5e9', color: '#2e7d32'}}>{TIPOLOGIE_INTERVENTO[o.tipologiaIntervento]?.label || o.tipologiaIntervento}</span>
+                                            {o.tipoIntervento && (
+                                                <span className="badge" style={{background: o.tipoIntervento === 'SINGOLO' ? '#DBEAFE' : '#FEF3C7', color: o.tipoIntervento === 'SINGOLO' ? '#1E40AF' : '#92400E'}}>
+                                                    {o.tipoIntervento}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <span style={{fontSize: '20px', fontWeight: '700', color: '#4CAF50'}}>€{formatNumber(o.importoPresunto)}</span>
+                                    </div>
+                                    <h3 style={{fontSize: '18px', fontWeight: '700', marginBottom: '8px', color: '#2E7D32'}}>{o.ragioneSociale}</h3>
+                                    <p style={{fontSize: '14px', color: '#666', marginBottom: '8px'}}>{o.tipologiaCliente}</p>
+                                    {o.vociSelezionate && o.vociSelezionate.length > 0 && (
+                                        <div style={{marginBottom: '8px'}}>
+                                            <strong style={{fontSize: '13px', color: '#2E7D32'}}>Voci: </strong>
+                                            {o.vociSelezionate.map((v, idx) => (
+                                                <span key={idx} className="badge" style={{background: '#81C784', color: 'white', fontSize: '11px', marginRight: '4px'}}>{v}</span>
+                                            ))}
+                                        </div>
+                                    )}
+                                    <p style={{fontSize: '14px', color: '#666', marginBottom: '8px'}}><strong>Ref:</strong> {o.nomeReferente} ({o.ruoloReferente})</p>
+                                    <p style={{fontSize: '14px', color: '#666', marginBottom: '8px'}}>{o.descrizioneIntervento}</p>
+                                    <div style={{padding: '8px 12px', background: '#f0f9f4', borderRadius: '6px', marginBottom: '8px'}}>
+                                        <strong style={{fontSize: '13px', color: '#2E7D32'}}>⏱️ Contrattualizzazione: </strong>
+                                        <span style={{fontSize: '13px', fontWeight: '600', color: '#666'}}>{o.possibileContrattualizzazione || 'Non specificato'}</span>
+                                    </div>
+                                    {user?.role === 'admin' && (
+                                        <div className="flex" style={{marginTop: '16px'}}>
+                                            <button className="btn btn-white" onClick={() => { setEditOpp(o); setOppForm({...o, vociSelezionate: o.vociSelezionate || []}); setShowOppForm(true); }}>Modifica</button>
+                                            <button className="btn btn-red" onClick={() => deleteOpp(o.id)}>Elimina</button>
+                                        </div>
+                                    )}
+                                </div>
+                            ))
+                        )}
+
+                        {opps.length > 0 && (
+                            <div style={{marginTop: '40px'}}>
+                                <h2 style={{fontSize: '20px', fontWeight: '700', marginBottom: '16px', color: '#2E7D32'}}>
+                                    📊 {user?.role === 'admin' ? 'Riepilogo Generale' : 'Il Tuo Riepilogo'}
+                                </h2>
+                                <table>
+                                    <thead><tr><th>{user?.role === 'admin' ? 'Agenzia' : 'Le Mie Opportunità'}</th><th>Calda</th><th>Fredda</th><th>KO</th><th>OK</th><th>Tot</th><th>Importo Totale</th></tr></thead>
+                                    <tbody>
+                                        {user?.role === 'admin' ? (
+                                            <>
+                                                {stats.map(s => (
+                                                    <React.Fragment key={s.agenzia}>
+                                                        <tr style={{background: '#f9f9f9'}}>
+                                                            <td style={{fontWeight: '700'}}>{s.agenzia}</td>
+                                                            <td>{s.calda}</td>
+                                                            <td>{s.fredda}</td>
+                                                            <td>{s.ko}</td>
+                                                            <td>{s.ok}</td>
+                                                            <td style={{fontWeight: '700'}}>{s.totale}</td>
+                                                            <td style={{fontWeight: '700'}}>€{formatNumber(s.importo)}</td>
+                                                        </tr>
+                                                        <tr style={{background: '#e8f5e9'}}>
+                                                            <td style={{fontWeight: '600', fontSize: '13px', paddingLeft: '30px'}}>↳ Importi {s.agenzia}</td>
+                                                            <td style={{fontWeight: '600', fontSize: '12px'}}>€{formatNumber(s.importoCalda)}</td>
+                                                            <td style={{fontWeight: '600', fontSize: '12px'}}>€{formatNumber(s.importoFredda)}</td>
+                                                            <td style={{fontWeight: '600', fontSize: '12px'}}>€{formatNumber(s.importoKo)}</td>
+                                                            <td style={{fontWeight: '600', fontSize: '12px'}}>€{formatNumber(s.importoOk)}</td>
+                                                            <td></td>
+                                                            <td style={{fontWeight: '600', fontSize: '12px'}}>€{formatNumber(s.importo)}</td>
+                                                        </tr>
+                                                    </React.Fragment>
+                                                ))}
+                                                <tr className="total-row">
+                                                    <td style={{fontWeight: '700'}}>TOTALE OPPORTUNITÀ</td>
+                                                    <td style={{fontWeight: '700', fontSize: '15px'}}>{totali.calda}</td>
+                                                    <td style={{fontWeight: '700', fontSize: '15px'}}>{totali.fredda}</td>
+                                                    <td style={{fontWeight: '700', fontSize: '15px'}}>{totali.ko}</td>
+                                                    <td style={{fontWeight: '700', fontSize: '15px'}}>{totali.ok}</td>
+                                                    <td style={{fontWeight: '700', fontSize: '15px'}}>{totali.totale}</td>
+                                                    <td style={{fontWeight: '700', fontSize: '15px'}}>€{formatNumber(totali.importo)}</td>
+                                                </tr>
+                                                <tr className="grand-total-row">
+                                                    <td style={{fontWeight: '700'}}>TOTALE IMPORTI</td>
+                                                    <td style={{fontWeight: '700', fontSize: '13px'}}>€{formatNumber(totali.importoCalda)}</td>
+                                                    <td style={{fontWeight: '700', fontSize: '13px'}}>€{formatNumber(totali.importoFredda)}</td>
+                                                    <td style={{fontWeight: '700', fontSize: '13px'}}>€{formatNumber(totali.importoKo)}</td>
+                                                    <td style={{fontWeight: '700', fontSize: '13px'}}>€{formatNumber(totali.importoOk)}</td>
+                                                    <td></td>
+                                                    <td style={{fontWeight: '700', fontSize: '15px'}}>€{formatNumber(totali.importo)}</td>
+                                                </tr>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <tr style={{background: '#f9f9f9'}}>
+                                                    <td style={{fontWeight: '700'}}>{user?.name}</td>
+                                                    <td>{opps.filter(o => o.clientId === user.id && o.stato === 'CALDA').length}</td>
+                                                    <td>{opps.filter(o => o.clientId === user.id && o.stato === 'FREDDA').length}</td>
+                                                    <td>{opps.filter(o => o.clientId === user.id && o.stato === 'KO').length}</td>
+                                                    <td>{opps.filter(o => o.clientId === user.id && o.stato === 'OK').length}</td>
+                                                    <td style={{fontWeight: '700'}}>{opps.filter(o => o.clientId === user.id).length}</td>
+                                                    <td style={{fontWeight: '700'}}>€{formatNumber(opps.filter(o => o.clientId === user.id).reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0))}</td>
+                                                </tr>
+                                                <tr className="total-row">
+                                                    <td style={{fontWeight: '700'}}>TOTALE OPPORTUNITÀ</td>
+                                                    <td style={{fontWeight: '700', fontSize: '15px'}}>{opps.filter(o => o.clientId === user.id && o.stato === 'CALDA').length}</td>
+                                                    <td style={{fontWeight: '700', fontSize: '15px'}}>{opps.filter(o => o.clientId === user.id && o.stato === 'FREDDA').length}</td>
+                                                    <td style={{fontWeight: '700', fontSize: '15px'}}>{opps.filter(o => o.clientId === user.id && o.stato === 'KO').length}</td>
+                                                    <td style={{fontWeight: '700', fontSize: '15px'}}>{opps.filter(o => o.clientId === user.id && o.stato === 'OK').length}</td>
+                                                    <td style={{fontWeight: '700', fontSize: '15px'}}>{opps.filter(o => o.clientId === user.id).length}</td>
+                                                    <td style={{fontWeight: '700', fontSize: '15px'}}>€{formatNumber(opps.filter(o => o.clientId === user.id).reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0))}</td>
+                                                </tr>
+                                                <tr className="grand-total-row">
+                                                    <td style={{fontWeight: '700'}}>TOTALE IMPORTI</td>
+                                                    <td style={{fontWeight: '700', fontSize: '13px'}}>€{formatNumber(opps.filter(o => o.clientId === user.id && o.stato === 'CALDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0))}</td>
+                                                    <td style={{fontWeight: '700', fontSize: '13px'}}>€{formatNumber(opps.filter(o => o.clientId === user.id && o.stato === 'FREDDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0))}</td>
+                                                    <td style={{fontWeight: '700', fontSize: '13px'}}>€{formatNumber(opps.filter(o => o.clientId === user.id && o.stato === 'KO').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0))}</td>
+                                                    <td style={{fontWeight: '700', fontSize: '13px'}}>€{formatNumber(opps.filter(o => o.clientId === user.id && o.stato === 'OK').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0))}</td>
+                                                    <td></td>
+                                                    <td style={{fontWeight: '700', fontSize: '15px'}}>€{formatNumber(opps.filter(o => o.clientId === user.id).reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0))}</td>
+                                                </tr>
+                                            </>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+
+                        {user?.role === 'admin' && users.length > 0 && (
+                            <div style={{marginTop: '40px'}}>
+                                <h2 style={{fontSize: '20px', fontWeight: '700', marginBottom: '16px', color: '#2E7D32'}}>👥 Gestione Utenti</h2>
+                                <div className="card" style={{padding: 0, overflow: 'hidden'}}>
+                                    <table>
+                                        <thead><tr><th>Nome Agenzia</th><th>Username</th><th>Ruolo</th><th style={{textAlign: 'right'}}>Azioni</th></tr></thead>
+                                        <tbody>
+                                            {users.map(u => (
+                                                <tr key={u.id}>
+                                                    <td style={{fontWeight: '600'}}>{u.name}</td>
+                                                    <td style={{color: '#666'}}>{u.username}</td>
+                                                    <td>
+                                                        <span className="badge" style={{background: u.role === 'admin' ? '#2E7D32' : '#81C784', color: 'white'}}>
+                                                            {u.role === 'admin' ? 'Admin' : 'Agenzia'}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{textAlign: 'right'}}>
+                                                        <button className="btn btn-white" style={{marginRight: '8px', padding: '8px 16px'}} onClick={() => { setEditUser(u); setUserForm({username: u.username, password: u.password, name: u.name, role: u.role}); setShowUserForm(true); }}>
+                                                            Modifica
+                                                        </button>
+                                                        {u.id !== user.id && (
+                                                            <button className="btn btn-red" style={{padding: '8px 16px'}} onClick={() => deleteUser(u.id)}>
+                                                                Elimina
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
