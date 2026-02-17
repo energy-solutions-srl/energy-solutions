@@ -59,10 +59,7 @@
         .file-list { margin-top: 12px; padding: 12px; background: #f0f9f4; border-radius: 8px; border: 2px solid #81C784; }
         .file-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; margin-bottom: 8px; border-radius: 6px; border: 1px solid #81C784; }
         .error-message { color: #f44336; font-size: 13px; margin-top: 6px; font-weight: 600; }
-        .storage-alert { position: fixed; bottom: 20px; right: 20px; background: white; border-radius: 12px; padding: 16px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-left: 4px solid #4CAF50; z-index: 100; max-width: 300px; }
-        .storage-bar { width: 100%; height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; margin: 8px 0; }
-        .storage-bar-fill { height: 100%; transition: width 0.3s ease, background 0.3s ease; }
-        @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } .storage-alert { bottom: 10px; right: 10px; left: 10px; max-width: none; } }
+        @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -158,46 +155,12 @@
             const [searchTerm, setSearchTerm] = useState('');
             const [userForm, setUserForm] = useState({ username: '', password: '', name: '', role: 'client' });
             const [uploadError, setUploadError] = useState('');
-            const [storageInfo, setStorageInfo] = useState({ used: 0, total: 1024 * 1024 * 1024 }); // 1GB in bytes
 
             const ROLE_LABELS = {
                 'admin': 'Amministratore',
                 'client': 'Agenzia',
                 'diretto': 'Diretto',
                 'interno': 'Interno'
-            };
-
-            // Calcola utilizzo storage
-            const calculateStorageUsage = (opportunities) => {
-                let totalBytes = 0;
-                opportunities.forEach(opp => {
-                    if (opp.files && opp.files.length > 0) {
-                        opp.files.forEach(file => {
-                            totalBytes += file.size || 0;
-                        });
-                    }
-                });
-                return totalBytes;
-            };
-
-            const formatBytes = (bytes) => {
-                if (bytes === 0) return '0 Bytes';
-                const k = 1024;
-                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(k));
-                return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
-            };
-
-            const getStoragePercentage = () => {
-                return Math.round((storageInfo.used / storageInfo.total) * 100);
-            };
-
-            const getStorageColor = () => {
-                const percentage = getStoragePercentage();
-                if (percentage >= 90) return '#f44336'; // Rosso
-                if (percentage >= 75) return '#FF9800'; // Arancione
-                if (percentage >= 50) return '#FFC107'; // Giallo
-                return '#4CAF50'; // Verde
             };
 
             // Carica credenziali salvate al mount
@@ -298,10 +261,6 @@
                     if (data) {
                         const oppsArray = Object.keys(data).map(key => ({ id: key, ...data[key] }));
                         setOpps(oppsArray);
-                        
-                        // Calcola utilizzo storage
-                        const usedBytes = calculateStorageUsage(oppsArray);
-                        setStorageInfo(prev => ({ ...prev, used: usedBytes }));
                     }
                     setSyncing(false);
                 });
@@ -527,44 +486,6 @@
             return (
                 <div style={{minHeight: '100vh', background: '#f0f9f4'}}>
                     {syncing && <div className="sync-badge">🔄 Salvataggio...</div>}
-                    
-                    {user?.role === 'admin' && (
-                        <div className="storage-alert" style={{borderLeftColor: getStorageColor()}}>
-                            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px'}}>
-                                <div style={{fontWeight: '700', fontSize: '14px', color: '#2E7D32'}}>
-                                    💾 Storage Firebase
-                                </div>
-                                <div style={{fontSize: '18px', fontWeight: '700', color: getStorageColor()}}>
-                                    {getStoragePercentage()}%
-                                </div>
-                            </div>
-                            <div className="storage-bar">
-                                <div 
-                                    className="storage-bar-fill" 
-                                    style={{
-                                        width: `${getStoragePercentage()}%`,
-                                        background: getStorageColor()
-                                    }}
-                                />
-                            </div>
-                            <div style={{fontSize: '12px', color: '#666', marginTop: '8px'}}>
-                                <div style={{marginBottom: '4px'}}>
-                                    <strong>Utilizzato:</strong> {formatBytes(storageInfo.used)}
-                                </div>
-                                <div style={{marginBottom: '4px'}}>
-                                    <strong>Disponibile:</strong> {formatBytes(storageInfo.total - storageInfo.used)}
-                                </div>
-                                <div>
-                                    <strong>Totale:</strong> {formatBytes(storageInfo.total)}
-                                </div>
-                            </div>
-                            {getStoragePercentage() >= 75 && (
-                                <div style={{marginTop: '12px', padding: '8px', background: getStoragePercentage() >= 90 ? '#FFEBEE' : '#FFF3E0', borderRadius: '6px', fontSize: '11px', fontWeight: '600', color: getStoragePercentage() >= 90 ? '#c62828' : '#e65100'}}>
-                                    {getStoragePercentage() >= 90 ? '⚠️ Spazio quasi esaurito!' : '⚠️ Spazio in esaurimento'}
-                                </div>
-                            )}
-                        </div>
-                    )}
                     
                     <div className="header">
                         <div className="container flex-between">
