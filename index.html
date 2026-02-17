@@ -59,7 +59,10 @@
         .file-list { margin-top: 12px; padding: 12px; background: #f0f9f4; border-radius: 8px; border: 2px solid #81C784; }
         .file-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; margin-bottom: 8px; border-radius: 6px; border: 1px solid #81C784; }
         .error-message { color: #f44336; font-size: 13px; margin-top: 6px; font-weight: 600; }
-        @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+        .storage-alert { position: fixed; bottom: 20px; right: 20px; background: white; border-radius: 12px; padding: 16px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-left: 4px solid #4CAF50; z-index: 100; max-width: 300px; }
+        .storage-bar { width: 100%; height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; margin: 8px 0; }
+        .storage-bar-fill { height: 100%; transition: width 0.3s ease, background 0.3s ease; }
+        @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } .storage-alert { bottom: 10px; right: 10px; left: 10px; max-width: none; } }
     </style>
 </head>
 <body>
@@ -155,6 +158,47 @@
             const [searchTerm, setSearchTerm] = useState('');
             const [userForm, setUserForm] = useState({ username: '', password: '', name: '', role: 'client' });
             const [uploadError, setUploadError] = useState('');
+            const [storageInfo, setStorageInfo] = useState({ used: 0, total: 1024 * 1024 * 1024 }); // 1GB in bytes
+
+            const ROLE_LABELS = {
+                'admin': 'Amministratore',
+                'client': 'Agenzia',
+                'diretto': 'Diretto',
+                'interno': 'Interno'
+            };
+
+            // Calcola utilizzo storage
+            const calculateStorageUsage = (opportunities) => {
+                let totalBytes = 0;
+                opportunities.forEach(opp => {
+                    if (opp.files && opp.files.length > 0) {
+                        opp.files.forEach(file => {
+                            totalBytes += file.size || 0;
+                        });
+                    }
+                });
+                return totalBytes;
+            };
+
+            const formatBytes = (bytes) => {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+            };
+
+            const getStoragePercentage = () => {
+                return Math.round((storageInfo.used / storageInfo.total) * 100);
+            };
+
+            const getStorageColor = () => {
+                const percentage = getStoragePercentage();
+                if (percentage >= 90) return '#f44336'; // Rosso
+                if (percentage >= 75) return '#FF9800'; // Arancione
+                if (percentage >= 50) return '#FFC107'; // Giallo
+                return '#4CAF50'; // Verde
+            };
 
             // Carica credenziali salvate al mount
             useEffect(() => {
@@ -240,7 +284,9 @@
                     } else {
                         const defaultUsers = {
                             'user1': { username: 'admin', password: 'admin123', role: 'admin', name: 'Amministratore' },
-                            'user2': { username: 'agenzia1', password: 'ag123', role: 'client', name: 'Agenzia Roma' }
+                            'user2': { username: 'agenzia1', password: 'ag123', role: 'client', name: 'Agenzia Roma' },
+                            'user3': { username: 'diretto1', password: 'dir123', role: 'diretto', name: 'Diretto Milano' },
+                            'user4': { username: 'interno1', password: 'int123', role: 'interno', name: 'Interno Ufficio' }
                         };
                         database.ref('users').set(defaultUsers);
                     }
@@ -252,6 +298,10 @@
                     if (data) {
                         const oppsArray = Object.keys(data).map(key => ({ id: key, ...data[key] }));
                         setOpps(oppsArray);
+                        
+                        // Calcola utilizzo storage
+                        const usedBytes = calculateStorageUsage(oppsArray);
+                        setStorageInfo(prev => ({ ...prev, used: usedBytes }));
                     }
                     setSyncing(false);
                 });
@@ -396,9 +446,12 @@
             };
 
             const getStatistiche = () => {
-                const agenzie = [...new Set(opps.map(o => o.agenzia))].filter(Boolean);
+                // Admin vede tutte le agenzie, altri vedono solo i propri dati
+                const dataToAnalyze = user?.role === 'admin' ? opps : opps.filter(o => o.clientId === user?.id);
+                const agenzie = [...new Set(dataToAnalyze.map(o => o.agenzia))].filter(Boolean);
+                const agenzie = [...new Set(dataToAnalyze.map(o => o.agenzia))].filter(Boolean);
                 const stats = agenzie.map(ag => {
-                    const oppsAg = opps.filter(o => o.agenzia === ag);
+                    const oppsAg = dataToAnalyze.filter(o => o.agenzia === ag);
                     return {
                         agenzia: ag,
                         calda: oppsAg.filter(o => o.stato === 'CALDA').length,
@@ -414,16 +467,16 @@
                     };
                 });
                 const totali = {
-                    calda: opps.filter(o => o.stato === 'CALDA').length,
-                    fredda: opps.filter(o => o.stato === 'FREDDA').length,
-                    ko: opps.filter(o => o.stato === 'KO').length,
-                    ok: opps.filter(o => o.stato === 'OK').length,
-                    totale: opps.length,
-                    importo: opps.reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0),
-                    importoCalda: opps.filter(o => o.stato === 'CALDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0),
-                    importoFredda: opps.filter(o => o.stato === 'FREDDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0),
-                    importoKo: opps.filter(o => o.stato === 'KO').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0),
-                    importoOk: opps.filter(o => o.stato === 'OK').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0)
+                    calda: dataToAnalyze.filter(o => o.stato === 'CALDA').length,
+                    fredda: dataToAnalyze.filter(o => o.stato === 'FREDDA').length,
+                    ko: dataToAnalyze.filter(o => o.stato === 'KO').length,
+                    ok: dataToAnalyze.filter(o => o.stato === 'OK').length,
+                    totale: dataToAnalyze.length,
+                    importo: dataToAnalyze.reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0),
+                    importoCalda: dataToAnalyze.filter(o => o.stato === 'CALDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0),
+                    importoFredda: dataToAnalyze.filter(o => o.stato === 'FREDDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0),
+                    importoKo: dataToAnalyze.filter(o => o.stato === 'KO').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0),
+                    importoOk: dataToAnalyze.filter(o => o.stato === 'OK').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0)
                 };
                 return { stats, totali };
             };
@@ -474,6 +527,44 @@
             return (
                 <div style={{minHeight: '100vh', background: '#f0f9f4'}}>
                     {syncing && <div className="sync-badge">🔄 Salvataggio...</div>}
+                    
+                    {user?.role === 'admin' && (
+                        <div className="storage-alert" style={{borderLeftColor: getStorageColor()}}>
+                            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px'}}>
+                                <div style={{fontWeight: '700', fontSize: '14px', color: '#2E7D32'}}>
+                                    💾 Storage Firebase
+                                </div>
+                                <div style={{fontSize: '18px', fontWeight: '700', color: getStorageColor()}}>
+                                    {getStoragePercentage()}%
+                                </div>
+                            </div>
+                            <div className="storage-bar">
+                                <div 
+                                    className="storage-bar-fill" 
+                                    style={{
+                                        width: `${getStoragePercentage()}%`,
+                                        background: getStorageColor()
+                                    }}
+                                />
+                            </div>
+                            <div style={{fontSize: '12px', color: '#666', marginTop: '8px'}}>
+                                <div style={{marginBottom: '4px'}}>
+                                    <strong>Utilizzato:</strong> {formatBytes(storageInfo.used)}
+                                </div>
+                                <div style={{marginBottom: '4px'}}>
+                                    <strong>Disponibile:</strong> {formatBytes(storageInfo.total - storageInfo.used)}
+                                </div>
+                                <div>
+                                    <strong>Totale:</strong> {formatBytes(storageInfo.total)}
+                                </div>
+                            </div>
+                            {getStoragePercentage() >= 75 && (
+                                <div style={{marginTop: '12px', padding: '8px', background: getStoragePercentage() >= 90 ? '#FFEBEE' : '#FFF3E0', borderRadius: '6px', fontSize: '11px', fontWeight: '600', color: getStoragePercentage() >= 90 ? '#c62828' : '#e65100'}}>
+                                    {getStoragePercentage() >= 90 ? '⚠️ Spazio quasi esaurito!' : '⚠️ Spazio in esaurimento'}
+                                </div>
+                            )}
+                        </div>
+                    )}
                     
                     <div className="header">
                         <div className="container flex-between">
@@ -694,6 +785,8 @@
                                             <label className="label">Ruolo *</label>
                                             <select className="input" value={userForm.role} onChange={(e) => setUserForm({...userForm, role: e.target.value})}>
                                                 <option value="client">Agenzia</option>
+                                                <option value="diretto">Diretto</option>
+                                                <option value="interno">Interno</option>
                                                 <option value="admin">Amministratore</option>
                                             </select>
                                         </div>
@@ -784,7 +877,7 @@
                                         </div>
                                     )}
                                     
-                                    {user?.role === 'admin' && (
+                                    {(user?.role === 'admin' || (user?.role === 'diretto' && o.clientId === user.id) || (user?.role === 'interno' && o.clientId === user.id)) && (
                                         <div className="flex" style={{marginTop: '16px'}}>
                                             <button className="btn btn-white" onClick={() => { setEditOpp(o); setOppForm({...o, vociSelezionate: o.vociSelezionate || [], files: o.files || []}); setShowOppForm(true); }}>Modifica</button>
                                             <button className="btn btn-red" onClick={() => deleteOpp(o.id)}>Elimina</button>
@@ -893,8 +986,11 @@
                                                     <td style={{fontWeight: '600'}}>{u.name}</td>
                                                     <td style={{color: '#666'}}>{u.username}</td>
                                                     <td>
-                                                        <span className="badge" style={{background: u.role === 'admin' ? '#2E7D32' : '#81C784', color: 'white'}}>
-                                                            {u.role === 'admin' ? 'Admin' : 'Agenzia'}
+                                                        <span className="badge" style={{
+                                                            background: u.role === 'admin' ? '#2E7D32' : u.role === 'diretto' ? '#1976D2' : u.role === 'interno' ? '#F57C00' : '#81C784', 
+                                                            color: 'white'
+                                                        }}>
+                                                            {ROLE_LABELS[u.role] || u.role}
                                                         </span>
                                                     </td>
                                                     <td style={{textAlign: 'right'}}>
@@ -920,10 +1016,6 @@
         }
 
         ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-    </script>
-</body>
-</html>
-
     </script>
 </body>
 </html>
