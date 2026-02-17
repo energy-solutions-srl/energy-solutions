@@ -56,6 +56,9 @@
         textarea { resize: vertical; font-family: Arial, sans-serif; }
         .loading { text-align: center; padding: 60px; color: #666; font-size: 18px; }
         .sync-badge { position: fixed; top: 20px; right: 20px; background: #4CAF50; color: white; padding: 10px 20px; border-radius: 25px; font-size: 13px; font-weight: 700; z-index: 100; box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4); }
+        .file-list { margin-top: 12px; padding: 12px; background: #f0f9f4; border-radius: 8px; border: 2px solid #81C784; }
+        .file-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; margin-bottom: 8px; border-radius: 6px; border: 1px solid #81C784; }
+        .error-message { color: #f44336; font-size: 13px; margin-top: 6px; font-weight: 600; }
         @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -138,18 +141,92 @@
             const [showUserForm, setShowUserForm] = useState(false);
             const [editOpp, setEditOpp] = useState(null);
             const [editUser, setEditUser] = useState(null);
-            const [login, setLogin] = useState({ username: '', password: '' });
+            const [login, setLogin] = useState({ username: '', password: '', remember: false });
             const [oppForm, setOppForm] = useState({
                 ragioneSociale: '', indirizzo: '', cap: '', citta: '', telefono: '', tipologiaCliente: '',
                 nomeReferente: '', ruoloReferente: '', telReferente: '', emailReferente: '',
                 viaIntervento: '', numeroIntervento: '', capIntervento: '', cittaIntervento: '',
                 hasTecnico: 'no', nomeStudioTecnico: '', referenteStudio: '', indirizzoStudio: '', telefonoStudio: '', emailStudio: '',
                 tipologiaIntervento: '', vociSelezionate: [], descrizioneIntervento: '', importoPresunto: '', stato: 'CALDA',
-                possibileContrattualizzazione: 'entro 3 mesi', tipoIntervento: 'SINGOLO'
+                possibileContrattualizzazione: 'entro 3 mesi', tipoIntervento: 'SINGOLO',
+                files: []
             });
             const [filters, setFilters] = useState({ agenzia: '', tipologiaCliente: '', stato: '' });
             const [searchTerm, setSearchTerm] = useState('');
             const [userForm, setUserForm] = useState({ username: '', password: '', name: '', role: 'client' });
+            const [uploadError, setUploadError] = useState('');
+
+            // Carica credenziali salvate al mount
+            useEffect(() => {
+                const savedUsername = localStorage.getItem('savedUsername');
+                const savedPassword = localStorage.getItem('savedPassword');
+                if (savedUsername && savedPassword) {
+                    setLogin({ username: savedUsername, password: savedPassword, remember: true });
+                }
+            }, []);
+
+            const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB
+            const ALLOWED_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
+                                    'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                    'image/jpeg', 'image/jpg', 'image/png'];
+
+            const formatFileSize = (bytes) => {
+                if (bytes < 1024) return bytes + ' B';
+                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+                return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+            };
+
+            const handleFileUpload = async (e) => {
+                const files = Array.from(e.target.files);
+                setUploadError('');
+
+                for (const file of files) {
+                    // Validazione dimensione
+                    if (file.size > MAX_FILE_SIZE) {
+                        setUploadError(`File "${file.name}" supera i 3MB (${formatFileSize(file.size)})`);
+                        continue;
+                    }
+
+                    // Validazione tipo
+                    if (!ALLOWED_TYPES.includes(file.type)) {
+                        setUploadError(`File "${file.name}" non è un tipo permesso`);
+                        continue;
+                    }
+
+                    // Converti in Base64
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const base64 = event.target.result;
+                        const newFile = {
+                            id: Date.now().toString() + Math.random().toString(36),
+                            name: file.name,
+                            size: file.size,
+                            type: file.type,
+                            data: base64,
+                            uploadedAt: new Date().toISOString()
+                        };
+                        setOppForm(prev => ({
+                            ...prev,
+                            files: [...(prev.files || []), newFile]
+                        }));
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+
+            const removeFile = (fileId) => {
+                setOppForm(prev => ({
+                    ...prev,
+                    files: (prev.files || []).filter(f => f.id !== fileId)
+                }));
+            };
+
+            const downloadFile = (file) => {
+                const link = document.createElement('a');
+                link.href = file.data;
+                link.download = file.name;
+                link.click();
+            };
 
             useEffect(() => {
                 const usersRef = database.ref('users');
@@ -189,9 +266,18 @@
                 e.preventDefault();
                 const found = users.find(u => u.username === login.username && u.password === login.password);
                 if (found) {
+                    // Salva credenziali se "Ricorda" è spuntato
+                    if (login.remember) {
+                        localStorage.setItem('savedUsername', login.username);
+                        localStorage.setItem('savedPassword', login.password);
+                    } else {
+                        localStorage.removeItem('savedUsername');
+                        localStorage.removeItem('savedPassword');
+                    }
+                    
                     setUser(found);
                     setShowLogin(false);
-                    setLogin({ username: '', password: '' });
+                    setLogin({ username: '', password: '', remember: false });
                 } else {
                     alert('Credenziali errate!');
                 }
@@ -228,8 +314,10 @@
                         viaIntervento: '', numeroIntervento: '', capIntervento: '', cittaIntervento: '',
                         hasTecnico: 'no', nomeStudioTecnico: '', referenteStudio: '', indirizzoStudio: '', telefonoStudio: '', emailStudio: '',
                         tipologiaIntervento: '', vociSelezionate: [], descrizioneIntervento: '', importoPresunto: '', stato: 'CALDA',
-                        possibileContrattualizzazione: 'entro 3 mesi', tipoIntervento: 'SINGOLO'
+                        possibileContrattualizzazione: 'entro 3 mesi', tipoIntervento: 'SINGOLO',
+                        files: []
                     });
+                    setUploadError('');
                 } catch (error) {
                     alert('Errore: ' + error.message);
                     setSyncing(false);
@@ -357,19 +445,24 @@
                             <form onSubmit={doLogin}>
                                 <div className="mb">
                                     <label className="label">Username</label>
-                                    <input className="input" value={login.username} onChange={(e) => setLogin({...login, username: e.target.value})} required />
+                                    <input className="input" value={login.username} onChange={(e) => setLogin({...login, username: e.target.value})} required autoComplete="username" />
                                 </div>
                                 <div className="mb">
                                     <label className="label">Password</label>
-                                    <input type="password" className="input" value={login.password} onChange={(e) => setLogin({...login, password: e.target.value})} required />
+                                    <input type="password" className="input" value={login.password} onChange={(e) => setLogin({...login, password: e.target.value})} required autoComplete="current-password" />
+                                </div>
+                                <div className="mb" style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                                    <input 
+                                        type="checkbox" 
+                                        id="remember" 
+                                        checked={login.remember}
+                                        onChange={(e) => setLogin({...login, remember: e.target.checked})}
+                                        style={{width: '18px', height: '18px', cursor: 'pointer'}}
+                                    />
+                                    <label htmlFor="remember" style={{cursor: 'pointer', fontSize: '14px', margin: 0}}>Ricorda le mie credenziali</label>
                                 </div>
                                 <button type="submit" className="btn btn-green" style={{width: '100%', padding: '14px', fontSize: '16px'}}>Accedi</button>
                             </form>
-                            <div style={{marginTop: '24px', padding: '16px', background: '#f0f9f4', borderRadius: '8px'}}>
-                                <p style={{fontWeight: '600', fontSize: '13px', marginBottom: '8px'}}>Credenziali test:</p>
-                                <p style={{fontSize: '12px', color: '#666', marginBottom: '4px'}}><strong>Admin:</strong> admin / admin123</p>
-                                <p style={{fontSize: '12px', color: '#666'}}><strong>Agenzia:</strong> agenzia1 / ag123</p>
-                            </div>
                         </div>
                     </div>
                 );
@@ -529,6 +622,46 @@
                                             </select>
                                         </div>
 
+                                        <div className="section-title">📎 Allegati (max 3MB per file)</div>
+                                        <div className="mb">
+                                            <label className="label">Carica File (PDF, DOC, DOCX, XLS, XLSX, JPG, PNG)</label>
+                                            <input 
+                                                type="file" 
+                                                className="input" 
+                                                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                                                multiple
+                                                onChange={handleFileUpload}
+                                            />
+                                            {uploadError && <div className="error-message">{uploadError}</div>}
+                                            <div style={{fontSize: '12px', color: '#666', marginTop: '4px'}}>
+                                                ℹ️ Massimo 3MB per file. Formati: PDF, Word, Excel, JPG, PNG
+                                            </div>
+                                        </div>
+
+                                        {oppForm.files && oppForm.files.length > 0 && (
+                                            <div className="file-list">
+                                                <div style={{fontWeight: '600', marginBottom: '8px', color: '#2E7D32'}}>
+                                                    📁 File caricati ({oppForm.files.length})
+                                                </div>
+                                                {oppForm.files.map(file => (
+                                                    <div key={file.id} className="file-item">
+                                                        <div>
+                                                            <div style={{fontWeight: '600', fontSize: '14px'}}>{file.name}</div>
+                                                            <div style={{fontSize: '12px', color: '#666'}}>{formatFileSize(file.size)}</div>
+                                                        </div>
+                                                        <button 
+                                                            type="button"
+                                                            className="btn btn-red" 
+                                                            style={{padding: '6px 12px', fontSize: '12px'}}
+                                                            onClick={() => removeFile(file.id)}
+                                                        >
+                                                            Elimina
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
                                         <div className="flex" style={{marginTop: '24px'}}>
                                             <button type="submit" className="btn btn-green" style={{flex: 1}}>Salva</button>
                                             <button type="button" className="btn btn-gray" onClick={() => setShowOppForm(false)}>Annulla</button>
@@ -627,9 +760,33 @@
                                         <strong style={{fontSize: '13px', color: '#2E7D32'}}>⏱️ Contrattualizzazione: </strong>
                                         <span style={{fontSize: '13px', fontWeight: '600', color: '#666'}}>{o.possibileContrattualizzazione || 'Non specificato'}</span>
                                     </div>
+                                    
+                                    {o.files && o.files.length > 0 && (
+                                        <div style={{marginTop: '12px', padding: '12px', background: '#f0f9f4', borderRadius: '8px'}}>
+                                            <div style={{fontWeight: '600', marginBottom: '8px', color: '#2E7D32', fontSize: '14px'}}>
+                                                📎 Allegati ({o.files.length})
+                                            </div>
+                                            {o.files.map((file, idx) => (
+                                                <div key={file.id || idx} style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: 'white', marginBottom: '4px', borderRadius: '6px', border: '1px solid #81C784'}}>
+                                                    <div>
+                                                        <div style={{fontSize: '13px', fontWeight: '600'}}>{file.name}</div>
+                                                        <div style={{fontSize: '11px', color: '#666'}}>{formatFileSize(file.size)}</div>
+                                                    </div>
+                                                    <button 
+                                                        className="btn btn-white" 
+                                                        style={{padding: '4px 12px', fontSize: '12px'}}
+                                                        onClick={() => downloadFile(file)}
+                                                    >
+                                                        📥 Download
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    
                                     {user?.role === 'admin' && (
                                         <div className="flex" style={{marginTop: '16px'}}>
-                                            <button className="btn btn-white" onClick={() => { setEditOpp(o); setOppForm({...o, vociSelezionate: o.vociSelezionate || []}); setShowOppForm(true); }}>Modifica</button>
+                                            <button className="btn btn-white" onClick={() => { setEditOpp(o); setOppForm({...o, vociSelezionate: o.vociSelezionate || [], files: o.files || []}); setShowOppForm(true); }}>Modifica</button>
                                             <button className="btn btn-red" onClick={() => deleteOpp(o.id)}>Elimina</button>
                                         </div>
                                     )}
@@ -763,6 +920,10 @@
         }
 
         ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
+
     </script>
 </body>
 </html>
