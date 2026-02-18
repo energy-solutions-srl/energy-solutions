@@ -7,6 +7,7 @@
     
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -22,6 +23,32 @@
         .btn-white:hover { background: #f0f9f4; }
         .btn-red { background: #f44336; color: white; }
         .btn-gray { background: #ddd; color: #666; }
+        .btn-google { 
+            background: white; 
+            color: #444; 
+            border: 2px solid #ddd; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 10px;
+            font-weight: 600;
+        }
+        .btn-google:hover { background: #f9f9f9; border-color: #4285f4; }
+        .divider { 
+            display: flex; 
+            align-items: center; 
+            text-align: center; 
+            margin: 20px 0;
+            color: #999;
+            font-size: 13px;
+        }
+        .divider::before, .divider::after { 
+            content: ''; 
+            flex: 1; 
+            border-bottom: 1px solid #ddd; 
+        }
+        .divider:not(:empty)::before { margin-right: 12px; }
+        .divider:not(:empty)::after { margin-left: 12px; }
         .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid #4CAF50; }
         .input { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; }
         .input:focus { outline: none; border-color: #4CAF50; }
@@ -116,7 +143,7 @@
                 'edifici': ['🏢', '🏠', '🏭', '🏗️', '🏛️', '🏘️', '🏚️', '🏬', '🏫'],
                 'trasporti': ['🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑', '🚒']
             };
-            const [userForm, setUserForm] = useState({ username: '', password: '', name: '', role: 'agenzia' });
+            const [userForm, setUserForm] = useState({ username: '', password: '', name: '', email: '', role: 'agenzia' });
             const [filters, setFilters] = useState({ 
                 utente: '', 
                 tipologiaCliente: '', 
@@ -257,6 +284,42 @@
                 }
             };
 
+            const loginWithGoogle = async () => {
+                try {
+                    const provider = new firebase.auth.GoogleAuthProvider();
+                    const result = await firebase.auth().signInWithPopup(provider);
+                    
+                    // Utente Google autenticato
+                    const googleUser = result.user;
+                    console.log('Google user:', googleUser);
+                    
+                    // Cerca se esiste già un utente con questa email
+                    const found = users.find(u => u.email === googleUser.email);
+                    
+                    if (!found) {
+                        // ACCESSO NEGATO - Utente non esistente
+                        await firebase.auth().signOut(); // Logout da Google
+                        alert('❌ ACCESSO NEGATO\n\nLa tua email non è autorizzata.\n\nContatta l\'amministratore per richiedere l\'accesso.');
+                        return;
+                    }
+                    
+                    // Utente trovato - LOGIN OK
+                    setUser(found);
+                    setShowLogin(false);
+                    console.log('✅ Google Sign-In successful');
+                    
+                } catch (error) {
+                    console.error('Errore Google Sign-In:', error);
+                    if (error.code === 'auth/popup-closed-by-user') {
+                        // Utente ha chiuso il popup, non fare nulla
+                    } else if (error.code === 'auth/unauthorized-domain') {
+                        alert('⚠️ Dominio non autorizzato!\n\nPer usare Google Sign-In devi:\n1. Andare su Firebase Console\n2. Authentication → Settings → Authorized domains\n3. Aggiungere il tuo dominio GitHub Pages');
+                    } else {
+                        alert('❌ Errore login Google: ' + error.message);
+                    }
+                }
+            };
+
             const verifyCaptcha = () => {
                 console.log('=== CAPTCHA VERIFICATION ===');
                 console.log('Selected images:', selectedImages);
@@ -359,7 +422,7 @@
                 }
                 setShowUserForm(false);
                 setEditUser(null);
-                setUserForm({ username: '', password: '', name: '', role: 'agenzia' });
+                setUserForm({ username: '', password: '', name: '', email: '', role: 'agenzia' });
             };
 
             const deleteUser = async (id) => {
@@ -725,11 +788,27 @@
                                     type="submit" 
                                     className="btn btn-green" 
                                     style={{width: '100%', cursor: 'pointer', fontSize: '16px', padding: '14px'}}
-                                    onClick={(e) => { console.log('Button clicked!'); }}
                                 >
                                     Accedi
                                 </button>
                             </form>
+
+                            <div className="divider">oppure</div>
+
+                            <button 
+                                type="button"
+                                className="btn btn-google" 
+                                style={{width: '100%', cursor: 'pointer', fontSize: '15px', padding: '12px'}}
+                                onClick={loginWithGoogle}
+                            >
+                                <svg width="20" height="20" viewBox="0 0 48 48">
+                                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                                </svg>
+                                Accedi con Google
+                            </button>
                         </div>
                     </div>
                 );
@@ -1124,6 +1203,7 @@
                                         <tr>
                                             <th>Nome</th>
                                             <th>Username</th>
+                                            <th>Email Google</th>
                                             <th>Ruolo</th>
                                             <th>Azioni</th>
                                         </tr>
@@ -1133,6 +1213,13 @@
                                             <tr key={u.id}>
                                                 <td style={{fontWeight: '600'}}>{u.name}</td>
                                                 <td>{u.username}</td>
+                                                <td style={{fontSize: '13px', color: '#666'}}>
+                                                    {u.email ? (
+                                                        <span>✅ {u.email}</span>
+                                                    ) : (
+                                                        <span style={{color: '#999'}}>Non configurata</span>
+                                                    )}
+                                                </td>
                                                 <td>
                                                     <span className="badge" style={{
                                                         background: u.role === 'admin' ? '#2E7D32' : u.role === 'diretto' ? '#1976D2' : u.role === 'interno' ? '#F57C00' : '#81C784',
@@ -1372,6 +1459,11 @@
                                     <div className="mb">
                                         <label className="label">Password *</label>
                                         <input type="password" className="input" value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} required />
+                                    </div>
+                                    <div className="mb">
+                                        <label className="label">Email Google (opzionale)</label>
+                                        <input type="email" className="input" placeholder="user@gmail.com" value={userForm.email} onChange={e => setUserForm({...userForm, email: e.target.value})} />
+                                        <small style={{color: '#666', fontSize: '12px'}}>💡 Inserisci l'email Google per permettere il login con Google Sign-In</small>
                                     </div>
                                     <div className="mb">
                                         <label className="label">Ruolo *</label>
