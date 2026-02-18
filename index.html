@@ -145,15 +145,22 @@
             }, []);
 
             const generateCaptcha = () => {
+                console.log('=== GENERATING CAPTCHA ===');
+                
                 // Scegli categoria random
                 const categories = Object.keys(CAPTCHA_CATEGORIES);
                 const randomCategory = categories[Math.floor(Math.random() * categories.length)];
                 const categoryIcons = CAPTCHA_CATEGORIES[randomCategory];
                 
+                console.log('Selected category:', randomCategory);
+                
                 // Scegli 2-3 target corretti
                 const numTargets = 2 + Math.floor(Math.random() * 2); // 2 o 3
                 const shuffled = [...categoryIcons].sort(() => Math.random() - 0.5);
                 const targets = shuffled.slice(0, numTargets);
+                
+                console.log('Number of targets:', numTargets);
+                console.log('Target icons:', targets);
                 
                 // Altre categorie per distrazione
                 const otherCategories = categories.filter(c => c !== randomCategory);
@@ -176,6 +183,8 @@
                 
                 // Shuffle finale
                 const finalImages = allImages.sort(() => Math.random() - 0.5).slice(0, 9);
+                
+                console.log('Final grid images:', finalImages);
                 
                 setCaptchaImages(finalImages);
                 setCaptchaTarget(randomCategory);
@@ -223,28 +232,54 @@
 
             const doLogin = (e) => {
                 e.preventDefault();
+                
+                if (users.length === 0) {
+                    alert('⏳ Sistema ancora in inizializzazione, riprova tra 2 secondi...');
+                    return;
+                }
+                
                 const found = users.find(u => u.username === login.username && u.password === login.password);
+                
                 if (found) {
-                    // Salva utente trovato e mostra CAPTCHA
-                    setPendingUser(found);
-                    generateCaptcha();
-                    setShowCaptcha(true);
+                    // LOGIN DIRETTO
+                    if (login.remember) {
+                        localStorage.setItem('savedUsername', login.username);
+                        localStorage.setItem('savedPassword', login.password);
+                    } else {
+                        localStorage.removeItem('savedUsername');
+                        localStorage.removeItem('savedPassword');
+                    }
+                    
+                    setUser(found);
+                    setShowLogin(false);
                 } else {
-                    alert('Credenziali errate!');
+                    alert('❌ Credenziali errate!');
                 }
             };
 
             const verifyCaptcha = () => {
+                console.log('=== CAPTCHA VERIFICATION ===');
+                console.log('Selected images:', selectedImages);
+                console.log('Target category:', captchaTarget);
+                console.log('Category icons:', CAPTCHA_CATEGORIES[captchaTarget]);
+                
                 // Verifica se l'utente ha selezionato tutte le immagini della categoria corretta
                 const correctImages = captchaImages.filter(img => CAPTCHA_CATEGORIES[captchaTarget].includes(img));
+                console.log('Correct images in grid:', correctImages);
                 
                 // Controlla se ha selezionato tutte quelle corrette e nessuna sbagliata
                 const allCorrectSelected = correctImages.every(img => selectedImages.includes(img));
                 const noWrongSelected = selectedImages.every(img => correctImages.includes(img));
                 const rightCount = selectedImages.length === correctImages.length;
                 
+                console.log('All correct selected:', allCorrectSelected);
+                console.log('No wrong selected:', noWrongSelected);
+                console.log('Right count:', rightCount);
+                
                 if (allCorrectSelected && noWrongSelected && rightCount) {
                     // CAPTCHA CORRETTO
+                    console.log('✅ CAPTCHA PASSED');
+                    
                     // Salva o rimuovi credenziali
                     if (login.remember) {
                         localStorage.setItem('savedUsername', login.username);
@@ -260,6 +295,7 @@
                     setPendingUser(null);
                 } else {
                     // CAPTCHA SBAGLIATO
+                    console.log('❌ CAPTCHA FAILED');
                     alert('❌ CAPTCHA errato! Riprova.');
                     generateCaptcha(); // Genera nuovo CAPTCHA
                 }
@@ -685,7 +721,14 @@
                                         Ricorda le mie credenziali
                                     </label>
                                 </div>
-                                <button type="submit" className="btn btn-green" style={{width: '100%'}}>Accedi</button>
+                                <button 
+                                    type="submit" 
+                                    className="btn btn-green" 
+                                    style={{width: '100%', cursor: 'pointer', fontSize: '16px', padding: '14px'}}
+                                    onClick={(e) => { console.log('Button clicked!'); }}
+                                >
+                                    Accedi
+                                </button>
                             </form>
                         </div>
                     </div>
