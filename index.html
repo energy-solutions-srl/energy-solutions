@@ -15,19 +15,46 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: #f0f9f4; }
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        .btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
         .btn-green { background: #4CAF50; color: white; }
+        .btn-green:hover { background: #45a049; }
         .btn-white { background: white; color: #4CAF50; border: 2px solid #4CAF50; }
-        .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .input { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; }
+        .btn-white:hover { background: #f0f9f4; }
+        .btn-red { background: #f44336; color: white; }
+        .btn-gray { background: #ddd; color: #666; }
+        .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid #4CAF50; }
+        .input { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; }
         .input:focus { outline: none; border-color: #4CAF50; }
-        .label { display: block; margin-bottom: 6px; font-weight: 600; }
+        .label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px; color: #333; }
         .mb { margin-bottom: 16px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+        .section-title { font-size: 18px; font-weight: 700; color: #2E7D32; margin: 24px 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid #81C784; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; overflow-y: auto; }
+        .modal-content { background: white; border-radius: 16px; padding: 24px; width: 95%; max-width: 900px; max-height: 90vh; overflow-y: auto; margin: 20px 0; }
+        .badge { display: inline-block; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-right: 8px; }
+        .stato-calda { background: #FEF3C7; color: #92400E; }
+        .stato-tiepida { background: #FCE7F3; color: #831843; }
+        .stato-fredda { background: #DBEAFE; color: #1E40AF; }
+        .stato-ko { background: #FEE2E2; color: #991B1B; }
+        .stato-ok { background: #D1FAE5; color: #065F46; }
         .login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f0f9f4 0%, #c8e6c9 100%); }
         .login-card { background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(76, 175, 80, 0.3); padding: 40px; max-width: 400px; width: 100%; }
         .logo { background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%); padding: 20px; border-radius: 12px; color: white; text-align: center; margin-bottom: 24px; }
+        .logo h2 { font-size: 24px; margin: 0; font-weight: 700; }
+        .logo p { font-size: 13px; margin: 8px 0 0 0; opacity: 0.95; }
         .header { background: white; border-bottom: 3px solid #4CAF50; padding: 16px; margin-bottom: 24px; }
         .loading { text-align: center; padding: 60px; }
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        .checkbox-item { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: #f5f5f5; border-radius: 6px; cursor: pointer; }
+        .checkbox-item input[type="checkbox"] { cursor: pointer; }
+        .checkbox-item:hover { background: #e8f5e9; }
+        textarea { resize: vertical; font-family: Arial, sans-serif; min-height: 80px; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; }
+        th { background: #4CAF50; color: white; padding: 14px; text-align: left; font-size: 13px; font-weight: 700; }
+        td { padding: 14px; border-top: 1px solid #ddd; }
+        tr:hover { background: #f9f9f9; }
+        @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -44,70 +71,101 @@
             appId: "1:86623187511:web:2a093d51719b458b4ec5b2"
         };
 
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
         const { useState, useEffect } = React;
 
+        const TIPOLOGIE_CLIENTE = ['P.A.', 'ETS NON COMMERCIALE', 'ETS COMMERCIALE', 'PRIVATO PMI', 'PRIVATO NON PMI', 'AZIENDA AGRICOLA'];
+        const TIPOLOGIE_INTERVENTO = {
+            'esco': { label: 'ESCO', voci: ['FTV', 'ILLUMINAZIONE', 'CENTRALE TERMICA', 'INFISSI', 'ISOLAMENTO', 'IMPIANTI INTERNI', 'BATTERIA DI ACCUMULO'] },
+            'conto_termico': { label: 'CONTO TERMICO 3.0', voci: ['FTV', 'ILLUMINAZIONE', 'CENTRALE TERMICA', 'INFISSI', 'ISOLAMENTO', 'IMPIANTI INTERNI', 'BATTERIA DI ACCUMULO', 'NZeb'] },
+            'industria_5': { label: 'INDUSTRIA 5.0', voci: ['FTV', 'IMPIANTI INTERNI'] },
+            'agrisolare': { label: 'AGRISOLARE 2026', voci: ['FTV', 'ACCUMULO', 'COLONNETTA RICARICA', 'INTERVENTI IN COPERTURA'] },
+            'cratere_2016': { label: 'CRATERE 2016', voci: ['DEMOLIZIONE E RICOSTRUZIONE', 'RISTRUTTURAZIONE', 'INTERVENTO SOLO IMPIANTI'] },
+            'cratere_2009': { label: 'CRATERE 2009', voci: ['DEMOLIZIONE E RICOSTRUZIONE', 'RISTRUTTURAZIONE', 'INTERVENTO SOLO IMPIANTI'] },
+            'privato': { label: 'PRIVATO', voci: [] }
+        };
+        const STATI = ['CALDA', 'TIEPIDA', 'FREDDA', 'KO', 'OK'];
+        const CONTRATTUALIZZAZIONE = ['entro 1 mese', 'entro 3 mesi', 'entro 6 mesi', 'entro 12 mesi'];
+        const TIPO_INTERVENTO = ['SINGOLO', 'MULTI INTERVENTO'];
+        const RUOLI = {
+            'admin': 'Amministratore',
+            'agenzia': 'Agenzia',
+            'diretto': 'Diretto',
+            'interno': 'Interno'
+        };
+
         function App() {
+            const [initComplete, setInitComplete] = useState(false);
             const [user, setUser] = useState(null);
             const [users, setUsers] = useState([]);
             const [opps, setOpps] = useState([]);
-            const [loading, setLoading] = useState(true);
             const [showLogin, setShowLogin] = useState(true);
             const [showForm, setShowForm] = useState(false);
+            const [showUserForm, setShowUserForm] = useState(false);
+            const [editOpp, setEditOpp] = useState(null);
+            const [editUser, setEditUser] = useState(null);
             const [login, setLogin] = useState({ username: '', password: '' });
-            const [form, setForm] = useState({ 
-                ragioneSociale: '', 
-                importo: '', 
-                stato: 'CALDA' 
+            const [userForm, setUserForm] = useState({ username: '', password: '', name: '', role: 'agenzia' });
+            const [filters, setFilters] = useState({ 
+                utente: '', 
+                tipologiaCliente: '', 
+                ruolo: '', 
+                tipologiaIntervento: '',
+                dataInizio: '',
+                dataFine: ''
+            });
+            const [showDescModal, setShowDescModal] = useState(false);
+            const [selectedDesc, setSelectedDesc] = useState('');
+            const [form, setForm] = useState({
+                ragioneSociale: '', indirizzo: '', cap: '', citta: '', telefono: '', tipologiaCliente: '',
+                nomeReferente: '', ruoloReferente: '', telReferente: '', emailReferente: '',
+                viaIntervento: '', numeroIntervento: '', capIntervento: '', cittaIntervento: '',
+                hasTecnico: 'no', nomeStudioTecnico: '', referenteStudio: '', indirizzoStudio: '', telefonoStudio: '', emailStudio: '',
+                tipologiaIntervento: '', vociSelezionate: [], livelloOperativo: '', descrizioneIntervento: '', importoPresunto: '', stato: 'CALDA',
+                possibileContrattualizzazione: 'entro 3 mesi', tipoIntervento: 'SINGOLO'
             });
 
             useEffect(() => {
-                // Carica utenti
-                db.ref('users').on('value', snap => {
-                    const data = snap.val();
-                    if (data) {
-                        setUsers(Object.keys(data).map(k => ({ id: k, ...data[k] })));
-                    } else {
-                        // Crea utenti default
-                        db.ref('users').set({
-                            'user1': { 
-                                username: 'admin', 
-                                password: 'admin123', 
-                                role: 'admin', 
-                                name: 'Amministratore' 
-                            },
-                            'user2': { 
-                                username: 'agenzia1', 
-                                password: 'ag123', 
-                                role: 'client', 
-                                name: 'Agenzia Roma' 
-                            }
+                const init = async () => {
+                    try {
+                        firebase.initializeApp(firebaseConfig);
+                        const db = firebase.database();
+
+                        const usersSnapshot = await db.ref('users').once('value');
+                        const existingUsers = usersSnapshot.val();
+                        
+                        if (!existingUsers || Object.keys(existingUsers).length === 0) {
+                            const defaultUsers = {
+                                'user1': { username: 'admin', password: 'admin123', role: 'admin', name: 'Amministratore' },
+                                'user2': { username: 'agenzia1', password: 'ag123', role: 'agenzia', name: 'Agenzia Roma' },
+                                'user3': { username: 'diretto1', password: 'dir123', role: 'diretto', name: 'Diretto Milano' },
+                                'user4': { username: 'interno1', password: 'int123', role: 'interno', name: 'Interno Ufficio' }
+                            };
+                            await db.ref('users').set(defaultUsers);
+                        }
+
+                        db.ref('users').on('value', snap => {
+                            const data = snap.val();
+                            if (data) setUsers(Object.keys(data).map(k => ({ id: k, ...data[k] })));
                         });
-                    }
-                    setLoading(false);
-                });
 
-                // Carica opportunità
-                db.ref('opportunities').on('value', snap => {
-                    const data = snap.val();
-                    if (data) {
-                        setOpps(Object.keys(data).map(k => ({ id: k, ...data[k] })));
-                    }
-                });
+                        db.ref('opportunities').on('value', snap => {
+                            const data = snap.val();
+                            if (data) setOpps(Object.keys(data).map(k => ({ id: k, ...data[k] })));
+                            else setOpps([]);
+                        });
 
-                return () => {
-                    db.ref('users').off();
-                    db.ref('opportunities').off();
+                        setInitComplete(true);
+                    } catch (error) {
+                        console.error('Errore:', error);
+                        alert('Errore connessione Firebase: ' + error.message);
+                    }
                 };
+                init();
             }, []);
 
             const doLogin = (e) => {
                 e.preventDefault();
-                const found = users.find(u => 
-                    u.username === login.username && 
-                    u.password === login.password
-                );
+                const found = users.find(u => u.username === login.username && u.password === login.password);
                 if (found) {
                     setUser(found);
                     setShowLogin(false);
@@ -118,26 +176,385 @@
 
             const saveOpp = async (e) => {
                 e.preventDefault();
-                const newOpp = {
+                if (!form.ragioneSociale || !form.tipologiaCliente || !form.tipologiaIntervento) {
+                    alert('Compila tutti i campi obbligatori (*)');
+                    return;
+                }
+
+                const db = firebase.database();
+                const oppData = {
                     ...form,
                     agenzia: user.name,
                     clientId: user.id,
-                    createdAt: new Date().toISOString()
+                    createdAt: editOpp ? editOpp.createdAt : new Date().toISOString()
                 };
-                
-                await db.ref('opportunities').push(newOpp);
+
+                if (editOpp) {
+                    await db.ref('opportunities/' + editOpp.id).set(oppData);
+                } else {
+                    await db.ref('opportunities').push(oppData);
+                }
+
                 setShowForm(false);
-                setForm({ ragioneSociale: '', importo: '', stato: 'CALDA' });
+                setEditOpp(null);
+                setForm({
+                    ragioneSociale: '', indirizzo: '', cap: '', citta: '', telefono: '', tipologiaCliente: '',
+                    nomeReferente: '', ruoloReferente: '', telReferente: '', emailReferente: '',
+                    viaIntervento: '', numeroIntervento: '', capIntervento: '', cittaIntervento: '',
+                    hasTecnico: 'no', nomeStudioTecnico: '', referenteStudio: '', indirizzoStudio: '', telefonoStudio: '', emailStudio: '',
+                    tipologiaIntervento: '', vociSelezionate: [], livelloOperativo: '', descrizioneIntervento: '', importoPresunto: '', stato: 'CALDA',
+                    possibileContrattualizzazione: 'entro 3 mesi', tipoIntervento: 'SINGOLO'
+                });
             };
 
             const deleteOpp = async (id) => {
-                if (confirm('Eliminare?')) {
+                if (confirm('Eliminare questa opportunità?')) {
+                    const db = firebase.database();
                     await db.ref('opportunities/' + id).remove();
                 }
             };
 
-            if (loading) {
-                return <div className="loading">⏳ Caricamento...</div>;
+            const saveUser = async (e) => {
+                e.preventDefault();
+                const db = firebase.database();
+                if (editUser) {
+                    await db.ref('users/' + editUser.id).set(userForm);
+                } else {
+                    await db.ref('users').push(userForm);
+                }
+                setShowUserForm(false);
+                setEditUser(null);
+                setUserForm({ username: '', password: '', name: '', role: 'agenzia' });
+            };
+
+            const deleteUser = async (id) => {
+                if (id === user.id) {
+                    alert('Non puoi eliminare il tuo account!');
+                    return;
+                }
+                if (confirm('Eliminare questo utente?')) {
+                    const db = firebase.database();
+                    await db.ref('users/' + id).remove();
+                }
+            };
+
+            const toggleVoce = (voce) => {
+                const voci = form.vociSelezionate || [];
+                if (voci.includes(voce)) {
+                    setForm({ ...form, vociSelezionate: voci.filter(v => v !== voce) });
+                } else {
+                    setForm({ ...form, vociSelezionate: [...voci, voce] });
+                }
+            };
+
+            const canEdit = (opp) => {
+                return user.role === 'admin' || opp.clientId === user.id;
+            };
+
+            const printCardPDF = (opp) => {
+                const printWindow = window.open('', '', 'width=800,height=600');
+                printWindow.document.write(`
+                    <html>
+                    <head>
+                        <title>Opportunità - ${opp.ragioneSociale}</title>
+                        <style>
+                            @page { size: A4; margin: 20mm; }
+                            @media print { body { margin: 0; } }
+                            body { 
+                                font-family: Arial, sans-serif; 
+                                padding: 20px; 
+                                font-size: 12px;
+                                line-height: 1.4;
+                            }
+                            h1 { 
+                                color: #2E7D32; 
+                                border-bottom: 4px solid #4CAF50; 
+                                padding-bottom: 10px; 
+                                margin-bottom: 20px;
+                                font-size: 24px;
+                            }
+                            .header-info {
+                                background: #f0f9f4;
+                                padding: 15px;
+                                border-radius: 8px;
+                                margin-bottom: 20px;
+                            }
+                            .section { 
+                                margin: 20px 0; 
+                                page-break-inside: avoid;
+                            }
+                            .section-title {
+                                font-size: 16px;
+                                font-weight: bold;
+                                color: #2E7D32;
+                                border-bottom: 2px solid #81C784;
+                                padding-bottom: 5px;
+                                margin-bottom: 10px;
+                            }
+                            .data-grid {
+                                display: grid;
+                                grid-template-columns: 1fr 1fr;
+                                gap: 10px 20px;
+                                margin-bottom: 15px;
+                            }
+                            .data-item {
+                                padding: 8px 0;
+                            }
+                            .label { 
+                                font-weight: bold; 
+                                color: #666; 
+                                font-size: 11px;
+                                display: block;
+                                margin-bottom: 3px;
+                            }
+                            .value { 
+                                color: #333;
+                                font-size: 13px;
+                            }
+                            .badge {
+                                display: inline-block;
+                                padding: 6px 12px;
+                                border-radius: 15px;
+                                font-weight: bold;
+                                font-size: 12px;
+                            }
+                            .stato-calda { background: #FEF3C7; color: #92400E; }
+                            .stato-tiepida { background: #FCE7F3; color: #831843; }
+                            .stato-fredda { background: #DBEAFE; color: #1E40AF; }
+                            .stato-ko { background: #FEE2E2; color: #991B1B; }
+                            .stato-ok { background: #D1FAE5; color: #065F46; }
+                            .description-box {
+                                background: #f9f9f9;
+                                border-left: 4px solid #4CAF50;
+                                padding: 15px;
+                                margin: 15px 0;
+                                white-space: pre-wrap;
+                                line-height: 1.6;
+                            }
+                            .footer {
+                                margin-top: 30px;
+                                padding-top: 15px;
+                                border-top: 2px solid #ddd;
+                                text-align: center;
+                                font-size: 10px;
+                                color: #999;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>🏢 ${opp.ragioneSociale}</h1>
+                        
+                        <div class="header-info">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <span class="label">Data creazione</span>
+                                    <span class="value">${new Date(opp.createdAt).toLocaleString('it-IT', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'})}</span>
+                                </div>
+                                <span class="badge stato-${opp.stato.toLowerCase()}">${opp.stato}</span>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">📋 Dati Azienda</div>
+                            <div class="data-grid">
+                                <div class="data-item">
+                                    <span class="label">Tipologia Cliente</span>
+                                    <span class="value">${opp.tipologiaCliente}</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="label">Telefono</span>
+                                    <span class="value">${opp.telefono || '-'}</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="label">Indirizzo</span>
+                                    <span class="value">${opp.indirizzo || '-'} ${opp.cap || ''} ${opp.citta || ''}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${opp.nomeReferente ? `
+                        <div class="section">
+                            <div class="section-title">👤 Referente</div>
+                            <div class="data-grid">
+                                <div class="data-item">
+                                    <span class="label">Nome</span>
+                                    <span class="value">${opp.nomeReferente} ${opp.ruoloReferente ? '(' + opp.ruoloReferente + ')' : ''}</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="label">Contatti</span>
+                                    <span class="value">${opp.telReferente || ''} ${opp.emailReferente || ''}</span>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        <div class="section">
+                            <div class="section-title">⚡ Intervento</div>
+                            <div class="data-grid">
+                                <div class="data-item">
+                                    <span class="label">Tipologia Intervento</span>
+                                    <span class="value">${TIPOLOGIE_INTERVENTO[opp.tipologiaIntervento]?.label}</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="label">Tipo</span>
+                                    <span class="value">${opp.tipoIntervento || 'SINGOLO'}</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="label">Importo Presunto</span>
+                                    <span class="value" style="font-size: 16px; font-weight: bold; color: #2E7D32;">€${(parseInt(opp.importoPresunto) || 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="label">Possibile Contrattualizzazione</span>
+                                    <span class="value">${opp.possibileContrattualizzazione || '-'}</span>
+                                </div>
+                                ${(opp.tipologiaIntervento === 'cratere_2016' || opp.tipologiaIntervento === 'cratere_2009') && opp.livelloOperativo ? `
+                                <div class="data-item">
+                                    <span class="label">Livello Operativo</span>
+                                    <span class="value">${opp.livelloOperativo}</span>
+                                </div>
+                                ` : ''}
+                            </div>
+                            ${opp.vociSelezionate && opp.vociSelezionate.length > 0 ? `
+                            <div style="margin-top: 10px;">
+                                <span class="label">Voci Intervento</span><br>
+                                ${opp.vociSelezionate.map(v => `<span class="badge" style="background: #4CAF50; color: white; margin-right: 5px;">${v}</span>`).join('')}
+                            </div>
+                            ` : ''}
+                        </div>
+
+                        ${opp.viaIntervento ? `
+                        <div class="section">
+                            <div class="section-title">📍 Ubicazione Intervento</div>
+                            <div class="value">${opp.viaIntervento} ${opp.numeroIntervento || ''}, ${opp.capIntervento || ''} ${opp.cittaIntervento || ''}</div>
+                        </div>
+                        ` : ''}
+
+                        ${opp.descrizioneIntervento ? `
+                        <div class="section">
+                            <div class="section-title">📄 Descrizione Intervento</div>
+                            <div class="description-box">${opp.descrizioneIntervento}</div>
+                        </div>
+                        ` : ''}
+
+                        <div class="footer">
+                            Energy Solutions - Edison Business Partner | Stampato il ${new Date().toLocaleString('it-IT')}
+                        </div>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+                setTimeout(() => printWindow.print(), 250);
+            };
+
+            const printTablePDF = () => {
+                const printContent = document.getElementById('summary-table-print');
+                if (!printContent) {
+                    alert('Nessuna tabella da stampare');
+                    return;
+                }
+                
+                const printWindow = window.open('', '', 'width=1000,height=800');
+                printWindow.document.write(`
+                    <html>
+                    <head>
+                        <title>Riepilogo Opportunità</title>
+                        <style>
+                            @page { size: A4 landscape; margin: 15mm; }
+                            @media print { 
+                                body { margin: 0; }
+                                .no-print { display: none; }
+                            }
+                            body { 
+                                font-family: Arial, sans-serif; 
+                                padding: 20px; 
+                                font-size: 11px;
+                            }
+                            h1 { 
+                                color: #2E7D32; 
+                                border-bottom: 3px solid #4CAF50; 
+                                padding-bottom: 10px; 
+                                margin-bottom: 20px;
+                            }
+                            h3 { 
+                                color: #2E7D32; 
+                                margin: 20px 0 10px 0;
+                                font-size: 14px;
+                            }
+                            table { 
+                                width: 100%; 
+                                border-collapse: collapse; 
+                                margin-bottom: 30px;
+                                font-size: 10px;
+                            }
+                            th { 
+                                background: #4CAF50; 
+                                color: white; 
+                                padding: 8px; 
+                                text-align: center; 
+                                font-size: 10px;
+                                border: 1px solid #ddd;
+                            }
+                            td { 
+                                padding: 6px 8px; 
+                                border: 1px solid #ddd; 
+                                text-align: center;
+                            }
+                            tr:nth-child(even) { background: #f9f9f9; }
+                            .total-row { background: #81C784 !important; font-weight: bold; }
+                            .grand-total-row { background: #2E7D32 !important; color: white !important; font-weight: bold; }
+                            .footer {
+                                margin-top: 20px;
+                                padding-top: 10px;
+                                border-top: 2px solid #ddd;
+                                text-align: center;
+                                font-size: 9px;
+                                color: #999;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>📊 Riepilogo Opportunità per Tipologia</h1>
+                        ${printContent.innerHTML}
+                        <div class="footer">
+                            Energy Solutions - Edison Business Partner | Stampato il ${new Date().toLocaleString('it-IT')}
+                        </div>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+                setTimeout(() => printWindow.print(), 250);
+            };
+
+            const getFilteredOpps = () => {
+                let filtered = user.role === 'admin' ? opps : opps.filter(o => o.clientId === user.id);
+                
+                if (filters.utente) {
+                    filtered = filtered.filter(o => o.agenzia?.toLowerCase().includes(filters.utente.toLowerCase()));
+                }
+                if (filters.tipologiaCliente) {
+                    filtered = filtered.filter(o => o.tipologiaCliente === filters.tipologiaCliente);
+                }
+                if (filters.ruolo && user.role === 'admin') {
+                    const usersByRole = users.filter(u => u.role === filters.ruolo).map(u => u.id);
+                    filtered = filtered.filter(o => usersByRole.includes(o.clientId));
+                }
+                if (filters.tipologiaIntervento) {
+                    filtered = filtered.filter(o => o.tipologiaIntervento === filters.tipologiaIntervento);
+                }
+                if (filters.dataInizio) {
+                    filtered = filtered.filter(o => new Date(o.createdAt) >= new Date(filters.dataInizio));
+                }
+                if (filters.dataFine) {
+                    const endDate = new Date(filters.dataFine);
+                    endDate.setHours(23, 59, 59);
+                    filtered = filtered.filter(o => new Date(o.createdAt) <= endDate);
+                }
+                
+                return filtered;
+            };
+
+            if (!initComplete) {
+                return <div className="loading">⏳ Inizializzazione...</div>;
             }
 
             if (showLogin) {
@@ -151,38 +568,27 @@
                             <form onSubmit={doLogin}>
                                 <div className="mb">
                                     <label className="label">Username</label>
-                                    <input 
-                                        className="input" 
-                                        value={login.username}
-                                        onChange={e => setLogin({...login, username: e.target.value})}
-                                        required 
-                                    />
+                                    <input className="input" value={login.username} onChange={e => setLogin({...login, username: e.target.value})} required />
                                 </div>
                                 <div className="mb">
                                     <label className="label">Password</label>
-                                    <input 
-                                        type="password"
-                                        className="input" 
-                                        value={login.password}
-                                        onChange={e => setLogin({...login, password: e.target.value})}
-                                        required 
-                                    />
+                                    <input type="password" className="input" value={login.password} onChange={e => setLogin({...login, password: e.target.value})} required />
                                 </div>
-                                <button type="submit" className="btn btn-green" style={{width: '100%'}}>
-                                    Accedi
-                                </button>
+                                <button type="submit" className="btn btn-green" style={{width: '100%'}}>Accedi</button>
                             </form>
                             <div style={{marginTop: '20px', padding: '15px', background: '#f0f9f4', borderRadius: '8px', fontSize: '13px'}}>
-                                <strong>Credenziali:</strong><br/>
-                                Admin: admin / admin123<br/>
-                                Agenzia: agenzia1 / ag123
+                                <strong>Credenziali test:</strong><br/>
+                                admin / admin123<br/>
+                                agenzia1 / ag123<br/>
+                                diretto1 / dir123<br/>
+                                interno1 / int123
                             </div>
                         </div>
                     </div>
                 );
             }
 
-            const myOpps = user.role === 'admin' ? opps : opps.filter(o => o.clientId === user.id);
+            const myOpps = getFilteredOpps();
 
             return (
                 <div style={{minHeight: '100vh'}}>
@@ -190,99 +596,574 @@
                         <div className="container" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                             <div>
                                 <h1 style={{fontSize: '20px', color: '#2E7D32'}}>Energy Solutions</h1>
-                                <p style={{fontSize: '14px', color: '#666'}}>{user.name}</p>
+                                <p style={{fontSize: '14px', color: '#666'}}>{user.name} - {RUOLI[user.role]}</p>
                             </div>
-                            <button className="btn btn-white" onClick={() => { setUser(null); setShowLogin(true); }}>
-                                Esci
-                            </button>
+                            <button className="btn btn-white" onClick={() => { setUser(null); setShowLogin(true); }}>Esci</button>
                         </div>
                     </div>
 
                     <div className="container">
-                        <div style={{marginBottom: '20px'}}>
-                            <button className="btn btn-green" onClick={() => setShowForm(true)}>
-                                + Nuova Opportunità
-                            </button>
+                        <div style={{marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'center'}}>
+                            <button className="btn btn-green" onClick={() => setShowForm(true)}>+ Nuova Opportunità</button>
+                            <button className="btn btn-white" onClick={printTablePDF}>🖨️ Stampa Riepilogo</button>
                         </div>
 
-                        {showForm && (
-                            <div className="card">
-                                <h2 style={{marginBottom: '20px'}}>Nuova Opportunità</h2>
-                                <form onSubmit={saveOpp}>
+                        <div className="card" style={{marginBottom: '20px'}}>
+                            <h3 style={{marginBottom: '16px', color: '#2E7D32'}}>🔍 Filtri Ricerca</h3>
+                            <div className="grid-3">
+                                <div className="mb">
+                                    <label className="label">Utente</label>
+                                    <input className="input" placeholder="Nome utente..." value={filters.utente} onChange={e => setFilters({...filters, utente: e.target.value})} />
+                                </div>
+                                <div className="mb">
+                                    <label className="label">Tipologia Cliente</label>
+                                    <select className="input" value={filters.tipologiaCliente} onChange={e => setFilters({...filters, tipologiaCliente: e.target.value})}>
+                                        <option value="">Tutte</option>
+                                        {TIPOLOGIE_CLIENTE.map(t => <option key={t} value={t}>{t}</option>)}
+                                    </select>
+                                </div>
+                                {user.role === 'admin' && (
                                     <div className="mb">
-                                        <label className="label">Ragione Sociale *</label>
-                                        <input 
-                                            className="input"
-                                            value={form.ragioneSociale}
-                                            onChange={e => setForm({...form, ragioneSociale: e.target.value})}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="mb">
-                                        <label className="label">Importo Presunto €</label>
-                                        <input 
-                                            type="number"
-                                            className="input"
-                                            value={form.importo}
-                                            onChange={e => setForm({...form, importo: e.target.value})}
-                                        />
-                                    </div>
-                                    <div className="mb">
-                                        <label className="label">Stato</label>
-                                        <select 
-                                            className="input"
-                                            value={form.stato}
-                                            onChange={e => setForm({...form, stato: e.target.value})}
-                                        >
-                                            <option>CALDA</option>
-                                            <option>FREDDA</option>
-                                            <option>KO</option>
-                                            <option>OK</option>
+                                        <label className="label">Ruolo</label>
+                                        <select className="input" value={filters.ruolo} onChange={e => setFilters({...filters, ruolo: e.target.value})}>
+                                            <option value="">Tutti</option>
+                                            {Object.keys(RUOLI).map(r => <option key={r} value={r}>{RUOLI[r]}</option>)}
                                         </select>
                                     </div>
-                                    <div style={{display: 'flex', gap: '10px'}}>
-                                        <button type="submit" className="btn btn-green">Salva</button>
-                                        <button type="button" className="btn btn-white" onClick={() => setShowForm(false)}>Annulla</button>
-                                    </div>
-                                </form>
+                                )}
+                                <div className="mb">
+                                    <label className="label">Tipologia Intervento</label>
+                                    <select className="input" value={filters.tipologiaIntervento} onChange={e => setFilters({...filters, tipologiaIntervento: e.target.value})}>
+                                        <option value="">Tutte</option>
+                                        {Object.keys(TIPOLOGIE_INTERVENTO).map(k => <option key={k} value={k}>{TIPOLOGIE_INTERVENTO[k].label}</option>)}
+                                    </select>
+                                </div>
+                                <div className="mb">
+                                    <label className="label">Data da</label>
+                                    <input type="date" className="input" value={filters.dataInizio} onChange={e => setFilters({...filters, dataInizio: e.target.value})} />
+                                </div>
+                                <div className="mb">
+                                    <label className="label">Data a</label>
+                                    <input type="date" className="input" value={filters.dataFine} onChange={e => setFilters({...filters, dataFine: e.target.value})} />
+                                </div>
                             </div>
-                        )}
+                            <button className="btn btn-gray" onClick={() => setFilters({ utente: '', tipologiaCliente: '', ruolo: '', tipologiaIntervento: '', dataInizio: '', dataFine: '' })}>🔄 Azzera Filtri</button>
+                        </div>
 
-                        <h2 style={{marginBottom: '16px'}}>Le Mie Opportunità ({myOpps.length})</h2>
+                        <h2 style={{margin: '20px 0 16px'}}>Le Mie Opportunità ({myOpps.length})</h2>
                         
                         {myOpps.length === 0 && (
                             <div className="card">
-                                <p style={{textAlign: 'center', color: '#666'}}>
-                                    Nessuna opportunità. Clicca "+ Nuova Opportunità" per iniziare!
-                                </p>
+                                <p style={{textAlign: 'center', color: '#666'}}>Nessuna opportunità. Clicca "+ Nuova Opportunità"!</p>
                             </div>
                         )}
 
                         {myOpps.map(o => (
-                            <div className="card" key={o.id}>
-                                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start'}}>
-                                    <div>
-                                        <h3 style={{marginBottom: '8px'}}>{o.ragioneSociale}</h3>
-                                        <p style={{color: '#666', marginBottom: '8px'}}>
-                                            Importo: €{o.importo || '0'} | Stato: <strong>{o.stato}</strong>
-                                        </p>
-                                        <p style={{fontSize: '13px', color: '#999'}}>
-                                            {new Date(o.createdAt).toLocaleString('it-IT')}
-                                        </p>
+                            <div className="card" key={o.id} style={{borderLeft: `6px solid ${o.stato === 'CALDA' ? '#FEF3C7' : o.stato === 'FREDDA' ? '#DBEAFE' : o.stato === 'KO' ? '#FEE2E2' : '#D1FAE5'}`}}>
+                                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px'}}>
+                                    <div style={{flex: 1}}>
+                                        <h3 style={{fontSize: '20px', marginBottom: '8px', color: '#2E7D32'}}>🏢 {o.ragioneSociale}</h3>
+                                        <div style={{fontSize: '13px', color: '#666', marginBottom: '12px'}}>
+                                            📅 <strong>{new Date(o.createdAt).toLocaleDateString('it-IT', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'})}</strong>
+                                        </div>
                                     </div>
-                                    {user.role === 'admin' && (
-                                        <button 
-                                            className="btn btn-white"
-                                            style={{padding: '8px 16px'}}
-                                            onClick={() => deleteOpp(o.id)}
-                                        >
-                                            Elimina
-                                        </button>
-                                    )}
+                                    <div style={{textAlign: 'right'}}>
+                                        <span className={`badge stato-${o.stato.toLowerCase()}`} style={{fontSize: '14px', padding: '8px 16px'}}>{o.stato}</span>
+                                        {o.tipoIntervento === 'MULTI INTERVENTO' && (
+                                            <span className="badge" style={{background: '#FFF3E0', color: '#e65100', fontSize: '12px', padding: '6px 12px', marginLeft: '8px', display: 'block', marginTop: '8px'}}>MULTI</span>
+                                        )}
+                                    </div>
                                 </div>
+
+                                <div style={{background: '#f9f9f9', padding: '16px', borderRadius: '8px', marginBottom: '16px'}}>
+                                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '14px'}}>
+                                        <div>
+                                            <div style={{color: '#666', fontSize: '12px', marginBottom: '4px'}}>Cliente</div>
+                                            <div style={{fontWeight: '700', fontSize: '15px'}}>{o.tipologiaCliente}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{color: '#666', fontSize: '12px', marginBottom: '4px'}}>Importo Presunto</div>
+                                            <div style={{fontWeight: '700', fontSize: '18px', color: '#2E7D32'}}>€{(parseInt(o.importoPresunto) || 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{color: '#666', fontSize: '12px', marginBottom: '4px'}}>Tipologia Intervento</div>
+                                            <div style={{fontWeight: '600'}}>{TIPOLOGIE_INTERVENTO[o.tipologiaIntervento]?.label}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{color: '#666', fontSize: '12px', marginBottom: '4px'}}>Contrattualizzazione</div>
+                                            <div style={{fontWeight: '600'}}>{o.possibileContrattualizzazione}</div>
+                                        </div>
+                                        {(o.tipologiaIntervento === 'cratere_2016' || o.tipologiaIntervento === 'cratere_2009') && o.livelloOperativo && (
+                                            <div>
+                                                <div style={{color: '#666', fontSize: '12px', marginBottom: '4px'}}>Livello Operativo</div>
+                                                <span className="badge" style={{background: '#2196F3', color: 'white'}}>{o.livelloOperativo}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {o.vociSelezionate && o.vociSelezionate.length > 0 && (
+                                    <div style={{marginBottom: '16px'}}>
+                                        <div style={{color: '#666', fontSize: '12px', marginBottom: '8px', fontWeight: '600'}}>Voci Intervento:</div>
+                                        <div style={{display: 'flex', flexWrap: 'wrap', gap: '6px'}}>
+                                            {o.vociSelezionate.map(v => <span key={v} className="badge" style={{background: '#4CAF50', color: 'white'}}>{v}</span>)}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {canEdit(o) && (
+                                    <div style={{display: 'flex', gap: '10px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e0e0e0'}}>
+                                        {o.descrizioneIntervento && (
+                                            <button className="btn btn-white" style={{padding: '10px 20px'}} onClick={() => { setSelectedDesc(o.descrizioneIntervento); setShowDescModal(true); }}>📄 Descrizione</button>
+                                        )}
+                                        <button className="btn btn-white" style={{padding: '10px 20px'}} onClick={() => printCardPDF(o)}>🖨️ Stampa</button>
+                                        <button className="btn btn-white" style={{padding: '10px 20px'}} onClick={() => { setEditOpp(o); setForm({...o, vociSelezionate: o.vociSelezionate || []}); setShowForm(true); }}>✏️ Modifica</button>
+                                        {user.role === 'admin' && <button className="btn btn-red" style={{padding: '10px 20px'}} onClick={() => deleteOpp(o.id)}>🗑️ Elimina</button>}
+                                    </div>
+                                )}
                             </div>
                         ))}
+
+                        {myOpps.length > 0 && (
+                            <div style={{marginTop: '40px'}} id="summary-table-print">
+                                <h2 style={{marginBottom: '16px', color: '#2E7D32'}}>📊 Riepilogo per Tipologia</h2>
+                                
+                                {user.role === 'admin' ? (
+                                    // ADMIN: Tabella per ogni client
+                                    [...new Set(opps.map(o => o.clientId))].filter(Boolean).map(clientId => {
+                                        const clientUser = users.find(u => u.id === clientId);
+                                        const clientOpps = opps.filter(o => o.clientId === clientId);
+                                        if (clientOpps.length === 0) return null;
+                                        
+                                        return (
+                                            <div key={clientId} style={{marginBottom: '30px'}}>
+                                                <h3 style={{marginBottom: '12px', color: '#2E7D32', fontSize: '16px'}}>
+                                                    👤 {clientUser?.name || 'Utente sconosciuto'}
+                                                </h3>
+                                                <table>
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Tipologia Intervento</th>
+                                                            <th style={{textAlign: 'center'}}>CALDA</th>
+                                                            <th style={{textAlign: 'center'}}>TIEPIDA</th>
+                                                            <th style={{textAlign: 'center'}}>FREDDA</th>
+                                                            <th style={{textAlign: 'center'}}>KO</th>
+                                                            <th style={{textAlign: 'center'}}>OK</th>
+                                                            <th style={{textAlign: 'center'}}>Totale</th>
+                                                            <th style={{textAlign: 'right'}}>Importo Totale</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {Object.keys(TIPOLOGIE_INTERVENTO).map(tipKey => {
+                                                            const oppsPerTipo = clientOpps.filter(o => o.tipologiaIntervento === tipKey);
+                                                            if (oppsPerTipo.length === 0) return null;
+                                                            
+                                                            const calda = oppsPerTipo.filter(o => o.stato === 'CALDA').length;
+                                                            const tiepida = oppsPerTipo.filter(o => o.stato === 'TIEPIDA').length;
+                                                            const fredda = oppsPerTipo.filter(o => o.stato === 'FREDDA').length;
+                                                            const ko = oppsPerTipo.filter(o => o.stato === 'KO').length;
+                                                            const ok = oppsPerTipo.filter(o => o.stato === 'OK').length;
+                                                            const totale = oppsPerTipo.length;
+                                                            const importoTotale = oppsPerTipo.reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0);
+                                                            
+                                                            return (
+                                                                <tr key={tipKey}>
+                                                                    <td style={{fontWeight: '600'}}>{TIPOLOGIE_INTERVENTO[tipKey].label}</td>
+                                                                    <td style={{textAlign: 'center', background: '#FEF3C7'}}>{calda}</td>
+                                                                    <td style={{textAlign: 'center', background: '#FCE7F3'}}>{tiepida}</td>
+                                                                    <td style={{textAlign: 'center', background: '#DBEAFE'}}>{fredda}</td>
+                                                                    <td style={{textAlign: 'center', background: '#FEE2E2'}}>{ko}</td>
+                                                                    <td style={{textAlign: 'center', background: '#D1FAE5'}}>{ok}</td>
+                                                                    <td style={{textAlign: 'center', fontWeight: '700'}}>{totale}</td>
+                                                                    <td style={{textAlign: 'right', fontWeight: '700'}}>€{importoTotale.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                        <tr style={{background: '#81C784', fontWeight: '700'}}>
+                                                            <td>TOTALE OPPORTUNITÀ</td>
+                                                            <td style={{textAlign: 'center'}}>{clientOpps.filter(o => o.stato === 'CALDA').length}</td>
+                                                            <td style={{textAlign: 'center'}}>{clientOpps.filter(o => o.stato === 'TIEPIDA').length}</td>
+                                                            <td style={{textAlign: 'center'}}>{clientOpps.filter(o => o.stato === 'FREDDA').length}</td>
+                                                            <td style={{textAlign: 'center'}}>{clientOpps.filter(o => o.stato === 'KO').length}</td>
+                                                            <td style={{textAlign: 'center'}}>{clientOpps.filter(o => o.stato === 'OK').length}</td>
+                                                            <td style={{textAlign: 'center'}}>{clientOpps.length}</td>
+                                                            <td style={{textAlign: 'right'}}>€{clientOpps.reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                        </tr>
+                                                        <tr style={{background: '#2E7D32', color: 'white', fontWeight: '700'}}>
+                                                            <td>TOTALE IMPORTI</td>
+                                                            <td style={{textAlign: 'center'}}>€{clientOpps.filter(o => o.stato === 'CALDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                            <td style={{textAlign: 'center'}}>€{clientOpps.filter(o => o.stato === 'TIEPIDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                            <td style={{textAlign: 'center'}}>€{clientOpps.filter(o => o.stato === 'FREDDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                            <td style={{textAlign: 'center'}}>€{clientOpps.filter(o => o.stato === 'KO').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                            <td style={{textAlign: 'center'}}>€{clientOpps.filter(o => o.stato === 'OK').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                            <td></td>
+                                                            <td style={{textAlign: 'right'}}>€{clientOpps.reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    // CLIENT: Solo la propria tabella
+                                    <div>
+                                        <h3 style={{marginBottom: '12px', color: '#2E7D32', fontSize: '16px'}}>
+                                            👤 {user.name}
+                                        </h3>
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th>Tipologia Intervento</th>
+                                                    <th style={{textAlign: 'center'}}>CALDA</th>
+                                                    <th style={{textAlign: 'center'}}>TIEPIDA</th>
+                                                    <th style={{textAlign: 'center'}}>FREDDA</th>
+                                                    <th style={{textAlign: 'center'}}>KO</th>
+                                                    <th style={{textAlign: 'center'}}>OK</th>
+                                                    <th style={{textAlign: 'center'}}>Totale</th>
+                                                    <th style={{textAlign: 'right'}}>Importo Totale</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {Object.keys(TIPOLOGIE_INTERVENTO).map(tipKey => {
+                                                    const oppsPerTipo = myOpps.filter(o => o.tipologiaIntervento === tipKey);
+                                                    if (oppsPerTipo.length === 0) return null;
+                                                    
+                                                    const calda = oppsPerTipo.filter(o => o.stato === 'CALDA').length;
+                                                    const tiepida = oppsPerTipo.filter(o => o.stato === 'TIEPIDA').length;
+                                                    const fredda = oppsPerTipo.filter(o => o.stato === 'FREDDA').length;
+                                                    const ko = oppsPerTipo.filter(o => o.stato === 'KO').length;
+                                                    const ok = oppsPerTipo.filter(o => o.stato === 'OK').length;
+                                                    const totale = oppsPerTipo.length;
+                                                    const importoTotale = oppsPerTipo.reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0);
+                                                    
+                                                    return (
+                                                        <tr key={tipKey}>
+                                                            <td style={{fontWeight: '600'}}>{TIPOLOGIE_INTERVENTO[tipKey].label}</td>
+                                                            <td style={{textAlign: 'center', background: '#FEF3C7'}}>{calda}</td>
+                                                            <td style={{textAlign: 'center', background: '#FCE7F3'}}>{tiepida}</td>
+                                                            <td style={{textAlign: 'center', background: '#DBEAFE'}}>{fredda}</td>
+                                                            <td style={{textAlign: 'center', background: '#FEE2E2'}}>{ko}</td>
+                                                            <td style={{textAlign: 'center', background: '#D1FAE5'}}>{ok}</td>
+                                                            <td style={{textAlign: 'center', fontWeight: '700'}}>{totale}</td>
+                                                            <td style={{textAlign: 'right', fontWeight: '700'}}>€{importoTotale.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                                <tr style={{background: '#81C784', fontWeight: '700'}}>
+                                                    <td>TOTALE OPPORTUNITÀ</td>
+                                                    <td style={{textAlign: 'center'}}>{myOpps.filter(o => o.stato === 'CALDA').length}</td>
+                                                    <td style={{textAlign: 'center'}}>{myOpps.filter(o => o.stato === 'TIEPIDA').length}</td>
+                                                    <td style={{textAlign: 'center'}}>{myOpps.filter(o => o.stato === 'FREDDA').length}</td>
+                                                    <td style={{textAlign: 'center'}}>{myOpps.filter(o => o.stato === 'KO').length}</td>
+                                                    <td style={{textAlign: 'center'}}>{myOpps.filter(o => o.stato === 'OK').length}</td>
+                                                    <td style={{textAlign: 'center'}}>{myOpps.length}</td>
+                                                    <td style={{textAlign: 'right'}}>€{myOpps.reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                </tr>
+                                                <tr style={{background: '#2E7D32', color: 'white', fontWeight: '700'}}>
+                                                    <td>TOTALE IMPORTI</td>
+                                                    <td style={{textAlign: 'center'}}>€{myOpps.filter(o => o.stato === 'CALDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                    <td style={{textAlign: 'center'}}>€{myOpps.filter(o => o.stato === 'TIEPIDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                    <td style={{textAlign: 'center'}}>€{myOpps.filter(o => o.stato === 'FREDDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                    <td style={{textAlign: 'center'}}>€{myOpps.filter(o => o.stato === 'KO').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                    <td style={{textAlign: 'center'}}>€{myOpps.filter(o => o.stato === 'OK').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                    <td></td>
+                                                    <td style={{textAlign: 'right'}}>€{myOpps.reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {user.role === 'admin' && (
+                            <>
+                                <h2 style={{margin: '40px 0 16px', color: '#2E7D32'}}>👥 Gestione Utenti</h2>
+                                <button className="btn btn-green" style={{marginBottom: '16px'}} onClick={() => setShowUserForm(true)}>+ Nuovo Utente</button>
+                                
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Nome</th>
+                                            <th>Username</th>
+                                            <th>Ruolo</th>
+                                            <th>Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {users.map(u => (
+                                            <tr key={u.id}>
+                                                <td style={{fontWeight: '600'}}>{u.name}</td>
+                                                <td>{u.username}</td>
+                                                <td>
+                                                    <span className="badge" style={{
+                                                        background: u.role === 'admin' ? '#2E7D32' : u.role === 'diretto' ? '#1976D2' : u.role === 'interno' ? '#F57C00' : '#81C784',
+                                                        color: 'white'
+                                                    }}>
+                                                        {RUOLI[u.role]}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <button className="btn btn-white" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setEditUser(u); setUserForm({...u}); setShowUserForm(true); }}>Modifica</button>
+                                                    <button className="btn btn-red" style={{padding: '6px 12px'}} onClick={() => deleteUser(u.id)}>Elimina</button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </>
+                        )}
                     </div>
+
+                    {showForm && (
+                        <div className="modal" onClick={() => { setShowForm(false); setEditOpp(null); }}>
+                            <div className="modal-content" onClick={e => e.stopPropagation()}>
+                                <h2 style={{marginBottom: '20px', color: '#2E7D32'}}>{editOpp ? 'Modifica' : 'Nuova'} Opportunità</h2>
+                                <form onSubmit={saveOpp}>
+                                    <div className="section-title">📋 Dati Azienda</div>
+                                    <div className="mb">
+                                        <label className="label">Ragione Sociale *</label>
+                                        <input className="input" value={form.ragioneSociale} onChange={e => setForm({...form, ragioneSociale: e.target.value})} required />
+                                    </div>
+                                    <div className="grid-2">
+                                        <div className="mb">
+                                            <label className="label">Indirizzo</label>
+                                            <input className="input" value={form.indirizzo} onChange={e => setForm({...form, indirizzo: e.target.value})} />
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">CAP</label>
+                                            <input className="input" value={form.cap} onChange={e => setForm({...form, cap: e.target.value})} />
+                                        </div>
+                                    </div>
+                                    <div className="grid-2">
+                                        <div className="mb">
+                                            <label className="label">Città</label>
+                                            <input className="input" value={form.citta} onChange={e => setForm({...form, citta: e.target.value})} />
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">Telefono</label>
+                                            <input className="input" value={form.telefono} onChange={e => setForm({...form, telefono: e.target.value})} />
+                                        </div>
+                                    </div>
+                                    <div className="mb">
+                                        <label className="label">Tipologia Cliente *</label>
+                                        <select className="input" value={form.tipologiaCliente} onChange={e => setForm({...form, tipologiaCliente: e.target.value})} required>
+                                            <option value="">Seleziona...</option>
+                                            {TIPOLOGIE_CLIENTE.map(t => <option key={t} value={t}>{t}</option>)}
+                                        </select>
+                                    </div>
+
+                                    <div className="section-title">👤 Referente</div>
+                                    <div className="grid-2">
+                                        <div className="mb">
+                                            <label className="label">Nome Referente</label>
+                                            <input className="input" value={form.nomeReferente} onChange={e => setForm({...form, nomeReferente: e.target.value})} />
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">Ruolo</label>
+                                            <input className="input" value={form.ruoloReferente} onChange={e => setForm({...form, ruoloReferente: e.target.value})} />
+                                        </div>
+                                    </div>
+                                    <div className="grid-2">
+                                        <div className="mb">
+                                            <label className="label">Telefono Referente</label>
+                                            <input className="input" value={form.telReferente} onChange={e => setForm({...form, telReferente: e.target.value})} />
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">Email Referente</label>
+                                            <input type="email" className="input" value={form.emailReferente} onChange={e => setForm({...form, emailReferente: e.target.value})} />
+                                        </div>
+                                    </div>
+
+                                    <div className="section-title">📍 Ubicazione Intervento</div>
+                                    <div className="grid-3">
+                                        <div className="mb">
+                                            <label className="label">Via</label>
+                                            <input className="input" value={form.viaIntervento} onChange={e => setForm({...form, viaIntervento: e.target.value})} />
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">Numero</label>
+                                            <input className="input" value={form.numeroIntervento} onChange={e => setForm({...form, numeroIntervento: e.target.value})} />
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">CAP</label>
+                                            <input className="input" value={form.capIntervento} onChange={e => setForm({...form, capIntervento: e.target.value})} />
+                                        </div>
+                                    </div>
+                                    <div className="mb">
+                                        <label className="label">Città Intervento</label>
+                                        <input className="input" value={form.cittaIntervento} onChange={e => setForm({...form, cittaIntervento: e.target.value})} />
+                                    </div>
+
+                                    <div className="section-title">🔧 Tecnico Incaricato</div>
+                                    <div className="mb">
+                                        <label className="label">Tecnico Incaricato</label>
+                                        <select className="input" value={form.hasTecnico} onChange={e => setForm({...form, hasTecnico: e.target.value})}>
+                                            <option value="no">NO</option>
+                                            <option value="si">SI</option>
+                                        </select>
+                                    </div>
+                                    {form.hasTecnico === 'si' && (
+                                        <>
+                                            <div className="mb">
+                                                <label className="label">Nome Studio Tecnico</label>
+                                                <input className="input" value={form.nomeStudioTecnico} onChange={e => setForm({...form, nomeStudioTecnico: e.target.value})} />
+                                            </div>
+                                            <div className="grid-2">
+                                                <div className="mb">
+                                                    <label className="label">Referente Studio</label>
+                                                    <input className="input" value={form.referenteStudio} onChange={e => setForm({...form, referenteStudio: e.target.value})} />
+                                                </div>
+                                                <div className="mb">
+                                                    <label className="label">Indirizzo Studio</label>
+                                                    <input className="input" value={form.indirizzoStudio} onChange={e => setForm({...form, indirizzoStudio: e.target.value})} />
+                                                </div>
+                                            </div>
+                                            <div className="grid-2">
+                                                <div className="mb">
+                                                    <label className="label">Telefono Studio</label>
+                                                    <input className="input" value={form.telefonoStudio} onChange={e => setForm({...form, telefonoStudio: e.target.value})} />
+                                                </div>
+                                                <div className="mb">
+                                                    <label className="label">Email Studio</label>
+                                                    <input type="email" className="input" value={form.emailStudio} onChange={e => setForm({...form, emailStudio: e.target.value})} />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    <div className="section-title">⚡ Intervento</div>
+                                    <div className="mb">
+                                        <label className="label">Tipologia Intervento *</label>
+                                        <select className="input" value={form.tipologiaIntervento} onChange={e => setForm({...form, tipologiaIntervento: e.target.value, vociSelezionate: []})} required>
+                                            <option value="">Seleziona...</option>
+                                            {Object.keys(TIPOLOGIE_INTERVENTO).map(k => <option key={k} value={k}>{TIPOLOGIE_INTERVENTO[k].label}</option>)}
+                                        </select>
+                                    </div>
+
+                                    {form.tipologiaIntervento && TIPOLOGIE_INTERVENTO[form.tipologiaIntervento].voci.length > 0 && (
+                                        <div className="mb">
+                                            <label className="label">Voci Intervento</label>
+                                            <div className="checkbox-group">
+                                                {TIPOLOGIE_INTERVENTO[form.tipologiaIntervento].voci.map(voce => (
+                                                    <label key={voce} className="checkbox-item">
+                                                        <input type="checkbox" checked={form.vociSelezionate.includes(voce)} onChange={() => toggleVoce(voce)} />
+                                                        <span>{voce}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {(form.tipologiaIntervento === 'cratere_2016' || form.tipologiaIntervento === 'cratere_2009') && (
+                                        <div className="mb">
+                                            <label className="label">Livello Operativo *</label>
+                                            <select className="input" value={form.livelloOperativo} onChange={e => setForm({...form, livelloOperativo: e.target.value})} required>
+                                                <option value="">Seleziona livello...</option>
+                                                <option value="L0">L0</option>
+                                                <option value="L1">L1</option>
+                                                <option value="L2">L2</option>
+                                                <option value="L3">L3</option>
+                                                <option value="L4">L4</option>
+                                            </select>
+                                        </div>
+                                    )}
+
+                                    <div className="mb">
+                                        <label className="label">Descrizione Intervento</label>
+                                        <textarea className="input" value={form.descrizioneIntervento} onChange={e => setForm({...form, descrizioneIntervento: e.target.value})} />
+                                    </div>
+
+                                    <div className="grid-2">
+                                        <div className="mb">
+                                            <label className="label">Tipo Intervento</label>
+                                            <select className="input" value={form.tipoIntervento} onChange={e => setForm({...form, tipoIntervento: e.target.value})}>
+                                                {TIPO_INTERVENTO.map(t => <option key={t} value={t}>{t}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">Importo Presunto (€)</label>
+                                            <input type="number" className="input" value={form.importoPresunto} onChange={e => setForm({...form, importoPresunto: e.target.value})} />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid-2">
+                                        <div className="mb">
+                                            <label className="label">Stato *</label>
+                                            <select className="input" value={form.stato} onChange={e => setForm({...form, stato: e.target.value})} style={{
+                                                background: form.stato === 'CALDA' ? '#FEF3C7' : form.stato === 'TIEPIDA' ? '#FCE7F3' : form.stato === 'FREDDA' ? '#DBEAFE' : form.stato === 'KO' ? '#FEE2E2' : '#D1FAE5',
+                                                fontWeight: '700'
+                                            }} required>
+                                                <option value="CALDA" style={{background: '#FEF3C7'}}>CALDA</option>
+                                                <option value="TIEPIDA" style={{background: '#FCE7F3'}}>TIEPIDA</option>
+                                                <option value="FREDDA" style={{background: '#DBEAFE'}}>FREDDA</option>
+                                                <option value="KO" style={{background: '#FEE2E2'}}>KO</option>
+                                                <option value="OK" style={{background: '#D1FAE5'}}>OK</option>
+                                            </select>
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">Possibile Contrattualizzazione</label>
+                                            <select className="input" value={form.possibileContrattualizzazione} onChange={e => setForm({...form, possibileContrattualizzazione: e.target.value})}>
+                                                {CONTRATTUALIZZAZIONE.map(c => <option key={c} value={c}>{c}</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div style={{display: 'flex', gap: '10px', marginTop: '24px'}}>
+                                        <button type="submit" className="btn btn-green">Salva</button>
+                                        <button type="button" className="btn btn-white" onClick={() => { setShowForm(false); setEditOpp(null); }}>Annulla</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {showUserForm && user.role === 'admin' && (
+                        <div className="modal" onClick={() => { setShowUserForm(false); setEditUser(null); }}>
+                            <div className="modal-content" style={{maxWidth: '500px'}} onClick={e => e.stopPropagation()}>
+                                <h2 style={{marginBottom: '20px', color: '#2E7D32'}}>{editUser ? 'Modifica' : 'Nuovo'} Utente</h2>
+                                <form onSubmit={saveUser}>
+                                    <div className="mb">
+                                        <label className="label">Nome *</label>
+                                        <input className="input" value={userForm.name} onChange={e => setUserForm({...userForm, name: e.target.value})} required />
+                                    </div>
+                                    <div className="mb">
+                                        <label className="label">Username *</label>
+                                        <input className="input" value={userForm.username} onChange={e => setUserForm({...userForm, username: e.target.value})} required />
+                                    </div>
+                                    <div className="mb">
+                                        <label className="label">Password *</label>
+                                        <input type="password" className="input" value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} required />
+                                    </div>
+                                    <div className="mb">
+                                        <label className="label">Ruolo *</label>
+                                        <select className="input" value={userForm.role} onChange={e => setUserForm({...userForm, role: e.target.value})} required>
+                                            <option value="agenzia">Agenzia</option>
+                                            <option value="diretto">Diretto</option>
+                                            <option value="interno">Interno</option>
+                                            <option value="admin">Amministratore</option>
+                                        </select>
+                                    </div>
+                                    <div style={{display: 'flex', gap: '10px'}}>
+                                        <button type="submit" className="btn btn-green">Salva</button>
+                                        <button type="button" className="btn btn-white" onClick={() => { setShowUserForm(false); setEditUser(null); }}>Annulla</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {showDescModal && (
+                        <div className="modal" onClick={() => setShowDescModal(false)}>
+                            <div className="modal-content" style={{maxWidth: '600px'}} onClick={e => e.stopPropagation()}>
+                                <h2 style={{marginBottom: '20px', color: '#2E7D32'}}>📄 Descrizione Intervento</h2>
+                                <div style={{padding: '20px', background: '#f9f9f9', borderRadius: '8px', lineHeight: '1.6', whiteSpace: 'pre-wrap'}}>
+                                    {selectedDesc}
+                                </div>
+                                <button className="btn btn-white" style={{marginTop: '20px'}} onClick={() => setShowDescModal(false)}>Chiudi</button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         }
