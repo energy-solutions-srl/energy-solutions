@@ -104,24 +104,13 @@
             const [editOpp, setEditOpp] = useState(null);
             const [editUser, setEditUser] = useState(null);
             const [login, setLogin] = useState({ username: '', password: '', remember: false });
-            const [showCaptcha, setShowCaptcha] = useState(false);
-            const [captchaImages, setCaptchaImages] = useState([]);
-            const [selectedImages, setSelectedImages] = useState([]);
-            const [captchaTarget, setCaptchaTarget] = useState('');
-            const [pendingUser, setPendingUser] = useState(null);
-
-            // Categorie di immagini per CAPTCHA
-            const CAPTCHA_CATEGORIES = {
-                'energia': ['☀️', '⚡', '🔋', '💡', '🌊', '🌬️', '🏭', '🔌', '⚙️'],
-                'edifici': ['🏢', '🏠', '🏭', '🏗️', '🏛️', '🏘️', '🏚️', '🏬', '🏫'],
-                'trasporti': ['🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑', '🚒']
-            };
             const [userForm, setUserForm] = useState({ username: '', password: '', name: '', role: 'agenzia' });
             const [filters, setFilters] = useState({ 
                 utente: '', 
                 tipologiaCliente: '', 
                 ruolo: '', 
                 tipologiaIntervento: '',
+                stato: '',
                 dataInizio: '',
                 dataFine: ''
             });
@@ -144,52 +133,6 @@
                 }
             }, []);
 
-            const generateCaptcha = () => {
-                console.log('=== GENERATING CAPTCHA ===');
-                
-                // Scegli categoria random
-                const categories = Object.keys(CAPTCHA_CATEGORIES);
-                const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-                const categoryIcons = CAPTCHA_CATEGORIES[randomCategory];
-                
-                console.log('Selected category:', randomCategory);
-                
-                // Scegli 2-3 target corretti
-                const numTargets = 2 + Math.floor(Math.random() * 2); // 2 o 3
-                const shuffled = [...categoryIcons].sort(() => Math.random() - 0.5);
-                const targets = shuffled.slice(0, numTargets);
-                
-                console.log('Number of targets:', numTargets);
-                console.log('Target icons:', targets);
-                
-                // Altre categorie per distrazione
-                const otherCategories = categories.filter(c => c !== randomCategory);
-                const distractors = [];
-                otherCategories.forEach(cat => {
-                    const icons = CAPTCHA_CATEGORIES[cat];
-                    const randomIcon = icons[Math.floor(Math.random() * icons.length)];
-                    distractors.push(randomIcon);
-                });
-                
-                // Mix: targets + distractor (totale 9 immagini)
-                const allImages = [...targets, ...distractors];
-                while (allImages.length < 9) {
-                    const randomCat = categories[Math.floor(Math.random() * categories.length)];
-                    const randomIcon = CAPTCHA_CATEGORIES[randomCat][Math.floor(Math.random() * CAPTCHA_CATEGORIES[randomCat].length)];
-                    if (!allImages.includes(randomIcon)) {
-                        allImages.push(randomIcon);
-                    }
-                }
-                
-                // Shuffle finale
-                const finalImages = allImages.sort(() => Math.random() - 0.5).slice(0, 9);
-                
-                console.log('Final grid images:', finalImages);
-                
-                setCaptchaImages(finalImages);
-                setCaptchaTarget(randomCategory);
-                setSelectedImages([]);
-            };
 
             useEffect(() => {
                 const init = async () => {
@@ -257,58 +200,6 @@
                 }
             };
 
-
-            const verifyCaptcha = () => {
-                console.log('=== CAPTCHA VERIFICATION ===');
-                console.log('Selected images:', selectedImages);
-                console.log('Target category:', captchaTarget);
-                console.log('Category icons:', CAPTCHA_CATEGORIES[captchaTarget]);
-                
-                // Verifica se l'utente ha selezionato tutte le immagini della categoria corretta
-                const correctImages = captchaImages.filter(img => CAPTCHA_CATEGORIES[captchaTarget].includes(img));
-                console.log('Correct images in grid:', correctImages);
-                
-                // Controlla se ha selezionato tutte quelle corrette e nessuna sbagliata
-                const allCorrectSelected = correctImages.every(img => selectedImages.includes(img));
-                const noWrongSelected = selectedImages.every(img => correctImages.includes(img));
-                const rightCount = selectedImages.length === correctImages.length;
-                
-                console.log('All correct selected:', allCorrectSelected);
-                console.log('No wrong selected:', noWrongSelected);
-                console.log('Right count:', rightCount);
-                
-                if (allCorrectSelected && noWrongSelected && rightCount) {
-                    // CAPTCHA CORRETTO
-                    console.log('✅ CAPTCHA PASSED');
-                    
-                    // Salva o rimuovi credenziali
-                    if (login.remember) {
-                        localStorage.setItem('savedUsername', login.username);
-                        localStorage.setItem('savedPassword', login.password);
-                    } else {
-                        localStorage.removeItem('savedUsername');
-                        localStorage.removeItem('savedPassword');
-                    }
-                    
-                    setUser(pendingUser);
-                    setShowLogin(false);
-                    setShowCaptcha(false);
-                    setPendingUser(null);
-                } else {
-                    // CAPTCHA SBAGLIATO
-                    console.log('❌ CAPTCHA FAILED');
-                    alert('❌ CAPTCHA errato! Riprova.');
-                    generateCaptcha(); // Genera nuovo CAPTCHA
-                }
-            };
-
-            const toggleImageSelection = (img) => {
-                if (selectedImages.includes(img)) {
-                    setSelectedImages(selectedImages.filter(i => i !== img));
-                } else {
-                    setSelectedImages([...selectedImages, img]);
-                }
-            };
 
             const saveOpp = async (e) => {
                 e.preventDefault();
@@ -677,6 +568,9 @@
                 if (filters.tipologiaIntervento) {
                     filtered = filtered.filter(o => o.tipologiaIntervento === filters.tipologiaIntervento);
                 }
+                if (filters.stato) {
+                    filtered = filtered.filter(o => o.stato === filters.stato);
+                }
                 if (filters.dataInizio) {
                     filtered = filtered.filter(o => new Date(o.createdAt) >= new Date(filters.dataInizio));
                 }
@@ -736,85 +630,6 @@
             }
 
             // SCHERMATA CAPTCHA
-            if (showCaptcha) {
-                const categoryLabels = {
-                    'energia': 'energia e tecnologia',
-                    'edifici': 'edifici',
-                    'trasporti': 'veicoli e trasporti'
-                };
-
-                return (
-                    <div className="login-container">
-                        <div className="login-card" style={{maxWidth: '500px'}}>
-                            <div className="logo">
-                                <h2>🔒 VERIFICA SICUREZZA</h2>
-                                <p>Autenticazione a due fattori</p>
-                            </div>
-                            
-                            <div style={{marginBottom: '20px', textAlign: 'center'}}>
-                                <p style={{fontSize: '16px', fontWeight: '600', color: '#2E7D32', marginBottom: '8px'}}>
-                                    Seleziona tutte le immagini con:
-                                </p>
-                                <p style={{fontSize: '20px', fontWeight: '700', color: '#4CAF50'}}>
-                                    {categoryLabels[captchaTarget]?.toUpperCase()}
-                                </p>
-                            </div>
-
-                            <div style={{
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(3, 1fr)',
-                                gap: '10px',
-                                marginBottom: '20px'
-                            }}>
-                                {captchaImages.map((img, idx) => (
-                                    <div
-                                        key={idx}
-                                        onClick={() => toggleImageSelection(img)}
-                                        style={{
-                                            width: '100%',
-                                            aspectRatio: '1',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            fontSize: '50px',
-                                            background: selectedImages.includes(img) ? '#C8E6C9' : 'white',
-                                            border: selectedImages.includes(img) ? '4px solid #4CAF50' : '2px solid #ddd',
-                                            borderRadius: '12px',
-                                            cursor: 'pointer',
-                                            transition: 'all 0.2s',
-                                            boxShadow: selectedImages.includes(img) ? '0 4px 12px rgba(76, 175, 80, 0.3)' : '0 2px 4px rgba(0,0,0,0.1)'
-                                        }}
-                                    >
-                                        {img}
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div style={{display: 'flex', gap: '10px'}}>
-                                <button 
-                                    className="btn btn-green" 
-                                    style={{flex: 1}}
-                                    onClick={verifyCaptcha}
-                                    disabled={selectedImages.length === 0}
-                                >
-                                    ✓ Verifica
-                                </button>
-                                <button 
-                                    className="btn btn-white" 
-                                    style={{flex: 1}}
-                                    onClick={() => { setShowCaptcha(false); setPendingUser(null); }}
-                                >
-                                    ✗ Annulla
-                                </button>
-                            </div>
-
-                            <div style={{marginTop: '20px', padding: '12px', background: '#f0f9f4', borderRadius: '8px', fontSize: '12px', color: '#666', textAlign: 'center'}}>
-                                💡 Clicca su tutte le immagini che corrispondono alla categoria richiesta
-                            </div>
-                        </div>
-                    </div>
-                );
-            }
 
             const myOpps = getFilteredOpps();
 
@@ -867,6 +682,19 @@
                                     </select>
                                 </div>
                                 <div className="mb">
+                                    <label className="label">Stato</label>
+                                    <select className="input" value={filters.stato} onChange={e => setFilters({...filters, stato: e.target.value})} style={{
+                                        background: filters.stato === 'CALDA' ? '#FEF3C7' : filters.stato === 'TIEPIDA' ? '#FCE7F3' : filters.stato === 'FREDDA' ? '#DBEAFE' : filters.stato === 'KO' ? '#FEE2E2' : filters.stato === 'OK' ? '#D1FAE5' : 'white'
+                                    }}>
+                                        <option value="">Tutti</option>
+                                        <option value="CALDA">CALDA</option>
+                                        <option value="TIEPIDA">TIEPIDA</option>
+                                        <option value="FREDDA">FREDDA</option>
+                                        <option value="KO">KO</option>
+                                        <option value="OK">OK</option>
+                                    </select>
+                                </div>
+                                <div className="mb">
                                     <label className="label">Data da</label>
                                     <input type="date" className="input" value={filters.dataInizio} onChange={e => setFilters({...filters, dataInizio: e.target.value})} />
                                 </div>
@@ -875,7 +703,7 @@
                                     <input type="date" className="input" value={filters.dataFine} onChange={e => setFilters({...filters, dataFine: e.target.value})} />
                                 </div>
                             </div>
-                            <button className="btn btn-gray" onClick={() => setFilters({ utente: '', tipologiaCliente: '', ruolo: '', tipologiaIntervento: '', dataInizio: '', dataFine: '' })}>🔄 Azzera Filtri</button>
+                            <button className="btn btn-gray" onClick={() => setFilters({ utente: '', tipologiaCliente: '', ruolo: '', tipologiaIntervento: '', stato: '', dataInizio: '', dataFine: '' })}>🔄 Azzera Filtri</button>
                         </div>
 
                         <h2 style={{margin: '20px 0 16px'}}>Le Mie Opportunità ({myOpps.length})</h2>
@@ -946,7 +774,7 @@
                                         )}
                                         <button className="btn btn-white" style={{padding: '10px 20px'}} onClick={() => printCardPDF(o)}>🖨️ Stampa</button>
                                         <button className="btn btn-white" style={{padding: '10px 20px'}} onClick={() => { setEditOpp(o); setForm({...o, vociSelezionate: o.vociSelezionate || []}); setShowForm(true); }}>✏️ Modifica</button>
-                                        {user.role === 'admin' && <button className="btn btn-red" style={{padding: '10px 20px'}} onClick={() => deleteOpp(o.id)}>🗑️ Elimina</button>}
+                                        <button className="btn btn-red" style={{padding: '10px 20px'}} onClick={() => deleteOpp(o.id)}>🗑️ Elimina</button>
                                     </div>
                                 )}
                             </div>
