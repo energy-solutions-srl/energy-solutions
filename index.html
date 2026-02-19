@@ -234,6 +234,25 @@
                 });
             };
 
+            const duplicateOpp = async (opp) => {
+                if (confirm('Duplicare questa opportunità?\n\nVerrà creata una copia con data odierna.')) {
+                    const db = firebase.database();
+                    const duplicatedData = {
+                        ...opp,
+                        ragioneSociale: opp.ragioneSociale + ' (Copia)',
+                        agenzia: user.name,
+                        clientId: user.id,
+                        createdAt: new Date().toISOString()
+                    };
+                    
+                    // Rimuovi l'ID dall'oggetto duplicato
+                    delete duplicatedData.id;
+                    
+                    await db.ref('opportunities').push(duplicatedData);
+                    alert('✅ Opportunità duplicata con successo!');
+                }
+            };
+
             const deleteOpp = async (id) => {
                 if (confirm('Eliminare questa opportunità?')) {
                     const db = firebase.database();
@@ -768,11 +787,12 @@
                                 )}
 
                                 {canEdit(o) && (
-                                    <div style={{display: 'flex', gap: '10px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e0e0e0'}}>
+                                    <div style={{display: 'flex', gap: '10px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e0e0e0', flexWrap: 'wrap'}}>
                                         {o.descrizioneIntervento && (
                                             <button className="btn btn-white" style={{padding: '10px 20px'}} onClick={() => { setSelectedDesc(o.descrizioneIntervento); setShowDescModal(true); }}>📄 Descrizione</button>
                                         )}
                                         <button className="btn btn-white" style={{padding: '10px 20px'}} onClick={() => printCardPDF(o)}>🖨️ Stampa</button>
+                                        <button className="btn btn-white" style={{padding: '10px 20px'}} onClick={() => duplicateOpp(o)}>📋 Duplica</button>
                                         <button className="btn btn-white" style={{padding: '10px 20px'}} onClick={() => { setEditOpp(o); setForm({...o, vociSelezionate: o.vociSelezionate || []}); setShowForm(true); }}>✏️ Modifica</button>
                                         <button className="btn btn-red" style={{padding: '10px 20px'}} onClick={() => deleteOpp(o.id)}>🗑️ Elimina</button>
                                     </div>
