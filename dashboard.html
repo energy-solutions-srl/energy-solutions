@@ -130,12 +130,15 @@
         <div class="card">
             <h2 style="color: #2E7D32; margin-bottom: 20px;">📋 Gestione</h2>
             <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                <button class="btn btn-green" onclick="window.location.href='index.html?from=dashboard'">
+                <button id="btnOpportunita" class="btn btn-green" onclick="window.location.href='index.html?from=dashboard'" style="display: none;">
                     📊 Gestisci Opportunità
                 </button>
                 <button id="btnPermessi" class="btn btn-white" onclick="openPermissions()" style="display: none;">
-                    ⚙️ Gestisci Permessi Simulatori
+                    ⚙️ Gestisci Permessi Utenti
                 </button>
+            </div>
+            <div id="noAccessMessage" style="display: none; padding: 20px; background: #f0f0f0; border-radius: 8px; text-align: center; color: #666;">
+                🔒 Non hai accesso alla gestione opportunità. Contatta l'amministratore.
             </div>
         </div>
     </div>
@@ -143,8 +146,8 @@
     <!-- Modal Permessi -->
     <div id="permissionsModal" class="modal">
         <div class="modal-content">
-            <h2 style="color: #2E7D32; margin-bottom: 20px;">⚙️ Gestione Permessi Simulatori</h2>
-            <p style="margin-bottom: 20px; color: #666;">Abilita o disabilita i simulatori per ogni utente</p>
+            <h2 style="color: #2E7D32; margin-bottom: 20px;">⚙️ Gestione Permessi Utenti</h2>
+            <p style="margin-bottom: 20px; color: #666;">Abilita o disabilita i simulatori e l'accesso alle opportunità per ogni utente</p>
             <div id="permissionsTable"></div>
             <div style="margin-top: 20px; display: flex; gap: 10px;">
                 <button class="btn btn-green" onclick="savePermissions()">💾 Salva Modifiche</button>
@@ -261,6 +264,19 @@
 
                 grid.appendChild(card);
             });
+
+            // Gestione accesso opportunità
+            const hasOpportunityAccess = currentUser.accessoOpportunita === true || currentUser.role === 'admin';
+            const btnOpportunita = document.getElementById('btnOpportunita');
+            const noAccessMsg = document.getElementById('noAccessMessage');
+
+            if (hasOpportunityAccess) {
+                btnOpportunita.style.display = 'inline-block';
+                noAccessMsg.style.display = 'none';
+            } else {
+                btnOpportunita.style.display = 'none';
+                noAccessMsg.style.display = 'block';
+            }
         }
 
         function openSimulator(file) {
@@ -289,6 +305,7 @@
                             <th style="text-align: center;">📊 ZES</th>
                             <th style="text-align: center;">🌾 Agrisolare</th>
                             <th style="text-align: center;">💎 Iperammortamento</th>
+                            <th style="text-align: center;">📋 Opportunità</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -296,9 +313,12 @@
 
             allUsers.forEach(user => {
                 const sim = user.simulatori || {};
+                const hasOpportunita = user.accessoOpportunita === true || user.role === 'admin';
+                const isAdmin = user.role === 'admin';
+                
                 html += `
                     <tr>
-                        <td><strong>${user.name}</strong><br><small style="color: #666;">${user.username}</small></td>
+                        <td><strong>${user.name}</strong><br><small style="color: #666;">${user.username}${isAdmin ? ' (admin)' : ''}</small></td>
                         <td style="text-align: center;">
                             <input type="checkbox" data-uid="${user.uid}" data-sim="zes" ${sim.zes ? 'checked' : ''}>
                         </td>
@@ -307,6 +327,10 @@
                         </td>
                         <td style="text-align: center;">
                             <input type="checkbox" data-uid="${user.uid}" data-sim="iperammortamento" ${sim.iperammortamento ? 'checked' : ''}>
+                        </td>
+                        <td style="text-align: center;">
+                            <input type="checkbox" data-uid="${user.uid}" data-perm="opportunita" ${hasOpportunita ? 'checked' : ''} ${isAdmin ? 'disabled' : ''}>
+                            ${isAdmin ? '<br><small style="color: #999;">Sempre attivo</small>' : ''}
                         </td>
                     </tr>
                 `;
@@ -326,27 +350,43 @@
         }
 
         async function savePermissions() {
-            const checkboxes = document.querySelectorAll('#permissionsTable input[type="checkbox"]');
-            const updates = {};
+            const checkboxes = document.querySelectorAll('#permissionsTable input[type="checkbox"]:not([disabled])');
+            const simulatoriUpdates = {};
+            const opportunitaUpdates = {};
 
             checkboxes.forEach(cb => {
                 const uid = cb.dataset.uid;
-                const sim = cb.dataset.sim;
-                if (!updates[uid]) updates[uid] = {};
-                updates[uid][sim] = cb.checked;
+                
+                if (cb.dataset.sim) {
+                    // Permessi simulatori
+                    const sim = cb.dataset.sim;
+                    if (!simulatoriUpdates[uid]) simulatoriUpdates[uid] = {};
+                    simulatoriUpdates[uid][sim] = cb.checked;
+                } else if (cb.dataset.perm === 'opportunita') {
+                    // Permesso opportunità
+                    opportunitaUpdates[uid] = cb.checked;
+                }
             });
 
             try {
-                const promises = Object.keys(updates).map(uid => 
-                    db.ref(`users/${uid}/simulatori`).set(updates[uid])
-                );
+                const promises = [];
+                
+                // Salva permessi simulatori
+                Object.keys(simulatoriUpdates).forEach(uid => {
+                    promises.push(db.ref(`users/${uid}/simulatori`).set(simulatoriUpdates[uid]));
+                });
+
+                // Salva permessi opportunità
+                Object.keys(opportunitaUpdates).forEach(uid => {
+                    promises.push(db.ref(`users/${uid}/accessoOpportunita`).set(opportunitaUpdates[uid]));
+                });
 
                 await Promise.all(promises);
                 alert('✅ Permessi salvati con successo!');
                 closePermissions();
 
                 // Ricarica se è l'utente corrente
-                if (updates[currentUser.uid]) {
+                if (simulatoriUpdates[currentUser.uid] || opportunitaUpdates.hasOwnProperty(currentUser.uid)) {
                     const snapshot = await db.ref(`users/${currentUser.uid}`).once('value');
                     currentUser = { ...snapshot.val(), uid: currentUser.uid };
                     renderSimulatori();
