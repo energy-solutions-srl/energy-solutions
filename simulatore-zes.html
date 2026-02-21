@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulatore ZES Unica 2026 - Credito d'Imposta</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-auth-compat.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #f57c00;
+            --secondary: #ff9800;
+            --accent: #ffb74d;
+            --light: #fff3e0;
+            --bg: #fafafa;
+            --text: #212121;
+        }
+
+        body {
+            font-family: 'Manrope', sans-serif;
+            background: linear-gradient(135deg, var(--light) 0%, #ffe0b2 100%);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(245, 124, 0, 0.3);
+            color: white;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        select, input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: 'Manrope', sans-serif;
+            transition: border-color 0.3s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .result-box {
+            background: linear-gradient(135deg, var(--light) 0%, #ffe0b2 100%);
+            border: 3px solid var(--primary);
+            border-radius: 16px;
+            padding: 30px;
+            margin-top: 30px;
+            display: none;
+        }
+
+        .result-value {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--primary);
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .info-box {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .warning {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+            color: #856404;
+        }
+
+        .success {
+            background: #d4edda;
+            border-left-color: #28a745;
+            color: #155724;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            .result-value {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <button onclick="window.location.href='dashboard.html'" style="background: rgba(255,255,255,0.2); color: white; border: 2px solid white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    ← Dashboard
+                </button>
+            </div>
+            <h1>🗺️ Simulatore ZES Unica 2026</h1>
+            <p class="subtitle">Credito d'Imposta per Investimenti - Marche, Umbria e Sud Italia</p>
+        </header>
+
+        <div class="card">
+            <h2 style="color: var(--primary); margin-bottom: 20px;">📋 Dati Investimento</h2>
+            
+            <div class="form-group">
+                <label for="regione">Regione:</label>
+                <select id="regione">
+                    <option value="">Seleziona regione...</option>
+                    <option value="sud">Sud (Abruzzo, Basilicata, Calabria, Campania, Molise, Puglia, Sicilia, Sardegna)</option>
+                    <option value="marche">Marche</option>
+                    <option value="umbria">Umbria</option>
+                </select>
+            </div>
+
+            <div id="comuneDiv" style="display: none;" class="form-group">
+                <label for="comune">Comune:</label>
+                <select id="comune"></select>
+            </div>
+
+            <div class="form-group">
+                <label for="dimensione">Dimensione Impresa:</label>
+                <select id="dimensione">
+                    <option value="piccola">Piccola Impresa</option>
+                    <option value="media">Media Impresa</option>
+                    <option value="grande">Grande Impresa</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="investimento">Importo Investimento (€):</label>
+                <input type="number" id="investimento" min="200000" max="100000000" step="0.01" placeholder="Min. €200.000 - Max. €100.000.000">
+            </div>
+
+            <button class="btn" onclick="calcolaZES()">🧮 Calcola Credito d'Imposta</button>
+        </div>
+
+        <div id="risultati" class="result-box"></div>
+    </div>
+
+    <script>
+        const comuniMarche = {
+            "Ancona": ["Castelbellino", "Cerreto d'Esi", "Cupramontana", "Fabriano", "Genga", "Jesi", "Monsano", "Monte Roberto", "San Paolo di Jesi", "Sassoferrato", "Serra San Quirico", "Staffolo"],
+            "Ascoli Piceno": ["Acquasanta Terme", "Acquaviva Picena", "Appignano del Tronto", "Arquata del Tronto", "Ascoli Piceno", "Carassai", "Castel di Lama", "Castignano", "Castorano", "Colli del Tronto", "Comunanza", "Cossignano", "Folignano", "Force", "Grottammare", "Maltignano", "Monsampolo del Tronto", "Montalto delle Marche", "Montedinove", "Montegallo", "Montemonaco", "Monteprandone", "Offida", "Palmiano", "Ripatransone", "Roccafluvione", "Rotella", "San Benedetto del Tronto", "Spinetoli", "Venarotta"],
+            "Pesaro-Urbino": ["Frontone", "Serra Sant'Abbondio"]
+        };
+
+        const comuniUmbria = [
+            "Bastia Umbra", "Bettona", "Campello sul Clitunno", "Cascia", "Castel Ritaldi", "Cerreto di Spoleto", "Citerna", "Città di Castello", "Collazzone", "Deruta", "Foligno", "Fossato di Vico", "Gualdo Cattaneo", "Gualdo Tadino", "Gubbio", "Marsciano", "Montefalco", "Monteleone di Spoleto", "Monte Santa Maria Tiberina", "Montone", "Narni", "Nocera Umbra", "Norcia", "Panicale", "Passignano sul Trasimeno", "Piegaro", "Poggiodomo", "Preci", "San Gemini", "Sant'Anatolia di Narco", "Scheggino", "Sellano", "Spoleto", "Terni", "Trevi", "Umbertide", "Vallo di Nera"
+        ];
+
+        document.getElementById('regione').addEventListener('change', function() {
+            const comuneDiv = document.getElementById('comuneDiv');
+            const comuneSelect = document.getElementById('comune');
+            
+            comuneSelect.innerHTML = '<option value="">Seleziona comune...</option>';
+            
+            if (this.value === 'marche') {
+                comuneDiv.style.display = 'block';
+                for (const [provincia, comuni] of Object.entries(comuniMarche)) {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = `Provincia ${provincia}`;
+                    comuni.forEach(c => {
+                        const option = document.createElement('option');
+                        option.value = c;
+                        option.textContent = c;
+                        optgroup.appendChild(option);
+                    });
+                    comuneSelect.appendChild(optgroup);
+                }
+            } else if (this.value === 'umbria') {
+                comuneDiv.style.display = 'block';
+                comuniUmbria.forEach(c => {
+                    const option = document.createElement('option');
+                    option.value = c;
+                    option.textContent = c;
+                    comuneSelect.appendChild(option);
+                });
+            } else {
+                comuneDiv.style.display = 'none';
+            }
+        });
+
+        function calcolaZES() {
+            const regione = document.getElementById('regione').value;
+            const dimensione = document.getElementById('dimensione').value;
+            const investimento = parseFloat(document.getElementById('investimento').value);
+            const comune = document.getElementById('comune').value;
+
+            if (!regione) {
+                alert('Seleziona una regione');
+                return;
+            }
+
+            if ((regione === 'marche' || regione === 'umbria') && !comune) {
+                alert('Seleziona un comune');
+                return;
+            }
+
+            if (!investimento || investimento < 200000) {
+                alert('Investimento minimo: €200.000');
+                return;
+            }
+
+            if (investimento > 100000000) {
+                alert('Investimento massimo: €100.000.000');
+                return;
+            }
+
+            // Calcolo aliquote (Carta aiuti finalità regionale 2022-2027)
+            let aliquota = 0;
+            if (regione === 'sud') {
+                // Zone 107.3.a (Sud)
+                if (dimensione === 'piccola') aliquota = 40;
+                else if (dimensione === 'media') aliquota = 30;
+                else aliquota = 15;
+            } else {
+                // Zone 107.3.c (Marche/Umbria)
+                if (dimensione === 'piccola') aliquota = 25;
+                else if (dimensione === 'media') aliquota = 15;
+                else aliquota = 15;
+            }
+
+            const creditoImposta = investimento * (aliquota / 100);
+            const percBeneficio = ((creditoImposta / investimento) * 100).toFixed(2);
+
+            const risultatiDiv = document.getElementById('risultati');
+            risultatiDiv.style.display = 'block';
+            risultatiDiv.innerHTML = `
+                <h2 style="color: var(--primary); text-align: center; margin-bottom: 20px;">
+                    💰 Risultato Simulazione
+                </h2>
+
+                <div class="info-box success">
+                    <strong>✅ Zona Agevolata Ammessa</strong><br>
+                    ${regione === 'sud' ? 'ZES Unica Sud' : (regione === 'marche' ? `ZES Marche - ${comune}` : `ZES Umbria - ${comune}`)}
+                </div>
+
+                <div class="result-value">
+                    € ${creditoImposta.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                </div>
+
+                <div style="text-align: center; font-size: 1.3rem; color: var(--text); margin-bottom: 20px;">
+                    <strong>${percBeneficio}%</strong> dell'investimento
+                </div>
+
+                <div class="info-box">
+                    <h3 style="color: var(--primary); margin-bottom: 10px;">📊 Dettaglio Calcolo</h3>
+                    <p><strong>Investimento:</strong> € ${investimento.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                    <p><strong>Aliquota:</strong> ${aliquota}% (${dimensione} impresa)</p>
+                    <p><strong>Credito d'imposta:</strong> € ${creditoImposta.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                </div>
+
+                <div class="info-box warning">
+                    <h3 style="margin-bottom: 10px;">⚠️ Comunicazione Obbligatoria</h3>
+                    <p><strong>Periodo:</strong> 31 marzo - 30 maggio 2026</p>
+                    <p>Comunicazione preventiva all'Agenzia delle Entrate tramite portale telematico</p>
+                </div>
+
+                <div class="info-box">
+                    <h3 style="color: var(--primary); margin-bottom: 10px;">✅ Cumulabilità</h3>
+                    <p>Il credito ZES è <strong>cumulabile</strong> con:</p>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>Iperammortamento 180%</li>
+                        <li>Nuova Sabatini</li>
+                        <li>Aiuti de minimis</li>
+                        <li>Altri aiuti di Stato (nei limiti UE)</li>
+                    </ul>
+                </div>
+
+                <div class="info-box">
+                    <h3 style="color: var(--primary); margin-bottom: 10px;">📝 Requisiti</h3>
+                    <ul style="margin-left: 20px;">
+                        <li>Investimento min. €200.000 - max €100.000.000</li>
+                        <li>Beni strumentali nuovi</li>
+                        <li>Struttura produttiva in zona ZES</li>
+                        <li>Mantenimento attività per 5 anni</li>
+                        <li>Certificazione revisore contabile</li>
+                        <li>Regolarità contributiva e fiscale</li>
+                    </ul>
+                </div>
+            `;
+
+            risultatiDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAPdXkLXzz4zjScQX3_buEXGi2OytRfH2o",
+            authDomain: "bu-progetti-speciali.firebaseapp.com",
+            databaseURL: "https://bu-progetti-speciali-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "bu-progetti-speciali"
+        };
+        firebase.initializeApp(firebaseConfig);
+        
+        firebase.auth().onAuthStateChanged((user) => {
+            if (!user) window.location.href = 'dashboard.html';
+        });
+    </script>
