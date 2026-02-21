@@ -390,7 +390,13 @@
                             name: userForm.name,
                             username: userForm.username,
                             role: userForm.role,
-                            createdAt: new Date().toISOString()
+                            createdAt: new Date().toISOString(),
+                            simulatori: {
+                                zes: false,
+                                agrisolare: false,
+                                iperammortamento: false
+                            },
+                            accessoOpportunita: false
                         });
                         
                         await db.ref(`usernames/${userForm.username}`).set({
