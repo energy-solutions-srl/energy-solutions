@@ -55,6 +55,14 @@
         th { background: #4CAF50; color: white; padding: 14px; text-align: left; font-size: 13px; font-weight: 700; }
         td { padding: 14px; border-top: 1px solid #ddd; }
         tr:hover { background: #f9f9f9; }
+        @keyframes slideIn {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(400px); opacity: 0; }
+        }
         @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -163,6 +171,10 @@
             });
             const [showDescModal, setShowDescModal] = useState(false);
             const [selectedDesc, setSelectedDesc] = useState('');
+            const [autoBackupEnabled, setAutoBackupEnabled] = useState(() => {
+                const saved = localStorage.getItem('autoBackupEnabled');
+                return saved !== null ? saved === 'true' : true; // Default: attivo
+            });
             const [form, setForm] = useState({
                 ragioneSociale: '', regione: '', provincia: '', indirizzo: '', cap: '', citta: '', telefono: '', tipologiaCliente: '',
                 nomeReferente: '', ruoloReferente: '', telReferente: '', emailReferente: '',
@@ -624,15 +636,18 @@
                 setTimeout(() => printWindow.print(), 250);
             };
 
-            const downloadBackup = async () => {
+            const downloadBackup = async (silent = false) => {
                 try {
                     const db = firebase.database();
                     
-                    // Mostra messaggio di attesa
-                    const loadingMsg = document.createElement('div');
-                    loadingMsg.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 9999; text-align: center;';
-                    loadingMsg.innerHTML = '<h3 style="color: #2E7D32; margin-bottom: 10px;">💾 Creazione Backup...</h3><p style="color: #666;">Attendere prego...</p>';
-                    document.body.appendChild(loadingMsg);
+                    // Mostra messaggio di attesa solo se non silenzioso
+                    let loadingMsg;
+                    if (!silent) {
+                        loadingMsg = document.createElement('div');
+                        loadingMsg.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 9999; text-align: center;';
+                        loadingMsg.innerHTML = '<h3 style="color: #2E7D32; margin-bottom: 10px;">💾 Creazione Backup...</h3><p style="color: #666;">Attendere prego...</p>';
+                        document.body.appendChild(loadingMsg);
+                    }
                     
                     // Scarica tutti i dati
                     const [usersSnap, oppsSnap] = await Promise.all([
@@ -644,8 +659,9 @@
                         metadata: {
                             dataBackup: new Date().toISOString(),
                             dataBackupLeggibile: new Date().toLocaleString('it-IT'),
-                            utenteBackup: user.name,
-                            versione: '1.0'
+                            utenteBackup: user?.name || 'Sistema Automatico',
+                            versione: '1.0',
+                            tipoBackup: silent ? 'automatico' : 'manuale'
                         },
                         users: usersSnap.val() || {},
                         opportunities: oppsSnap.val() || {},
@@ -670,17 +686,70 @@
                     document.body.removeChild(link);
                     URL.revokeObjectURL(url);
                     
+                    // Salva data ultimo backup
+                    localStorage.setItem('lastBackupDate', new Date().toISOString());
+                    
                     // Rimuovi messaggio di attesa
-                    document.body.removeChild(loadingMsg);
+                    if (!silent && loadingMsg) {
+                        document.body.removeChild(loadingMsg);
+                    }
                     
                     // Mostra conferma
-                    alert(`✅ Backup completato!\n\nFile: ${fileName}\n\nUtenti: ${backupData.statistiche.totaleUtenti}\nOpportunità: ${backupData.statistiche.totaleOpportunita}\n\nIl file è stato scaricato nella cartella Download.`);
+                    if (silent) {
+                        // Notifica discreta
+                        const notification = document.createElement('div');
+                        notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #4CAF50; color: white; padding: 16px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999; animation: slideIn 0.3s ease-out;';
+                        notification.innerHTML = `<strong>✅ Backup Automatico Completato</strong><br><small>${fileName}</small>`;
+                        document.body.appendChild(notification);
+                        setTimeout(() => {
+                            notification.style.animation = 'slideOut 0.3s ease-out';
+                            setTimeout(() => document.body.removeChild(notification), 300);
+                        }, 4000);
+                    } else {
+                        alert(`✅ Backup completato!\n\nFile: ${fileName}\n\nUtenti: ${backupData.statistiche.totaleUtenti}\nOpportunità: ${backupData.statistiche.totaleOpportunita}\n\nIl file è stato scaricato nella cartella Download.`);
+                    }
                     
                 } catch (error) {
                     console.error('Errore backup:', error);
-                    alert('❌ Errore durante il backup: ' + error.message);
+                    if (!silent) {
+                        alert('❌ Errore durante il backup: ' + error.message);
+                    }
                 }
             };
+
+            const checkAutoBackup = async () => {
+                if (!autoBackupEnabled || !user || user.role !== 'admin') return;
+                
+                const lastBackup = localStorage.getItem('lastBackupDate');
+                const now = new Date();
+                
+                if (!lastBackup) {
+                    // Primo backup
+                    console.log('🔄 Primo backup automatico...');
+                    await downloadBackup(true);
+                    return;
+                }
+                
+                const lastBackupDate = new Date(lastBackup);
+                const hoursSinceBackup = (now - lastBackupDate) / (1000 * 60 * 60);
+                
+                // Se sono passate più di 24 ore
+                if (hoursSinceBackup >= 24) {
+                    console.log(`🔄 Backup automatico (${Math.floor(hoursSinceBackup)}h dall'ultimo)`);
+                    await downloadBackup(true);
+                }
+            };
+
+            // Controlla backup automatico quando l'utente fa login
+            useEffect(() => {
+                if (user && user.role === 'admin') {
+                    // Aspetta 3 secondi dopo il login per non interferire con il caricamento
+                    const timer = setTimeout(() => {
+                        checkAutoBackup();
+                    }, 3000);
+                    return () => clearTimeout(timer);
+                }
+            }, [user, autoBackupEnabled]);
 
             const printTablePDF = () => {
                 const printContent = document.getElementById('summary-table-print');
@@ -863,7 +932,30 @@
                                 <button className="btn btn-green" onClick={() => setShowForm(true)}>+ Nuova Opportunità</button>
                             )}
                             {user.role === 'admin' && (
-                                <button className="btn btn-white" onClick={downloadBackup} style={{marginLeft: '10px'}}>💾 Backup Dati</button>
+                                <>
+                                    <button className="btn btn-white" onClick={downloadBackup}>💾 Backup Dati</button>
+                                    <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '10px', padding: '8px 12px', background: '#f0f9f4', borderRadius: '8px', border: '1px solid #4CAF50'}}>
+                                        <input 
+                                            type="checkbox" 
+                                            id="autoBackup" 
+                                            checked={autoBackupEnabled} 
+                                            onChange={(e) => {
+                                                const enabled = e.target.checked;
+                                                setAutoBackupEnabled(enabled);
+                                                localStorage.setItem('autoBackupEnabled', enabled);
+                                            }}
+                                            style={{cursor: 'pointer', width: '18px', height: '18px'}}
+                                        />
+                                        <label htmlFor="autoBackup" style={{cursor: 'pointer', margin: 0, fontSize: '13px', fontWeight: '600', color: '#2E7D32'}}>
+                                            Backup Automatico (ogni 24h)
+                                        </label>
+                                        <span style={{fontSize: '11px', color: '#666', marginLeft: '4px'}}>
+                                            {localStorage.getItem('lastBackupDate') ? 
+                                                `Ultimo: ${new Date(localStorage.getItem('lastBackupDate')).toLocaleDateString('it-IT')}` : 
+                                                'Mai eseguito'}
+                                        </span>
+                                    </div>
+                                </>
                             )}
                             <button className="btn btn-white" onClick={printTablePDF}>🖨️ Stampa Riepilogo</button>
                         </div>
