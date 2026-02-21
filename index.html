@@ -7,6 +7,7 @@
     
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -165,6 +166,28 @@
                             else setOpps([]);
                         });
 
+                        // Listener autenticazione Firebase
+                        firebase.auth().onAuthStateChanged(async (firebaseUser) => {
+                            if (firebaseUser) {
+                                // Utente autenticato, trova i suoi dati nel database
+                                const username = firebaseUser.email.replace('@energy.local', '');
+                                const usersData = await db.ref('users').once('value');
+                                const allUsers = usersData.val();
+                                if (allUsers) {
+                                    const usersList = Object.keys(allUsers).map(k => ({ id: k, ...allUsers[k] }));
+                                    const userData = usersList.find(u => u.username === username);
+                                    if (userData) {
+                                        setUser(userData);
+                                        setShowLogin(false);
+                                    }
+                                }
+                            } else {
+                                // Nessun utente autenticato
+                                setUser(null);
+                                setShowLogin(true);
+                            }
+                        });
+
                         setInitComplete(true);
                     } catch (error) {
                         console.error('Errore:', error);
@@ -174,7 +197,8 @@
                 init();
             }, []);
 
-            const doLogin = (e) => {
+
+            const doLogin = async (e) => {
                 e.preventDefault();
                 
                 if (users.length === 0) {
@@ -182,19 +206,52 @@
                     return;
                 }
                 
+                // Cerca utente nel database
                 const found = users.find(u => u.username === login.username && u.password === login.password);
                 
                 if (found) {
-                    // LOGIN DIRETTO
-                    if (login.remember) {
-                        localStorage.setItem('savedUsername', login.username);
-                        localStorage.setItem('savedPassword', login.password);
-                    } else {
-                        localStorage.removeItem('savedUsername');
-                        localStorage.removeItem('savedPassword');
+                    try {
+                        // Crea email fittizia per Firebase Auth (username@energy.local)
+                        const email = `${login.username}@energy.local`;
+                        const password = login.password;
+                        
+                        // Prova login Firebase Auth
+                        try {
+                            await firebase.auth().signInWithEmailAndPassword(email, password);
+                        } catch (authError) {
+                            // Se utente non esiste in Auth, crealo
+                            if (authError.code === 'auth/user-not-found') {
+                                await firebase.auth().createUserWithEmailAndPassword(email, password);
+                            } else if (authError.code === 'auth/wrong-password') {
+                                // Password cambiata nel database, aggiorna Auth
+                                // Per semplicità, richiedi re-login (in produzione gestire meglio)
+                                alert('⚠️ Errore sincronizzazione. Contatta amministratore.');
+                                return;
+                            } else {
+                                throw authError;
+                            }
+                        }
+                        
+                        // Salva credenziali se richiesto
+                        if (login.remember) {
+                            localStorage.setItem('savedUsername', login.username);
+                            localStorage.setItem('savedPassword', login.password);
+                        } else {
+                            localStorage.removeItem('savedUsername');
+                            localStorage.removeItem('savedPassword');
+                        }
+                        
+                        // Salva dati utente nello state
+                        setUser(found);
+                        setShowLogin(false);
+                    } catch (error) {
+                        console.error('Errore Firebase Auth:', error);
+                        alert('❌ Errore autenticazione: ' + error.message);
                     }
-                    
-                    setUser(found);
+                } else {
+                    alert('❌ Credenziali errate!');
+                }
+            };
                     setShowLogin(false);
                 } else {
                     alert('❌ Credenziali errate!');
@@ -661,7 +718,7 @@
                                 <h1 style={{fontSize: '20px', color: '#2E7D32'}}>Energy Solutions</h1>
                                 <p style={{fontSize: '14px', color: '#666'}}>{user.name} - {RUOLI[user.role]}</p>
                             </div>
-                            <button className="btn btn-white" onClick={() => { setUser(null); setShowLogin(true); }}>Esci</button>
+                            <button className="btn btn-white" onClick={async () => { await firebase.auth().signOut(); setUser(null); setShowLogin(true); }}>Esci</button>
                         </div>
                     </div>
 
