@@ -5,12 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Energy Solutions - Edison Business Partner</title>
     
-    <!-- Firebase versione BUNDLED - funziona anche offline -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-database-compat.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-auth-compat.min.js"></script>
-    
-    <!-- React -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -18,41 +15,8 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: #f0f9f4; }
-        .loading-screen { 
-            min-height: 100vh; 
-            display: flex; 
-            flex-direction: column;
-            align-items: center; 
-            justify-content: center; 
-            background: linear-gradient(135deg, #f0f9f4 0%, #c8e6c9 100%); 
-        }
+        .loading-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #f0f9f4 0%, #c8e6c9 100%); }
         .loading-screen h1 { color: #2E7D32; margin-bottom: 20px; }
-        .loading-screen p { color: #666; margin: 10px 0; }
-        .error-screen {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #fee;
-            padding: 20px;
-        }
-        .error-card {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            max-width: 600px;
-            border: 3px solid #f44336;
-        }
-        .error-card h2 { color: #f44336; margin-bottom: 20px; }
-        .error-card pre { 
-            background: #000; 
-            color: #0f0; 
-            padding: 15px; 
-            border-radius: 8px; 
-            overflow-x: auto; 
-            margin: 15px 0;
-            font-size: 12px;
-        }
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
         .btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
         .btn-green { background: #4CAF50; color: white; }
@@ -60,7 +24,6 @@
         .btn-white { background: white; color: #4CAF50; border: 2px solid #4CAF50; }
         .btn-white:hover { background: #f0f9f4; }
         .btn-red { background: #f44336; color: white; }
-        .btn-gray { background: #ddd; color: #666; }
         .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid #4CAF50; }
         .input { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; }
         .input:focus { outline: none; border-color: #4CAF50; }
@@ -68,7 +31,6 @@
         .mb { margin-bottom: 16px; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-        .section-title { font-size: 18px; font-weight: 700; color: #2E7D32; margin: 24px 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid #81C784; }
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; overflow-y: auto; }
         .modal-content { background: white; border-radius: 16px; padding: 24px; width: 95%; max-width: 900px; max-height: 90vh; overflow-y: auto; margin: 20px 0; }
         .badge { display: inline-block; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-right: 8px; }
@@ -83,10 +45,6 @@
         .logo h2 { font-size: 24px; margin: 0; font-weight: 700; }
         .logo p { font-size: 13px; margin: 8px 0 0 0; opacity: 0.95; }
         .header { background: white; border-bottom: 3px solid #4CAF50; padding: 16px; margin-bottom: 24px; }
-        .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-        .checkbox-item { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: #f5f5f5; border-radius: 6px; cursor: pointer; }
-        .checkbox-item input[type="checkbox"] { cursor: pointer; }
-        .checkbox-item:hover { background: #e8f5e9; }
         textarea { resize: vertical; font-family: Arial, sans-serif; min-height: 80px; }
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; }
         th { background: #4CAF50; color: white; padding: 14px; text-align: left; font-size: 13px; font-weight: 700; }
@@ -99,56 +57,9 @@
     <div id="root">
         <div class="loading-screen">
             <h1>⚡ Energy Solutions</h1>
-            <p>Caricamento in corso...</p>
-            <p style="font-size: 12px; color: #999; margin-top: 20px;">Se questa schermata persiste, controlla la console (F12)</p>
+            <p>Caricamento...</p>
         </div>
     </div>
-    
-    <script>
-        // Log di debug
-        console.log('🚀 Script iniziato');
-        
-        // Verifica Firebase
-        setTimeout(() => {
-            if (typeof firebase === 'undefined') {
-                document.getElementById('root').innerHTML = `
-                    <div class="error-screen">
-                        <div class="error-card">
-                            <h2>❌ Errore: Firebase non caricato</h2>
-                            <p><strong>Il browser non riesce a caricare Firebase.</strong></p>
-                            
-                            <h3 style="margin-top: 20px;">Possibili cause:</h3>
-                            <ul style="margin: 15px 0; padding-left: 20px;">
-                                <li>Estensioni browser (AdBlock, Privacy Badger, etc.)</li>
-                                <li>Firewall aziendale che blocca cdnjs.cloudflare.com</li>
-                                <li>Connessione internet instabile</li>
-                            </ul>
-                            
-                            <h3 style="margin-top: 20px;">Soluzioni:</h3>
-                            <ol style="margin: 15px 0; padding-left: 20px;">
-                                <li>Disattiva temporaneamente AdBlock/Privacy Badger</li>
-                                <li>Prova con un altro browser (Chrome, Firefox, Edge)</li>
-                                <li>Prova in modalità incognito</li>
-                                <li>Verifica la connessione internet</li>
-                                <li>Contatta l'IT se sei in rete aziendale</li>
-                            </ol>
-                            
-                            <button class="btn btn-green" onclick="window.location.reload()" style="margin-top: 20px;">
-                                🔄 Riprova
-                            </button>
-                            
-                            <h3 style="margin-top: 30px;">Debug Info:</h3>
-                            <pre>Firebase SDK: NON CARICATO
-User Agent: ${navigator.userAgent}
-URL: ${window.location.href}</pre>
-                        </div>
-                    </div>
-                `;
-            } else {
-                console.log('✅ Firebase caricato, inizializzo app...');
-            }
-        }, 2000);
-    </script>
     
     <script type="text/babel">
         const firebaseConfig = {
@@ -186,7 +97,6 @@ URL: ${window.location.href}</pre>
 
         function App() {
             const [initComplete, setInitComplete] = useState(false);
-            const [authUser, setAuthUser] = useState(null);
             const [user, setUser] = useState(null);
             const [users, setUsers] = useState([]);
             const [opps, setOpps] = useState([]);
@@ -214,10 +124,10 @@ URL: ${window.location.href}</pre>
                     console.log('🚀 Inizializzazione Firebase...');
                     
                     if (typeof firebase === 'undefined') {
-                        throw new Error('Firebase SDK non caricato. Verifica la connessione e riprova.');
+                        throw new Error('Firebase SDK non caricato');
                     }
                     
-                    const app = firebase.initializeApp(firebaseConfig);
+                    firebase.initializeApp(firebaseConfig);
                     const db = firebase.database();
                     setDbRef(db);
                     console.log('✅ Firebase inizializzato');
@@ -226,16 +136,27 @@ URL: ${window.location.href}</pre>
                         console.log('🔐 Auth state changed:', firebaseUser?.uid);
                         
                         if (firebaseUser) {
-                            setAuthUser(firebaseUser);
-                            
                             try {
+                                // ASPETTA che l'autenticazione sia completa
+                                await new Promise(resolve => setTimeout(resolve, 500));
+                                
+                                console.log('📊 Carico dati utente:', firebaseUser.uid);
                                 const userSnapshot = await db.ref(`users/${firebaseUser.uid}`).once('value');
                                 const userData = userSnapshot.val();
                                 
                                 if (userData) {
-                                    setUser({ ...userData, uid: firebaseUser.uid });
+                                    console.log('✅ Utente trovato:', userData.name);
+                                    const currentUser = { ...userData, uid: firebaseUser.uid };
+                                    setUser(currentUser);
                                     setShowLogin(false);
-                                    loadData(db, { ...userData, uid: firebaseUser.uid });
+                                    
+                                    // Carica opportunità
+                                    loadOpportunities(db);
+                                    
+                                    // Carica utenti SOLO se admin E DOPO un delay
+                                    if (currentUser.role === 'admin') {
+                                        setTimeout(() => loadUsers(db), 1000);
+                                    }
                                 } else {
                                     console.error('❌ Utente non trovato nel database');
                                     setError('Utente non trovato nel database');
@@ -247,7 +168,6 @@ URL: ${window.location.href}</pre>
                                 await firebase.auth().signOut();
                             }
                         } else {
-                            setAuthUser(null);
                             setUser(null);
                             setShowLogin(true);
                         }
@@ -257,37 +177,40 @@ URL: ${window.location.href}</pre>
 
                     return () => unsubscribe();
                 } catch (err) {
-                    console.error('❌ Errore inizializzazione Firebase:', err);
+                    console.error('❌ Errore inizializzazione:', err);
                     setError(err.message);
                     setInitComplete(true);
                 }
             }, []);
 
-            const loadData = async (db, currentUser) => {
+            const loadOpportunities = async (db) => {
                 try {
-                    console.log('📊 Caricamento dati...');
-                    
-                    const oppsSnapshot = await db.ref('opportunita').once('value');
+                    console.log('📋 Caricamento opportunità...');
+                    const oppsSnapshot = await db.ref('opportunities').once('value');
                     const oppsData = [];
                     oppsSnapshot.forEach(child => {
                         oppsData.push({ id: child.key, ...child.val() });
                     });
-                    
                     console.log(`✅ Caricate ${oppsData.length} opportunità`);
                     setOpps(oppsData);
-
-                    if (currentUser.role === 'admin') {
-                        const usersSnapshot = await db.ref('users').once('value');
-                        const usersData = [];
-                        usersSnapshot.forEach(child => {
-                            usersData.push({ uid: child.key, ...child.val() });
-                        });
-                        console.log(`✅ Caricati ${usersData.length} utenti`);
-                        setUsers(usersData);
-                    }
                 } catch (err) {
-                    console.error('❌ Errore caricamento dati:', err);
-                    setError(`Errore caricamento dati: ${err.message}`);
+                    console.error('❌ Errore caricamento opportunità:', err);
+                }
+            };
+
+            const loadUsers = async (db) => {
+                try {
+                    console.log('👥 Caricamento utenti (admin)...');
+                    const usersSnapshot = await db.ref('users').once('value');
+                    const usersData = [];
+                    usersSnapshot.forEach(child => {
+                        usersData.push({ uid: child.key, ...child.val() });
+                    });
+                    console.log(`✅ Caricati ${usersData.length} utenti`);
+                    setUsers(usersData);
+                } catch (err) {
+                    console.error('❌ Errore caricamento utenti:', err);
+                    console.error('Questo è normale se non sei admin');
                 }
             };
 
@@ -296,29 +219,26 @@ URL: ${window.location.href}</pre>
                 setError(null);
                 
                 try {
-                    console.log('🔑 Tentativo login...');
+                    console.log('🔑 Tentativo login con username:', login.username);
                     
-                    const usersSnapshot = await dbRef.ref('users').once('value');
-                    let foundUser = null;
+                    const usernameSnapshot = await dbRef.ref(`usernames/${login.username}`).once('value');
+                    const usernameData = usernameSnapshot.val();
                     
-                    usersSnapshot.forEach(child => {
-                        const userData = child.val();
-                        if (userData.username === login.username && userData.password === login.password) {
-                            foundUser = { uid: child.key, ...userData };
-                        }
-                    });
-
-                    if (!foundUser) {
-                        throw new Error('Username o password errati');
+                    if (!usernameData || !usernameData.uid) {
+                        throw new Error('Username non trovato');
                     }
-
+                    
+                    const uid = usernameData.uid;
+                    console.log('✅ Username trovato, UID:', uid);
+                    
                     const email = `${login.username}@energy-solutions.local`;
                     
                     try {
                         await firebase.auth().signInWithEmailAndPassword(email, login.password);
+                        console.log('✅ Autenticazione riuscita');
                     } catch (authError) {
                         if (authError.code === 'auth/user-not-found') {
-                            console.log('Creating new auth user...');
+                            console.log('Creazione utente in Authentication...');
                             await firebase.auth().createUserWithEmailAndPassword(email, login.password);
                         } else if (authError.code === 'auth/wrong-password') {
                             throw new Error('Password errata');
@@ -327,7 +247,7 @@ URL: ${window.location.href}</pre>
                         }
                     }
 
-                    console.log('✅ Login riuscito');
+                    console.log('✅ Login completato');
                 } catch (err) {
                     console.error('❌ Errore login:', err);
                     setError(err.message);
@@ -343,7 +263,6 @@ URL: ${window.location.href}</pre>
                     setShowLogin(true);
                 } catch (err) {
                     console.error('❌ Errore logout:', err);
-                    setError(err.message);
                 }
             };
 
@@ -362,14 +281,14 @@ URL: ${window.location.href}</pre>
                     data.creatorName = user.name;
                     
                     if (editOpp) {
-                        await dbRef.ref(`opportunita/${editOpp.id}`).update(data);
+                        await dbRef.ref(`opportunities/${editOpp.id}`).update(data);
                     } else {
-                        await dbRef.ref('opportunita').push(data);
+                        await dbRef.ref('opportunities').push(data);
                     }
                     
                     setShowForm(false);
                     setEditOpp(null);
-                    loadData(dbRef, user);
+                    loadOpportunities(dbRef);
                 } catch (err) {
                     console.error('❌ Errore salvataggio:', err);
                     setError(err.message);
@@ -380,8 +299,8 @@ URL: ${window.location.href}</pre>
                 if (!confirm('Sei sicuro di voler eliminare questa opportunità?')) return;
                 
                 try {
-                    await dbRef.ref(`opportunita/${id}`).remove();
-                    loadData(dbRef, user);
+                    await dbRef.ref(`opportunities/${id}`).remove();
+                    loadOpportunities(dbRef);
                 } catch (err) {
                     console.error('❌ Errore eliminazione:', err);
                     setError(err.message);
@@ -399,8 +318,7 @@ URL: ${window.location.href}</pre>
                         await dbRef.ref(`users/${editUser.uid}`).update({
                             name: userForm.name,
                             username: userForm.username,
-                            role: userForm.role,
-                            password: userForm.password
+                            role: userForm.role
                         });
                     } else {
                         const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, userForm.password);
@@ -409,17 +327,23 @@ URL: ${window.location.href}</pre>
                             name: userForm.name,
                             username: userForm.username,
                             role: userForm.role,
-                            password: userForm.password,
                             createdAt: Date.now()
                         });
                         
-                        await firebase.auth().updateCurrentUser(authUser);
+                        await dbRef.ref(`usernames/${userForm.username}`).set({
+                            uid: userCredential.user.uid
+                        });
+                        
+                        const currentAuthUser = firebase.auth().currentUser;
+                        if (currentAuthUser && currentAuthUser.uid !== userCredential.user.uid) {
+                            await firebase.auth().updateCurrentUser(currentAuthUser);
+                        }
                     }
                     
                     setShowUserForm(false);
                     setEditUser(null);
                     setUserForm({ username: '', password: '', name: '', role: 'agenzia' });
-                    loadData(dbRef, user);
+                    loadUsers(dbRef);
                 } catch (err) {
                     console.error('❌ Errore salvataggio utente:', err);
                     setError(err.message);
@@ -430,10 +354,17 @@ URL: ${window.location.href}</pre>
                 if (!confirm('Sei sicuro di voler eliminare questo utente?')) return;
                 
                 try {
+                    const userSnapshot = await dbRef.ref(`users/${uid}`).once('value');
+                    const userData = userSnapshot.val();
+                    
+                    if (userData && userData.username) {
+                        await dbRef.ref(`usernames/${userData.username}`).remove();
+                    }
+                    
                     await dbRef.ref(`users/${uid}`).remove();
-                    loadData(dbRef, user);
+                    loadUsers(dbRef);
                 } catch (err) {
-                    console.error('❌ Errore eliminazione utente:', err);
+                    console.error('❌ Errore eliminazione:', err);
                     setError(err.message);
                 }
             };
@@ -466,14 +397,17 @@ URL: ${window.location.href}</pre>
                 );
             }
 
-            if (error) {
+            if (error && !user) {
                 return (
-                    <div className="error-screen">
-                        <div className="error-card">
-                            <h2>⚠️ Errore</h2>
+                    <div className="loading-screen">
+                        <div style={{background: 'white', padding: '30px', borderRadius: '12px', maxWidth: '500px', border: '3px solid #f44'}}>
+                            <h2 style={{color: '#f44', marginBottom: '15px'}}>⚠️ Errore</h2>
                             <p>{error}</p>
-                            <button className="btn btn-green" onClick={() => window.location.reload()} style={{marginTop: '10px'}}>
-                                Ricarica Pagina
+                            <button className="btn btn-green" onClick={() => {
+                                setError(null);
+                                window.location.reload();
+                            }} style={{marginTop: '15px'}}>
+                                Ricarica
                             </button>
                         </div>
                     </div>
@@ -488,6 +422,18 @@ URL: ${window.location.href}</pre>
                                 <h2>⚡ Energy Solutions</h2>
                                 <p>Edison Business Partner</p>
                             </div>
+                            {error && (
+                                <div style={{
+                                    background: '#fee', 
+                                    border: '2px solid #f44', 
+                                    padding: '12px', 
+                                    borderRadius: '8px',
+                                    marginBottom: '16px',
+                                    color: '#c00'
+                                }}>
+                                    {error}
+                                </div>
+                            )}
                             <form onSubmit={handleLogin}>
                                 <div className="mb">
                                     <label className="label">Username</label>
@@ -516,7 +462,7 @@ URL: ${window.location.href}</pre>
                                         onChange={e => setLogin({...login, remember: e.target.checked})}
                                         id="remember"
                                     />
-                                    <label htmlFor="remember" style={{margin: 0, cursor: 'pointer'}}>Ricordami</label>
+                                    <label htmlFor="remember" style={{margin: 0, cursor: 'pointer', fontSize: '14px'}}>Ricordami</label>
                                 </div>
                                 <button type="submit" className="btn btn-green" style={{width: '100%'}}>
                                     Accedi
@@ -538,6 +484,20 @@ URL: ${window.location.href}</pre>
                             <button className="btn btn-red" onClick={handleLogout}>Esci</button>
                         </div>
                     </div>
+
+                    {error && (
+                        <div style={{
+                            background: '#fee', 
+                            border: '2px solid #f44', 
+                            padding: '16px', 
+                            borderRadius: '8px',
+                            marginBottom: '16px',
+                            color: '#c00'
+                        }}>
+                            {error}
+                            <button onClick={() => setError(null)} style={{marginLeft: '10px', cursor: 'pointer'}}>✕</button>
+                        </div>
+                    )}
 
                     <div className="card">
                         <div className="grid-3">
@@ -751,7 +711,7 @@ URL: ${window.location.href}</pre>
                                         <div className="grid-2">
                                             <div className="mb">
                                                 <label className="label">Password *</label>
-                                                <input type="password" className="input" value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} required />
+                                                <input type="password" className="input" value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} required={!editUser} />
                                             </div>
                                             <div className="mb">
                                                 <label className="label">Ruolo *</label>
@@ -800,7 +760,7 @@ URL: ${window.location.href}</pre>
                                                                 setUserForm({
                                                                     name: u.name,
                                                                     username: u.username,
-                                                                    password: u.password,
+                                                                    password: '',
                                                                     role: u.role
                                                                 });
                                                             }}
@@ -833,28 +793,7 @@ URL: ${window.location.href}</pre>
             );
         }
 
-        window.addEventListener('error', (event) => {
-            console.error('❌ Errore globale:', event.error);
-        });
-
-        window.addEventListener('unhandledrejection', (event) => {
-            console.error('❌ Promise non gestita:', event.reason);
-        });
-
-        try {
-            ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-        } catch (error) {
-            console.error('❌ Errore render React:', error);
-            document.getElementById('root').innerHTML = `
-                <div class="error-screen">
-                    <div class="error-card">
-                        <h2>❌ Errore Rendering</h2>
-                        <p>${error.message}</p>
-                        <pre>${error.stack}</pre>
-                    </div>
-                </div>
-            `;
-        }
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>
 </body>
 </html>
