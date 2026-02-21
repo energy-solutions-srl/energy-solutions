@@ -116,6 +116,28 @@
             'Valle d\'Aosta': ['Aosta'],
             'Veneto': ['Belluno', 'Padova', 'Rovigo', 'Treviso', 'Venezia', 'Verona', 'Vicenza']
         };
+        const COLORI_REGIONI = {
+            'Abruzzo': '#E53935',           // Rosso
+            'Basilicata': '#8E24AA',        // Viola
+            'Calabria': '#00ACC1',          // Cyan
+            'Campania': '#FB8C00',          // Arancione
+            'Emilia-Romagna': '#D32F2F',    // Rosso scuro
+            'Friuli-Venezia Giulia': '#1976D2', // Blu
+            'Lazio': '#FFB300',             // Giallo oro
+            'Liguria': '#0097A7',           // Turchese
+            'Lombardia': '#388E3C',         // Verde
+            'Marche': '#7B1FA2',            // Viola scuro
+            'Molise': '#5D4037',            // Marrone
+            'Piemonte': '#C62828',          // Rosso bordeaux
+            'Puglia': '#F57C00',            // Arancione scuro
+            'Sardegna': '#0288D1',          // Blu cielo
+            'Sicilia': '#FFA000',           // Ambra
+            'Toscana': '#7CB342',           // Verde chiaro
+            'Trentino-Alto Adige': '#1565C0', // Blu reale
+            'Umbria': '#689F38',            // Verde oliva
+            'Valle d\'Aosta': '#5E35B1',    // Indaco
+            'Veneto': '#E64A19'             // Rosso arancio
+        };
 
         function App() {
             const [initComplete, setInitComplete] = useState(false);
@@ -859,10 +881,15 @@
                             <div className="card" key={o.id} style={{borderLeft: `6px solid ${o.stato === 'CALDA' ? '#FEF3C7' : o.stato === 'FREDDA' ? '#DBEAFE' : o.stato === 'KO' ? '#FEE2E2' : '#D1FAE5'}`, padding: '16px', marginBottom: '12px'}}>
                                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '10px'}}>
                                     <div style={{flex: 1}}>
-                                        <h3 style={{fontSize: '18px', marginBottom: '4px', color: '#2E7D32', display: 'flex', alignItems: 'center', gap: '8px'}}>
-                                            🏢 {o.ragioneSociale}
+                                        <h3 style={{fontSize: '18px', marginBottom: '4px', color: '#2E7D32', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap'}}>
+                                            <span>🏢 {o.ragioneSociale}</span>
                                             {(o.regione || o.regioneIntervento) && (
-                                                <span style={{fontSize: '14px', color: '#FF9800', fontWeight: '600'}}>
+                                                <span style={{
+                                                    fontSize: '16px', 
+                                                    color: COLORI_REGIONI[o.regione || o.regioneIntervento] || '#FF9800', 
+                                                    fontWeight: '700',
+                                                    letterSpacing: '0.5px'
+                                                }}>
                                                     {o.regione || o.regioneIntervento}
                                                 </span>
                                             )}
