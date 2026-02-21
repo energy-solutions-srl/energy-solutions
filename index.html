@@ -208,9 +208,40 @@
                                     const userData = userSnapshot.val();
                                     
                                     if (userData) {
-                                        // Redirect a dashboard dopo login
-                                        window.location.href = 'dashboard.html';
-                                        return;
+                                        // Check se arriva da dashboard (parametro URL ?from=dashboard)
+                                        const urlParams = new URLSearchParams(window.location.search);
+                                        const fromDashboard = urlParams.get('from') === 'dashboard';
+                                        
+                                        if (!fromDashboard && !sessionStorage.getItem('visitedDashboard')) {
+                                            // Primo login → vai a dashboard
+                                            window.location.href = 'dashboard.html';
+                                            return;
+                                        }
+                                        
+                                        // Già passato da dashboard o arriva con parametro → carica opportunità
+                                        sessionStorage.setItem('visitedDashboard', 'true');
+                                        setUser({ ...userData, id: firebaseUser.uid });
+                                        setShowLogin(false);
+                                        
+                                        // Carica opportunità
+                                        db.ref('opportunities').on('value', snap => {
+                                            const data = snap.val();
+                                            if (data) setOpps(Object.keys(data).map(k => ({ id: k, ...data[k] })));
+                                            else setOpps([]);
+                                        });
+                                        
+                                        // Carica utenti SOLO se admin
+                                        if (userData.role === 'admin') {
+                                            setTimeout(async () => {
+                                                try {
+                                                    const usersSnap = await db.ref('users').once('value');
+                                                    const data = usersSnap.val();
+                                                    if (data) setUsers(Object.keys(data).map(k => ({ id: k, ...data[k] })));
+                                                } catch (err) {
+                                                    console.error('Errore caricamento utenti:', err);
+                                                }
+                                            }, 1000);
+                                        }
                                     } else {
                                         await firebase.auth().signOut();
                                     }
@@ -904,8 +935,8 @@
                                 <p style={{fontSize: '14px', color: '#666'}}>{user.name} - {RUOLI[user.role]}</p>
                             </div>
                             <div style={{display: 'flex', gap: '10px'}}>
-                                <button className="btn btn-white" onClick={() => window.location.href = 'dashboard.html'}>← Dashboard</button>
-                                <button className="btn btn-white" onClick={async () => { await firebase.auth().signOut(); setUser(null); setShowLogin(true); }}>Esci</button>
+                                <button className="btn btn-white" onClick={() => { sessionStorage.removeItem('visitedDashboard'); window.location.href = 'dashboard.html'; }}>← Dashboard</button>
+                                <button className="btn btn-white" onClick={async () => { await firebase.auth().signOut(); sessionStorage.clear(); setUser(null); setShowLogin(true); }}>Esci</button>
                             </div>
                         </div>
                     </div>
