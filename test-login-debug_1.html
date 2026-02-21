@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Login Debug</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-database-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-auth-compat.min.js"></script>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #0f0; }
+        .log { padding: 10px; margin: 5px 0; background: #2a2a2a; border-left: 4px solid #0f0; }
+        .error { background: #3a0000; border-left: 4px solid #f00; color: #f00; }
+        .success { background: #003a00; border-left: 4px solid #0f0; }
+        input, button { padding: 10px; margin: 5px; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 TEST LOGIN DEBUG</h1>
+    
+    <div style="background: #333; padding: 20px; margin: 20px 0; border-radius: 8px;">
+        <h3>Login:</h3>
+        Username: <input id="username" value="admin" /><br>
+        Password: <input id="password" type="password" value="Admin123!" /><br>
+        <button onclick="testLogin()">TEST LOGIN</button>
+    </div>
+    
+    <div id="logs"></div>
+    
+    <script>
+        const output = document.getElementById('logs');
+        
+        function log(msg, type = 'log') {
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            output.appendChild(div);
+            console.log(msg);
+        }
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyAPdXkLXzz4zjScQX3_buEXGi2OytRfH2o",
+            authDomain: "bu-progetti-speciali.firebaseapp.com",
+            databaseURL: "https://bu-progetti-speciali-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "bu-progetti-speciali",
+            storageBucket: "bu-progetti-speciali.firebasestorage.app",
+            messagingSenderId: "86623187511",
+            appId: "1:86623187511:web:2a093d51719b458b4ec5b2"
+        };
+        
+        log('Inizializzazione Firebase...');
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        log('✅ Firebase OK', 'success');
+        
+        async function testLogin() {
+            output.innerHTML = '<h2>📋 INIZIO TEST</h2>';
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                // STEP 1: Leggi usernames/<username>
+                log(`STEP 1: Leggo usernames/${username}...`);
+                const usernameRef = db.ref(`usernames/${username}`);
+                const usernameSnap = await usernameRef.once('value');
+                const usernameData = usernameSnap.val();
+                
+                if (!usernameData) {
+                    throw new Error('❌ Username non trovato in usernames/');
+                }
+                
+                log(`✅ Username trovato! UID: ${usernameData.uid}`, 'success');
+                
+                // STEP 2: Autenticazione Firebase
+                log(`STEP 2: Autenticazione Firebase...`);
+                const email = `${username}@energy-solutions.local`;
+                log(`Email generata: ${email}`);
+                
+                try {
+                    await firebase.auth().signInWithEmailAndPassword(email, password);
+                    log('✅ Login Firebase Auth riuscito!', 'success');
+                } catch (authErr) {
+                    if (authErr.code === 'auth/user-not-found') {
+                        log('⚠️ Utente non trovato in Auth, lo creo...');
+                        await firebase.auth().createUserWithEmailAndPassword(email, password);
+                        log('✅ Utente creato in Auth!', 'success');
+                    } else {
+                        throw authErr;
+                    }
+                }
+                
+                // STEP 3: Aspetta che auth sia completato
+                log('STEP 3: Attendo conferma autenticazione...');
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                const currentUser = firebase.auth().currentUser;
+                if (!currentUser) {
+                    throw new Error('❌ Nessun utente autenticato!');
+                }
+                log(`✅ Utente autenticato: ${currentUser.uid}`, 'success');
+                
+                // STEP 4: Leggi dati utente da database
+                log(`STEP 4: Leggo users/${currentUser.uid}...`);
+                const userRef = db.ref(`users/${currentUser.uid}`);
+                const userSnap = await userRef.once('value');
+                const userData = userSnap.val();
+                
+                if (!userData) {
+                    throw new Error('❌ Dati utente non trovati in database!');
+                }
+                
+                log(`✅ Dati utente caricati!`, 'success');
+                log(`Nome: ${userData.name}`, 'success');
+                log(`Role: ${userData.role}`, 'success');
+                
+                // STEP 5: Se admin, prova a leggere tutti gli utenti
+                if (userData.role === 'admin') {
+                    log(`STEP 5: Sono admin, provo a leggere /users...`);
+                    const allUsersRef = db.ref('users');
+                    const allUsersSnap = await allUsersRef.once('value');
+                    log(`✅ Lettura /users OK! Trovati ${allUsersSnap.numChildren()} utenti`, 'success');
+                }
+                
+                log('', 'success');
+                log('🎉🎉🎉 LOGIN COMPLETATO CON SUCCESSO! 🎉🎉🎉', 'success');
+                
+            } catch (err) {
+                log(`❌ ERRORE: ${err.message}`, 'error');
+                log(`Codice: ${err.code}`, 'error');
+                log(`Stack: ${err.stack}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
