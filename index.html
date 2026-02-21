@@ -94,6 +94,28 @@
             'interno': 'Interno',
             'visualizzatore': 'Visualizzatore'
         };
+        const REGIONI_PROVINCE = {
+            'Abruzzo': ['Chieti', 'L\'Aquila', 'Pescara', 'Teramo'],
+            'Basilicata': ['Matera', 'Potenza'],
+            'Calabria': ['Catanzaro', 'Cosenza', 'Crotone', 'Reggio Calabria', 'Vibo Valentia'],
+            'Campania': ['Avellino', 'Benevento', 'Caserta', 'Napoli', 'Salerno'],
+            'Emilia-Romagna': ['Bologna', 'Ferrara', 'Forlì-Cesena', 'Modena', 'Parma', 'Piacenza', 'Ravenna', 'Reggio Emilia', 'Rimini'],
+            'Friuli-Venezia Giulia': ['Gorizia', 'Pordenone', 'Trieste', 'Udine'],
+            'Lazio': ['Frosinone', 'Latina', 'Rieti', 'Roma', 'Viterbo'],
+            'Liguria': ['Genova', 'Imperia', 'La Spezia', 'Savona'],
+            'Lombardia': ['Bergamo', 'Brescia', 'Como', 'Cremona', 'Lecco', 'Lodi', 'Mantova', 'Milano', 'Monza e Brianza', 'Pavia', 'Sondrio', 'Varese'],
+            'Marche': ['Ancona', 'Ascoli Piceno', 'Fermo', 'Macerata', 'Pesaro e Urbino'],
+            'Molise': ['Campobasso', 'Isernia'],
+            'Piemonte': ['Alessandria', 'Asti', 'Biella', 'Cuneo', 'Novara', 'Torino', 'Verbano-Cusio-Ossola', 'Vercelli'],
+            'Puglia': ['Bari', 'Barletta-Andria-Trani', 'Brindisi', 'Foggia', 'Lecce', 'Taranto'],
+            'Sardegna': ['Cagliari', 'Nuoro', 'Oristano', 'Sassari', 'Sud Sardegna'],
+            'Sicilia': ['Agrigento', 'Caltanissetta', 'Catania', 'Enna', 'Messina', 'Palermo', 'Ragusa', 'Siracusa', 'Trapani'],
+            'Toscana': ['Arezzo', 'Firenze', 'Grosseto', 'Livorno', 'Lucca', 'Massa-Carrara', 'Pisa', 'Pistoia', 'Prato', 'Siena'],
+            'Trentino-Alto Adige': ['Bolzano', 'Trento'],
+            'Umbria': ['Perugia', 'Terni'],
+            'Valle d\'Aosta': ['Aosta'],
+            'Veneto': ['Belluno', 'Padova', 'Rovigo', 'Treviso', 'Venezia', 'Verona', 'Vicenza']
+        };
 
         function App() {
             const [initComplete, setInitComplete] = useState(false);
@@ -113,16 +135,17 @@
                 ruolo: '', 
                 tipologiaIntervento: '',
                 stato: '',
+                regione: '',
                 dataInizio: '',
                 dataFine: ''
             });
             const [showDescModal, setShowDescModal] = useState(false);
             const [selectedDesc, setSelectedDesc] = useState('');
             const [form, setForm] = useState({
-                ragioneSociale: '', indirizzo: '', cap: '', citta: '', telefono: '', tipologiaCliente: '',
+                ragioneSociale: '', regione: '', provincia: '', indirizzo: '', cap: '', citta: '', telefono: '', tipologiaCliente: '',
                 nomeReferente: '', ruoloReferente: '', telReferente: '', emailReferente: '',
-                viaIntervento: '', numeroIntervento: '', capIntervento: '', cittaIntervento: '',
-                hasTecnico: 'no', nomeStudioTecnico: '', referenteStudio: '', indirizzoStudio: '', telefonoStudio: '', emailStudio: '',
+                regioneIntervento: '', provinciaIntervento: '', viaIntervento: '', numeroIntervento: '', capIntervento: '', cittaIntervento: '',
+                hasTecnico: 'no', regioneStudio: '', provinciaStudio: '', nomeStudioTecnico: '', referenteStudio: '', indirizzoStudio: '', telefonoStudio: '', emailStudio: '',
                 tipologiaIntervento: '', vociSelezionate: [], livelloOperativo: '', descrizioneIntervento: '', importoPresunto: '', stato: 'CALDA',
                 possibileContrattualizzazione: 'entro 3 mesi', tipoIntervento: 'SINGOLO'
             });
@@ -264,10 +287,10 @@
                 setShowForm(false);
                 setEditOpp(null);
                 setForm({
-                    ragioneSociale: '', indirizzo: '', cap: '', citta: '', telefono: '', tipologiaCliente: '',
+                    ragioneSociale: '', regione: '', provincia: '', indirizzo: '', cap: '', citta: '', telefono: '', tipologiaCliente: '',
                     nomeReferente: '', ruoloReferente: '', telReferente: '', emailReferente: '',
-                    viaIntervento: '', numeroIntervento: '', capIntervento: '', cittaIntervento: '',
-                    hasTecnico: 'no', nomeStudioTecnico: '', referenteStudio: '', indirizzoStudio: '', telefonoStudio: '', emailStudio: '',
+                    regioneIntervento: '', provinciaIntervento: '', viaIntervento: '', numeroIntervento: '', capIntervento: '', cittaIntervento: '',
+                    hasTecnico: 'no', regioneStudio: '', provinciaStudio: '', nomeStudioTecnico: '', referenteStudio: '', indirizzoStudio: '', telefonoStudio: '', emailStudio: '',
                     tipologiaIntervento: '', vociSelezionate: [], livelloOperativo: '', descrizioneIntervento: '', importoPresunto: '', stato: 'CALDA',
                     possibileContrattualizzazione: 'entro 3 mesi', tipoIntervento: 'SINGOLO'
                 });
@@ -674,6 +697,9 @@
                 if (filters.tipologiaIntervento) {
                     filtered = filtered.filter(o => o.tipologiaIntervento === filters.tipologiaIntervento);
                 }
+                if (filters.regione) {
+                    filtered = filtered.filter(o => o.regione === filters.regione || o.regioneIntervento === filters.regione);
+                }
                 if (filters.stato) {
                     filtered = filtered.filter(o => o.stato === filters.stato);
                 }
@@ -787,6 +813,13 @@
                                     <select className="input" value={filters.tipologiaIntervento} onChange={e => setFilters({...filters, tipologiaIntervento: e.target.value})}>
                                         <option value="">Tutte</option>
                                         {Object.keys(TIPOLOGIE_INTERVENTO).map(k => <option key={k} value={k}>{TIPOLOGIE_INTERVENTO[k].label}</option>)}
+                                    </select>
+                                </div>
+                                <div className="mb">
+                                    <label className="label">Regione</label>
+                                    <select className="input" value={filters.regione} onChange={e => setFilters({...filters, regione: e.target.value})}>
+                                        <option value="">Tutte</option>
+                                        {Object.keys(REGIONI_PROVINCE).map(r => <option key={r} value={r}>{r}</option>)}
                                     </select>
                                 </div>
                                 <div className="mb">
@@ -1106,6 +1139,22 @@
                                     </div>
                                     <div className="grid-2">
                                         <div className="mb">
+                                            <label className="label">Regione</label>
+                                            <select className="input" value={form.regione} onChange={e => setForm({...form, regione: e.target.value, provincia: ''})}>
+                                                <option value="">Seleziona regione...</option>
+                                                {Object.keys(REGIONI_PROVINCE).map(r => <option key={r} value={r}>{r}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">Provincia</label>
+                                            <select className="input" value={form.provincia} onChange={e => setForm({...form, provincia: e.target.value})} disabled={!form.regione}>
+                                                <option value="">Seleziona provincia...</option>
+                                                {form.regione && REGIONI_PROVINCE[form.regione].map(p => <option key={p} value={p}>{p}</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="grid-2">
+                                        <div className="mb">
                                             <label className="label">Indirizzo</label>
                                             <input className="input" value={form.indirizzo} onChange={e => setForm({...form, indirizzo: e.target.value})} />
                                         </div>
@@ -1155,6 +1204,22 @@
                                     </div>
 
                                     <div className="section-title">📍 Ubicazione Intervento</div>
+                                    <div className="grid-2">
+                                        <div className="mb">
+                                            <label className="label">Regione Intervento</label>
+                                            <select className="input" value={form.regioneIntervento} onChange={e => setForm({...form, regioneIntervento: e.target.value, provinciaIntervento: ''})}>
+                                                <option value="">Seleziona regione...</option>
+                                                {Object.keys(REGIONI_PROVINCE).map(r => <option key={r} value={r}>{r}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">Provincia Intervento</label>
+                                            <select className="input" value={form.provinciaIntervento} onChange={e => setForm({...form, provinciaIntervento: e.target.value})} disabled={!form.regioneIntervento}>
+                                                <option value="">Seleziona provincia...</option>
+                                                {form.regioneIntervento && REGIONI_PROVINCE[form.regioneIntervento].map(p => <option key={p} value={p}>{p}</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
                                     <div className="grid-3">
                                         <div className="mb">
                                             <label className="label">Via</label>
@@ -1187,6 +1252,22 @@
                                             <div className="mb">
                                                 <label className="label">Nome Studio Tecnico</label>
                                                 <input className="input" value={form.nomeStudioTecnico} onChange={e => setForm({...form, nomeStudioTecnico: e.target.value})} />
+                                            </div>
+                                            <div className="grid-2">
+                                                <div className="mb">
+                                                    <label className="label">Regione Studio</label>
+                                                    <select className="input" value={form.regioneStudio} onChange={e => setForm({...form, regioneStudio: e.target.value, provinciaStudio: ''})}>
+                                                        <option value="">Seleziona regione...</option>
+                                                        {Object.keys(REGIONI_PROVINCE).map(r => <option key={r} value={r}>{r}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div className="mb">
+                                                    <label className="label">Provincia Studio</label>
+                                                    <select className="input" value={form.provinciaStudio} onChange={e => setForm({...form, provinciaStudio: e.target.value})} disabled={!form.regioneStudio}>
+                                                        <option value="">Seleziona provincia...</option>
+                                                        {form.regioneStudio && REGIONI_PROVINCE[form.regioneStudio].map(p => <option key={p} value={p}>{p}</option>)}
+                                                    </select>
+                                                </div>
                                             </div>
                                             <div className="grid-2">
                                                 <div className="mb">
