@@ -208,28 +208,9 @@
                                     const userData = userSnapshot.val();
                                     
                                     if (userData) {
-                                        setUser({ ...userData, id: firebaseUser.uid });
-                                        setShowLogin(false);
-                                        
-                                        // Carica opportunità
-                                        db.ref('opportunities').on('value', snap => {
-                                            const data = snap.val();
-                                            if (data) setOpps(Object.keys(data).map(k => ({ id: k, ...data[k] })));
-                                            else setOpps([]);
-                                        });
-                                        
-                                        // Carica utenti SOLO se admin
-                                        if (userData.role === 'admin') {
-                                            setTimeout(async () => {
-                                                try {
-                                                    const usersSnap = await db.ref('users').once('value');
-                                                    const data = usersSnap.val();
-                                                    if (data) setUsers(Object.keys(data).map(k => ({ id: k, ...data[k] })));
-                                                } catch (err) {
-                                                    console.error('Errore caricamento utenti:', err);
-                                                }
-                                            }, 1000);
-                                        }
+                                        // Redirect a dashboard dopo login
+                                        window.location.href = 'dashboard.html';
+                                        return;
                                     } else {
                                         await firebase.auth().signOut();
                                     }
@@ -919,10 +900,13 @@
                     <div className="header">
                         <div className="container" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                             <div>
-                                <h1 style={{fontSize: '20px', color: '#2E7D32'}}>Energy Solutions</h1>
+                                <h1 style={{fontSize: '20px', color: '#2E7D32'}}>Energy Solutions - Opportunità</h1>
                                 <p style={{fontSize: '14px', color: '#666'}}>{user.name} - {RUOLI[user.role]}</p>
                             </div>
-                            <button className="btn btn-white" onClick={async () => { await firebase.auth().signOut(); setUser(null); setShowLogin(true); }}>Esci</button>
+                            <div style={{display: 'flex', gap: '10px'}}>
+                                <button className="btn btn-white" onClick={() => window.location.href = 'dashboard.html'}>← Dashboard</button>
+                                <button className="btn btn-white" onClick={async () => { await firebase.auth().signOut(); setUser(null); setShowLogin(true); }}>Esci</button>
+                            </div>
                         </div>
                     </div>
 
