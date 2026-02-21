@@ -7,7 +7,6 @@
     
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -55,9 +54,6 @@
         th { background: #4CAF50; color: white; padding: 14px; text-align: left; font-size: 13px; font-weight: 700; }
         td { padding: 14px; border-top: 1px solid #ddd; }
         tr:hover { background: #f9f9f9; }
-        .error-banner { background: #fee; border: 2px solid #f44336; color: #c00; padding: 16px; border-radius: 8px; margin: 20px; }
-        .error-banner h3 { margin-bottom: 10px; }
-        .error-banner pre { background: #fff; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 12px; }
         @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -100,7 +96,6 @@
 
         function App() {
             const [initComplete, setInitComplete] = useState(false);
-            const [authUser, setAuthUser] = useState(null);
             const [user, setUser] = useState(null);
             const [users, setUsers] = useState([]);
             const [opps, setOpps] = useState([]);
@@ -113,294 +108,503 @@
             const [userForm, setUserForm] = useState({ username: '', password: '', name: '', role: 'agenzia' });
             const [filters, setFilters] = useState({ 
                 utente: '', 
-                stato: '', 
                 tipologiaCliente: '', 
-                tipologiaIntervento: '', 
-                search: '' 
+                ruolo: '', 
+                tipologiaIntervento: '',
+                stato: '',
+                dataInizio: '',
+                dataFine: ''
             });
             const [showDescModal, setShowDescModal] = useState(false);
             const [selectedDesc, setSelectedDesc] = useState('');
-            const [error, setError] = useState(null);
-            const [dbRef, setDbRef] = useState(null);
+            const [form, setForm] = useState({
+                ragioneSociale: '', indirizzo: '', cap: '', citta: '', telefono: '', tipologiaCliente: '',
+                nomeReferente: '', ruoloReferente: '', telReferente: '', emailReferente: '',
+                viaIntervento: '', numeroIntervento: '', capIntervento: '', cittaIntervento: '',
+                hasTecnico: 'no', nomeStudioTecnico: '', referenteStudio: '', indirizzoStudio: '', telefonoStudio: '', emailStudio: '',
+                tipologiaIntervento: '', vociSelezionate: [], livelloOperativo: '', descrizioneIntervento: '', importoPresunto: '', stato: 'CALDA',
+                possibileContrattualizzazione: 'entro 3 mesi', tipoIntervento: 'SINGOLO'
+            });
 
-            // Inizializzazione Firebase con gestione errori
             useEffect(() => {
-                try {
-                    console.log('🚀 Inizializzazione Firebase...');
-                    const app = firebase.initializeApp(firebaseConfig);
-                    const db = firebase.database();
-                    setDbRef(db);
-                    console.log('✅ Firebase inizializzato');
-
-                    // Listener autenticazione
-                    const unsubscribe = firebase.auth().onAuthStateChanged(async (firebaseUser) => {
-                        console.log('🔐 Auth state changed:', firebaseUser?.uid);
-                        
-                        if (firebaseUser) {
-                            setAuthUser(firebaseUser);
-                            
-                            try {
-                                // Carica dati utente da database
-                                const userSnapshot = await db.ref(`users/${firebaseUser.uid}`).once('value');
-                                const userData = userSnapshot.val();
-                                
-                                if (userData) {
-                                    setUser({ ...userData, uid: firebaseUser.uid });
-                                    setShowLogin(false);
-                                    loadData(db, { ...userData, uid: firebaseUser.uid });
-                                } else {
-                                    console.error('❌ Utente non trovato nel database');
-                                    setError('Utente non trovato nel database');
-                                    await firebase.auth().signOut();
-                                }
-                            } catch (err) {
-                                console.error('❌ Errore caricamento utente:', err);
-                                setError(`Errore caricamento utente: ${err.message}`);
-                                await firebase.auth().signOut();
-                            }
-                        } else {
-                            setAuthUser(null);
-                            setUser(null);
-                            setShowLogin(true);
-                        }
-                        
-                        setInitComplete(true);
-                    });
-
-                    return () => unsubscribe();
-                } catch (err) {
-                    console.error('❌ Errore inizializzazione Firebase:', err);
-                    setError(`Errore inizializzazione: ${err.message}`);
-                    setInitComplete(true);
+                const savedUsername = localStorage.getItem('savedUsername');
+                const savedPassword = localStorage.getItem('savedPassword');
+                if (savedUsername && savedPassword) {
+                    setLogin({ username: savedUsername, password: savedPassword, remember: true });
                 }
             }, []);
 
-            const loadData = async (db, currentUser) => {
-                try {
-                    console.log('📊 Caricamento dati...');
-                    
-                    // Carica opportunità
-                    const oppsSnapshot = await db.ref('opportunita').once('value');
-                    const oppsData = [];
-                    oppsSnapshot.forEach(child => {
-                        oppsData.push({ id: child.key, ...child.val() });
-                    });
-                    
-                    console.log(`✅ Caricate ${oppsData.length} opportunità`);
-                    setOpps(oppsData);
 
-                    // Carica utenti (solo admin)
-                    if (currentUser.role === 'admin') {
-                        const usersSnapshot = await db.ref('users').once('value');
-                        const usersData = [];
-                        usersSnapshot.forEach(child => {
-                            usersData.push({ uid: child.key, ...child.val() });
-                        });
-                        console.log(`✅ Caricati ${usersData.length} utenti`);
-                        setUsers(usersData);
-                    }
-                } catch (err) {
-                    console.error('❌ Errore caricamento dati:', err);
-                    setError(`Errore caricamento dati: ${err.message}`);
-                }
-            };
-
-            const handleLogin = async (e) => {
-                e.preventDefault();
-                setError(null);
-                
-                try {
-                    console.log('🔑 Tentativo login...');
-                    
-                    // Trova utente nel database
-                    const usersSnapshot = await dbRef.ref('users').once('value');
-                    let foundUser = null;
-                    
-                    usersSnapshot.forEach(child => {
-                        const userData = child.val();
-                        if (userData.username === login.username && userData.password === login.password) {
-                            foundUser = { uid: child.key, ...userData };
-                        }
-                    });
-
-                    if (!foundUser) {
-                        throw new Error('Username o password errati');
-                    }
-
-                    // Autenticazione con Firebase Auth usando email personalizzato
-                    const email = `${login.username}@energy-solutions.local`;
-                    
+            useEffect(() => {
+                const init = async () => {
                     try {
-                        // Prova prima a fare login
-                        await firebase.auth().signInWithEmailAndPassword(email, login.password);
-                    } catch (authError) {
-                        if (authError.code === 'auth/user-not-found') {
-                            // Se non esiste, crea l'utente
-                            console.log('Creating new auth user...');
-                            await firebase.auth().createUserWithEmailAndPassword(email, login.password);
-                        } else if (authError.code === 'auth/wrong-password') {
-                            throw new Error('Password errata');
-                        } else {
-                            throw authError;
+                        firebase.initializeApp(firebaseConfig);
+                        const db = firebase.database();
+
+                        const usersSnapshot = await db.ref('users').once('value');
+                        const existingUsers = usersSnapshot.val();
+                        
+                        if (!existingUsers || Object.keys(existingUsers).length === 0) {
+                            const defaultUsers = {
+                                'user1': { username: 'admin', password: 'admin123', role: 'admin', name: 'Amministratore' },
+                                'user2': { username: 'agenzia1', password: 'ag123', role: 'agenzia', name: 'Agenzia Roma' },
+                                'user3': { username: 'diretto1', password: 'dir123', role: 'diretto', name: 'Diretto Milano' },
+                                'user4': { username: 'interno1', password: 'int123', role: 'interno', name: 'Interno Ufficio' }
+                            };
+                            await db.ref('users').set(defaultUsers);
                         }
+
+                        db.ref('users').on('value', snap => {
+                            const data = snap.val();
+                            if (data) setUsers(Object.keys(data).map(k => ({ id: k, ...data[k] })));
+                        });
+
+                        db.ref('opportunities').on('value', snap => {
+                            const data = snap.val();
+                            if (data) setOpps(Object.keys(data).map(k => ({ id: k, ...data[k] })));
+                            else setOpps([]);
+                        });
+
+                        setInitComplete(true);
+                    } catch (error) {
+                        console.error('Errore:', error);
+                        alert('Errore connessione Firebase: ' + error.message);
                     }
+                };
+                init();
+            }, []);
 
-                    console.log('✅ Login riuscito');
-                } catch (err) {
-                    console.error('❌ Errore login:', err);
-                    setError(err.message);
+            const doLogin = (e) => {
+                e.preventDefault();
+                
+                if (users.length === 0) {
+                    alert('⏳ Sistema ancora in inizializzazione, riprova tra 2 secondi...');
+                    return;
+                }
+                
+                const found = users.find(u => u.username === login.username && u.password === login.password);
+                
+                if (found) {
+                    // LOGIN DIRETTO
+                    if (login.remember) {
+                        localStorage.setItem('savedUsername', login.username);
+                        localStorage.setItem('savedPassword', login.password);
+                    } else {
+                        localStorage.removeItem('savedUsername');
+                        localStorage.removeItem('savedPassword');
+                    }
+                    
+                    setUser(found);
+                    setShowLogin(false);
+                } else {
+                    alert('❌ Credenziali errate!');
                 }
             };
 
-            const handleLogout = async () => {
-                try {
-                    await firebase.auth().signOut();
-                    setUser(null);
-                    setOpps([]);
-                    setUsers([]);
-                    setShowLogin(true);
-                } catch (err) {
-                    console.error('❌ Errore logout:', err);
-                    setError(err.message);
-                }
-            };
 
             const saveOpp = async (e) => {
                 e.preventDefault();
-                setError(null);
-                
-                try {
-                    const formData = new FormData(e.target);
-                    const data = Object.fromEntries(formData);
+                if (!form.ragioneSociale || !form.tipologiaCliente || !form.tipologiaIntervento) {
+                    alert('Compila tutti i campi obbligatori (*)');
+                    return;
+                }
+
+                const db = firebase.database();
+                const oppData = {
+                    ...form,
+                    agenzia: user.name,
+                    clientId: user.id,
+                    createdAt: editOpp ? editOpp.createdAt : new Date().toISOString()
+                };
+
+                if (editOpp) {
+                    await db.ref('opportunities/' + editOpp.id).set(oppData);
+                } else {
+                    await db.ref('opportunities').push(oppData);
+                }
+
+                setShowForm(false);
+                setEditOpp(null);
+                setForm({
+                    ragioneSociale: '', indirizzo: '', cap: '', citta: '', telefono: '', tipologiaCliente: '',
+                    nomeReferente: '', ruoloReferente: '', telReferente: '', emailReferente: '',
+                    viaIntervento: '', numeroIntervento: '', capIntervento: '', cittaIntervento: '',
+                    hasTecnico: 'no', nomeStudioTecnico: '', referenteStudio: '', indirizzoStudio: '', telefonoStudio: '', emailStudio: '',
+                    tipologiaIntervento: '', vociSelezionate: [], livelloOperativo: '', descrizioneIntervento: '', importoPresunto: '', stato: 'CALDA',
+                    possibileContrattualizzazione: 'entro 3 mesi', tipoIntervento: 'SINGOLO'
+                });
+            };
+
+            const duplicateOpp = async (opp) => {
+                if (confirm('Duplicare questa opportunità?\n\nVerrà creata una copia con data odierna.')) {
+                    const db = firebase.database();
+                    const duplicatedData = {
+                        ...opp,
+                        ragioneSociale: opp.ragioneSociale + ' (Copia)',
+                        agenzia: user.name,
+                        clientId: user.id,
+                        createdAt: new Date().toISOString()
+                    };
                     
-                    // Gestione checkbox multipli
-                    const vociIntervento = formData.getAll('vociIntervento');
-                    data.vociIntervento = vociIntervento;
+                    // Rimuovi l'ID dall'oggetto duplicato
+                    delete duplicatedData.id;
                     
-                    data.creatoIl = editOpp ? editOpp.creatoIl : Date.now();
-                    data.modificatoIl = Date.now();
-                    data.creatorId = user.uid;
-                    data.creatorName = user.name;
-                    
-                    if (editOpp) {
-                        await dbRef.ref(`opportunita/${editOpp.id}`).update(data);
-                    } else {
-                        await dbRef.ref('opportunita').push(data);
-                    }
-                    
-                    setShowForm(false);
-                    setEditOpp(null);
-                    loadData(dbRef, user);
-                } catch (err) {
-                    console.error('❌ Errore salvataggio:', err);
-                    setError(err.message);
+                    await db.ref('opportunities').push(duplicatedData);
+                    alert('✅ Opportunità duplicata con successo!');
                 }
             };
 
             const deleteOpp = async (id) => {
-                if (!confirm('Sei sicuro di voler eliminare questa opportunità?')) return;
-                
-                try {
-                    await dbRef.ref(`opportunita/${id}`).remove();
-                    loadData(dbRef, user);
-                } catch (err) {
-                    console.error('❌ Errore eliminazione:', err);
-                    setError(err.message);
+                if (confirm('Eliminare questa opportunità?')) {
+                    const db = firebase.database();
+                    await db.ref('opportunities/' + id).remove();
                 }
             };
 
             const saveUser = async (e) => {
                 e.preventDefault();
-                setError(null);
-                
-                try {
-                    const email = `${userForm.username}@energy-solutions.local`;
-                    
-                    if (editUser) {
-                        // Aggiorna utente esistente
-                        await dbRef.ref(`users/${editUser.uid}`).update({
-                            name: userForm.name,
-                            username: userForm.username,
-                            role: userForm.role,
-                            password: userForm.password
-                        });
-                    } else {
-                        // Crea nuovo utente in Auth
-                        const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, userForm.password);
-                        
-                        // Salva in database
-                        await dbRef.ref(`users/${userCredential.user.uid}`).set({
-                            name: userForm.name,
-                            username: userForm.username,
-                            role: userForm.role,
-                            password: userForm.password,
-                            createdAt: Date.now()
-                        });
-                        
-                        // Logout dell'utente appena creato per tornare all'admin
-                        await firebase.auth().updateCurrentUser(authUser);
-                    }
-                    
-                    setShowUserForm(false);
-                    setEditUser(null);
-                    setUserForm({ username: '', password: '', name: '', role: 'agenzia' });
-                    loadData(dbRef, user);
-                } catch (err) {
-                    console.error('❌ Errore salvataggio utente:', err);
-                    setError(err.message);
+                const db = firebase.database();
+                if (editUser) {
+                    await db.ref('users/' + editUser.id).set(userForm);
+                } else {
+                    await db.ref('users').push(userForm);
+                }
+                setShowUserForm(false);
+                setEditUser(null);
+                setUserForm({ username: '', password: '', name: '', role: 'agenzia' });
+            };
+
+            const deleteUser = async (id) => {
+                if (id === user.id) {
+                    alert('Non puoi eliminare il tuo account!');
+                    return;
+                }
+                if (confirm('Eliminare questo utente?')) {
+                    const db = firebase.database();
+                    await db.ref('users/' + id).remove();
                 }
             };
 
-            const deleteUser = async (uid) => {
-                if (!confirm('Sei sicuro di voler eliminare questo utente?')) return;
-                
-                try {
-                    await dbRef.ref(`users/${uid}`).remove();
-                    loadData(dbRef, user);
-                } catch (err) {
-                    console.error('❌ Errore eliminazione utente:', err);
-                    setError(err.message);
+            const toggleVoce = (voce) => {
+                const voci = form.vociSelezionate || [];
+                if (voci.includes(voce)) {
+                    setForm({ ...form, vociSelezionate: voci.filter(v => v !== voce) });
+                } else {
+                    setForm({ ...form, vociSelezionate: [...voci, voce] });
                 }
             };
 
-            // Filtri
-            const filteredOpps = opps.filter(opp => {
-                if (user.role === 'agenzia' && opp.creatorId !== user.uid) return false;
-                if (user.role === 'diretto' && opp.creatorId !== user.uid) return false;
-                if (filters.utente && opp.creatorId !== filters.utente) return false;
-                if (filters.stato && opp.stato !== filters.stato) return false;
-                if (filters.tipologiaCliente && opp.tipologiaCliente !== filters.tipologiaCliente) return false;
-                if (filters.tipologiaIntervento && opp.tipologiaIntervento !== filters.tipologiaIntervento) return false;
-                if (filters.search) {
-                    const s = filters.search.toLowerCase();
-                    return (
-                        opp.cliente?.toLowerCase().includes(s) ||
-                        opp.comune?.toLowerCase().includes(s) ||
-                        opp.descrizioneIntervento?.toLowerCase().includes(s)
-                    );
+            const canEdit = (opp) => {
+                return user.role === 'admin' || opp.clientId === user.id;
+            };
+
+            const printCardPDF = (opp) => {
+                const printWindow = window.open('', '', 'width=800,height=600');
+                printWindow.document.write(`
+                    <html>
+                    <head>
+                        <title>Opportunità - ${opp.ragioneSociale}</title>
+                        <style>
+                            @page { size: A4; margin: 20mm; }
+                            @media print { body { margin: 0; } }
+                            body { 
+                                font-family: Arial, sans-serif; 
+                                padding: 20px; 
+                                font-size: 12px;
+                                line-height: 1.4;
+                            }
+                            h1 { 
+                                color: #2E7D32; 
+                                border-bottom: 4px solid #4CAF50; 
+                                padding-bottom: 10px; 
+                                margin-bottom: 20px;
+                                font-size: 24px;
+                            }
+                            .header-info {
+                                background: #f0f9f4;
+                                padding: 15px;
+                                border-radius: 8px;
+                                margin-bottom: 20px;
+                            }
+                            .section { 
+                                margin: 20px 0; 
+                                page-break-inside: avoid;
+                            }
+                            .section-title {
+                                font-size: 16px;
+                                font-weight: bold;
+                                color: #2E7D32;
+                                border-bottom: 2px solid #81C784;
+                                padding-bottom: 5px;
+                                margin-bottom: 10px;
+                            }
+                            .data-grid {
+                                display: grid;
+                                grid-template-columns: 1fr 1fr;
+                                gap: 10px 20px;
+                                margin-bottom: 15px;
+                            }
+                            .data-item {
+                                padding: 8px 0;
+                            }
+                            .label { 
+                                font-weight: bold; 
+                                color: #666; 
+                                font-size: 11px;
+                                display: block;
+                                margin-bottom: 3px;
+                            }
+                            .value { 
+                                color: #333;
+                                font-size: 13px;
+                            }
+                            .badge {
+                                display: inline-block;
+                                padding: 6px 12px;
+                                border-radius: 15px;
+                                font-weight: bold;
+                                font-size: 12px;
+                            }
+                            .stato-calda { background: #FEF3C7; color: #92400E; }
+                            .stato-tiepida { background: #FCE7F3; color: #831843; }
+                            .stato-fredda { background: #DBEAFE; color: #1E40AF; }
+                            .stato-ko { background: #FEE2E2; color: #991B1B; }
+                            .stato-ok { background: #D1FAE5; color: #065F46; }
+                            .description-box {
+                                background: #f9f9f9;
+                                border-left: 4px solid #4CAF50;
+                                padding: 15px;
+                                margin: 15px 0;
+                                white-space: pre-wrap;
+                                line-height: 1.6;
+                            }
+                            .footer {
+                                margin-top: 30px;
+                                padding-top: 15px;
+                                border-top: 2px solid #ddd;
+                                text-align: center;
+                                font-size: 10px;
+                                color: #999;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>🏢 ${opp.ragioneSociale}</h1>
+                        
+                        <div class="header-info">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <span class="label">Data creazione</span>
+                                    <span class="value">${new Date(opp.createdAt).toLocaleString('it-IT', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'})}</span>
+                                </div>
+                                <span class="badge stato-${opp.stato.toLowerCase()}">${opp.stato}</span>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">📋 Dati Azienda</div>
+                            <div class="data-grid">
+                                <div class="data-item">
+                                    <span class="label">Tipologia Cliente</span>
+                                    <span class="value">${opp.tipologiaCliente}</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="label">Telefono</span>
+                                    <span class="value">${opp.telefono || '-'}</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="label">Indirizzo</span>
+                                    <span class="value">${opp.indirizzo || '-'} ${opp.cap || ''} ${opp.citta || ''}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${opp.nomeReferente ? `
+                        <div class="section">
+                            <div class="section-title">👤 Referente</div>
+                            <div class="data-grid">
+                                <div class="data-item">
+                                    <span class="label">Nome</span>
+                                    <span class="value">${opp.nomeReferente} ${opp.ruoloReferente ? '(' + opp.ruoloReferente + ')' : ''}</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="label">Contatti</span>
+                                    <span class="value">${opp.telReferente || ''} ${opp.emailReferente || ''}</span>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        <div class="section">
+                            <div class="section-title">⚡ Intervento</div>
+                            <div class="data-grid">
+                                <div class="data-item">
+                                    <span class="label">Tipologia Intervento</span>
+                                    <span class="value">${TIPOLOGIE_INTERVENTO[opp.tipologiaIntervento]?.label}</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="label">Tipo</span>
+                                    <span class="value">${opp.tipoIntervento || 'SINGOLO'}</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="label">Importo Presunto</span>
+                                    <span class="value" style="font-size: 16px; font-weight: bold; color: #2E7D32;">€${(parseInt(opp.importoPresunto) || 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="label">Possibile Contrattualizzazione</span>
+                                    <span class="value">${opp.possibileContrattualizzazione || '-'}</span>
+                                </div>
+                                ${(opp.tipologiaIntervento === 'cratere_2016' || opp.tipologiaIntervento === 'cratere_2009') && opp.livelloOperativo ? `
+                                <div class="data-item">
+                                    <span class="label">Livello Operativo</span>
+                                    <span class="value">${opp.livelloOperativo}</span>
+                                </div>
+                                ` : ''}
+                            </div>
+                            ${opp.vociSelezionate && opp.vociSelezionate.length > 0 ? `
+                            <div style="margin-top: 10px;">
+                                <span class="label">Voci Intervento</span><br>
+                                ${opp.vociSelezionate.map(v => `<span class="badge" style="background: #4CAF50; color: white; margin-right: 5px;">${v}</span>`).join('')}
+                            </div>
+                            ` : ''}
+                        </div>
+
+                        ${opp.viaIntervento ? `
+                        <div class="section">
+                            <div class="section-title">📍 Ubicazione Intervento</div>
+                            <div class="value">${opp.viaIntervento} ${opp.numeroIntervento || ''}, ${opp.capIntervento || ''} ${opp.cittaIntervento || ''}</div>
+                        </div>
+                        ` : ''}
+
+                        ${opp.descrizioneIntervento ? `
+                        <div class="section">
+                            <div class="section-title">📄 Descrizione Intervento</div>
+                            <div class="description-box">${opp.descrizioneIntervento}</div>
+                        </div>
+                        ` : ''}
+
+                        <div class="footer">
+                            Energy Solutions - Edison Business Partner | Stampato il ${new Date().toLocaleString('it-IT')}
+                        </div>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+                setTimeout(() => printWindow.print(), 250);
+            };
+
+            const printTablePDF = () => {
+                const printContent = document.getElementById('summary-table-print');
+                if (!printContent) {
+                    alert('Nessuna tabella da stampare');
+                    return;
                 }
-                return true;
-            });
+                
+                const printWindow = window.open('', '', 'width=1000,height=800');
+                printWindow.document.write(`
+                    <html>
+                    <head>
+                        <title>Riepilogo Opportunità</title>
+                        <style>
+                            @page { size: A4 landscape; margin: 15mm; }
+                            @media print { 
+                                body { margin: 0; }
+                                .no-print { display: none; }
+                            }
+                            body { 
+                                font-family: Arial, sans-serif; 
+                                padding: 20px; 
+                                font-size: 11px;
+                            }
+                            h1 { 
+                                color: #2E7D32; 
+                                border-bottom: 3px solid #4CAF50; 
+                                padding-bottom: 10px; 
+                                margin-bottom: 20px;
+                            }
+                            h3 { 
+                                color: #2E7D32; 
+                                margin: 20px 0 10px 0;
+                                font-size: 14px;
+                            }
+                            table { 
+                                width: 100%; 
+                                border-collapse: collapse; 
+                                margin-bottom: 30px;
+                                font-size: 10px;
+                            }
+                            th { 
+                                background: #4CAF50; 
+                                color: white; 
+                                padding: 8px; 
+                                text-align: center; 
+                                font-size: 10px;
+                                border: 1px solid #ddd;
+                            }
+                            td { 
+                                padding: 6px 8px; 
+                                border: 1px solid #ddd; 
+                                text-align: center;
+                            }
+                            tr:nth-child(even) { background: #f9f9f9; }
+                            .total-row { background: #81C784 !important; font-weight: bold; }
+                            .grand-total-row { background: #2E7D32 !important; color: white !important; font-weight: bold; }
+                            .footer {
+                                margin-top: 20px;
+                                padding-top: 10px;
+                                border-top: 2px solid #ddd;
+                                text-align: center;
+                                font-size: 9px;
+                                color: #999;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>📊 Riepilogo Opportunità per Tipologia</h1>
+                        ${printContent.innerHTML}
+                        <div class="footer">
+                            Energy Solutions - Edison Business Partner | Stampato il ${new Date().toLocaleString('it-IT')}
+                        </div>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+                setTimeout(() => printWindow.print(), 250);
+            };
+
+            const getFilteredOpps = () => {
+                let filtered = (user.role === 'admin' || user.role === 'visualizzatore') ? opps : opps.filter(o => o.clientId === user.id);
+                
+                if (filters.utente) {
+                    filtered = filtered.filter(o => o.agenzia?.toLowerCase().includes(filters.utente.toLowerCase()));
+                }
+                if (filters.tipologiaCliente) {
+                    filtered = filtered.filter(o => o.tipologiaCliente === filters.tipologiaCliente);
+                }
+                if (filters.ruolo && (user.role === 'admin' || user.role === 'visualizzatore')) {
+                    const usersByRole = users.filter(u => u.role === filters.ruolo).map(u => u.id);
+                    filtered = filtered.filter(o => usersByRole.includes(o.clientId));
+                }
+                if (filters.tipologiaIntervento) {
+                    filtered = filtered.filter(o => o.tipologiaIntervento === filters.tipologiaIntervento);
+                }
+                if (filters.stato) {
+                    filtered = filtered.filter(o => o.stato === filters.stato);
+                }
+                if (filters.dataInizio) {
+                    filtered = filtered.filter(o => new Date(o.createdAt) >= new Date(filters.dataInizio));
+                }
+                if (filters.dataFine) {
+                    const endDate = new Date(filters.dataFine);
+                    endDate.setHours(23, 59, 59);
+                    filtered = filtered.filter(o => new Date(o.createdAt) <= endDate);
+                }
+                
+                return filtered;
+            };
 
             if (!initComplete) {
-                return (
-                    <div className="loading">
-                        <div style={{fontSize: '48px', marginBottom: '20px'}}>⏳</div>
-                        <h2>Caricamento...</h2>
-                    </div>
-                );
-            }
-
-            if (error) {
-                return (
-                    <div className="error-banner">
-                        <h3>⚠️ Errore</h3>
-                        <p>{error}</p>
-                        <button className="btn btn-green" onClick={() => window.location.reload()} style={{marginTop: '10px'}}>
-                            Ricarica Pagina
-                        </button>
-                    </div>
-                );
+                return <div className="loading">⏳ Inizializzazione...</div>;
             }
 
             if (showLogin) {
@@ -408,40 +612,35 @@
                     <div className="login-container">
                         <div className="login-card">
                             <div className="logo">
-                                <h2>⚡ Energy Solutions</h2>
+                                <h2>ENERGY SOLUTIONS</h2>
                                 <p>Edison Business Partner</p>
                             </div>
-                            <form onSubmit={handleLogin}>
+                            <form onSubmit={doLogin}>
                                 <div className="mb">
                                     <label className="label">Username</label>
-                                    <input 
-                                        className="input" 
-                                        value={login.username} 
-                                        onChange={e => setLogin({...login, username: e.target.value})} 
-                                        required 
-                                        autoFocus
-                                    />
+                                    <input className="input" value={login.username} onChange={e => setLogin({...login, username: e.target.value})} required autoComplete="username" />
                                 </div>
                                 <div className="mb">
                                     <label className="label">Password</label>
-                                    <input 
-                                        type="password" 
-                                        className="input" 
-                                        value={login.password} 
-                                        onChange={e => setLogin({...login, password: e.target.value})} 
-                                        required 
-                                    />
+                                    <input type="password" className="input" value={login.password} onChange={e => setLogin({...login, password: e.target.value})} required autoComplete="current-password" />
                                 </div>
                                 <div className="mb" style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
                                     <input 
                                         type="checkbox" 
-                                        checked={login.remember} 
+                                        id="remember" 
+                                        checked={login.remember}
                                         onChange={e => setLogin({...login, remember: e.target.checked})}
-                                        id="remember"
+                                        style={{width: '18px', height: '18px', cursor: 'pointer'}}
                                     />
-                                    <label htmlFor="remember" style={{margin: 0, cursor: 'pointer'}}>Ricordami</label>
+                                    <label htmlFor="remember" style={{cursor: 'pointer', fontSize: '14px', margin: 0, color: '#666'}}>
+                                        Ricorda le mie credenziali
+                                    </label>
                                 </div>
-                                <button type="submit" className="btn btn-green" style={{width: '100%'}}>
+                                <button 
+                                    type="submit" 
+                                    className="btn btn-green" 
+                                    style={{width: '100%', cursor: 'pointer', fontSize: '16px', padding: '14px'}}
+                                >
                                     Accedi
                                 </button>
                             </form>
@@ -450,198 +649,554 @@
                 );
             }
 
+            // SCHERMATA CAPTCHA
+
+            const myOpps = getFilteredOpps();
+
             return (
-                <div className="container">
+                <div style={{minHeight: '100vh'}}>
                     <div className="header">
-                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                        <div className="container" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                             <div>
-                                <h1 style={{color: '#2E7D32', fontSize: '28px'}}>⚡ Energy Solutions</h1>
-                                <p style={{color: '#666', marginTop: '4px'}}>Benvenuto, {user.name} ({RUOLI[user.role]})</p>
+                                <h1 style={{fontSize: '20px', color: '#2E7D32'}}>Energy Solutions</h1>
+                                <p style={{fontSize: '14px', color: '#666'}}>{user.name} - {RUOLI[user.role]}</p>
                             </div>
-                            <button className="btn btn-red" onClick={handleLogout}>Esci</button>
+                            <button className="btn btn-white" onClick={() => { setUser(null); setShowLogin(true); }}>Esci</button>
                         </div>
                     </div>
 
-                    {/* Filtri */}
-                    <div className="card">
-                        <div className="grid-3">
-                            <div>
-                                <label className="label">Cerca</label>
-                                <input 
-                                    className="input" 
-                                    placeholder="Cliente, Comune, Descrizione..." 
-                                    value={filters.search}
-                                    onChange={e => setFilters({...filters, search: e.target.value})}
-                                />
-                            </div>
-                            <div>
-                                <label className="label">Stato</label>
-                                <select className="input" value={filters.stato} onChange={e => setFilters({...filters, stato: e.target.value})}>
-                                    <option value="">Tutti</option>
-                                    {STATI.map(s => <option key={s} value={s}>{s}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="label">Tipologia Cliente</label>
-                                <select className="input" value={filters.tipologiaCliente} onChange={e => setFilters({...filters, tipologiaCliente: e.target.value})}>
-                                    <option value="">Tutte</option>
-                                    {TIPOLOGIE_CLIENTE.map(t => <option key={t} value={t}>{t}</option>)}
-                                </select>
-                            </div>
-                        </div>
-                        <div style={{marginTop: '16px'}}>
-                            <button 
-                                className="btn btn-green" 
-                                onClick={() => {
-                                    setShowForm(true);
-                                    setEditOpp(null);
-                                }}
-                            >
-                                + Nuova Opportunità
-                            </button>
-                            {user.role === 'admin' && (
-                                <button 
-                                    className="btn btn-white" 
-                                    onClick={() => {
-                                        setShowUserForm(true);
-                                        setEditUser(null);
-                                        setUserForm({ username: '', password: '', name: '', role: 'agenzia' });
-                                    }}
-                                    style={{marginLeft: '10px'}}
-                                >
-                                    👥 Gestisci Utenti
-                                </button>
+                    <div className="container">
+                        <div style={{marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'center'}}>
+                            {user.role !== 'visualizzatore' && (
+                                <button className="btn btn-green" onClick={() => setShowForm(true)}>+ Nuova Opportunità</button>
                             )}
+                            <button className="btn btn-white" onClick={printTablePDF}>🖨️ Stampa Riepilogo</button>
                         </div>
-                    </div>
 
-                    {/* Tabella Opportunità */}
-                    <div className="card">
-                        <h2 style={{marginBottom: '16px'}}>📊 Opportunità ({filteredOpps.length})</h2>
-                        <div style={{overflowX: 'auto'}}>
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Cliente</th>
-                                        <th>Comune</th>
-                                        <th>Tipologia Cliente</th>
-                                        <th>Tipologia Intervento</th>
-                                        <th>Stato</th>
-                                        <th>Importo €</th>
-                                        <th>Creato da</th>
-                                        <th>Azioni</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredOpps.length === 0 ? (
-                                        <tr><td colSpan="8" style={{textAlign: 'center', padding: '40px'}}>Nessuna opportunità trovata</td></tr>
-                                    ) : (
-                                        filteredOpps.map(opp => (
-                                            <tr key={opp.id}>
-                                                <td><strong>{opp.cliente}</strong></td>
-                                                <td>{opp.comune}</td>
-                                                <td>{opp.tipologiaCliente}</td>
-                                                <td>{TIPOLOGIE_INTERVENTO[opp.tipologiaIntervento]?.label}</td>
+                        <div className="card" style={{marginBottom: '20px'}}>
+                            <h3 style={{marginBottom: '16px', color: '#2E7D32'}}>🔍 Filtri Ricerca</h3>
+                            <div className="grid-3">
+                                <div className="mb">
+                                    <label className="label">Utente</label>
+                                    <input className="input" placeholder="Nome utente..." value={filters.utente} onChange={e => setFilters({...filters, utente: e.target.value})} />
+                                </div>
+                                <div className="mb">
+                                    <label className="label">Tipologia Cliente</label>
+                                    <select className="input" value={filters.tipologiaCliente} onChange={e => setFilters({...filters, tipologiaCliente: e.target.value})}>
+                                        <option value="">Tutte</option>
+                                        {TIPOLOGIE_CLIENTE.map(t => <option key={t} value={t}>{t}</option>)}
+                                    </select>
+                                </div>
+                                {user.role === 'admin' && (
+                                    <div className="mb">
+                                        <label className="label">Ruolo</label>
+                                        <select className="input" value={filters.ruolo} onChange={e => setFilters({...filters, ruolo: e.target.value})}>
+                                            <option value="">Tutti</option>
+                                            {Object.keys(RUOLI).map(r => <option key={r} value={r}>{RUOLI[r]}</option>)}
+                                        </select>
+                                    </div>
+                                )}
+                                <div className="mb">
+                                    <label className="label">Tipologia Intervento</label>
+                                    <select className="input" value={filters.tipologiaIntervento} onChange={e => setFilters({...filters, tipologiaIntervento: e.target.value})}>
+                                        <option value="">Tutte</option>
+                                        {Object.keys(TIPOLOGIE_INTERVENTO).map(k => <option key={k} value={k}>{TIPOLOGIE_INTERVENTO[k].label}</option>)}
+                                    </select>
+                                </div>
+                                <div className="mb">
+                                    <label className="label">Stato</label>
+                                    <select className="input" value={filters.stato} onChange={e => setFilters({...filters, stato: e.target.value})} style={{
+                                        background: filters.stato === 'CALDA' ? '#FEF3C7' : filters.stato === 'TIEPIDA' ? '#FCE7F3' : filters.stato === 'FREDDA' ? '#DBEAFE' : filters.stato === 'KO' ? '#FEE2E2' : filters.stato === 'OK' ? '#D1FAE5' : 'white'
+                                    }}>
+                                        <option value="">Tutti</option>
+                                        <option value="CALDA">CALDA</option>
+                                        <option value="TIEPIDA">TIEPIDA</option>
+                                        <option value="FREDDA">FREDDA</option>
+                                        <option value="KO">KO</option>
+                                        <option value="OK">OK</option>
+                                    </select>
+                                </div>
+                                <div className="mb">
+                                    <label className="label">Data da</label>
+                                    <input type="date" className="input" value={filters.dataInizio} onChange={e => setFilters({...filters, dataInizio: e.target.value})} />
+                                </div>
+                                <div className="mb">
+                                    <label className="label">Data a</label>
+                                    <input type="date" className="input" value={filters.dataFine} onChange={e => setFilters({...filters, dataFine: e.target.value})} />
+                                </div>
+                            </div>
+                            <button className="btn btn-gray" onClick={() => setFilters({ utente: '', tipologiaCliente: '', ruolo: '', tipologiaIntervento: '', stato: '', dataInizio: '', dataFine: '' })}>🔄 Azzera Filtri</button>
+                        </div>
+
+                        <h2 style={{margin: '20px 0 16px'}}>Le Mie Opportunità ({myOpps.length})</h2>
+                        
+                        {myOpps.length === 0 && (
+                            <div className="card">
+                                <p style={{textAlign: 'center', color: '#666'}}>Nessuna opportunità. Clicca "+ Nuova Opportunità"!</p>
+                            </div>
+                        )}
+
+                        {myOpps.map(o => (
+                            <div className="card" key={o.id} style={{borderLeft: `6px solid ${o.stato === 'CALDA' ? '#FEF3C7' : o.stato === 'FREDDA' ? '#DBEAFE' : o.stato === 'KO' ? '#FEE2E2' : '#D1FAE5'}`}}>
+                                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px'}}>
+                                    <div style={{flex: 1}}>
+                                        <h3 style={{fontSize: '20px', marginBottom: '8px', color: '#2E7D32'}}>🏢 {o.ragioneSociale}</h3>
+                                        <div style={{fontSize: '13px', color: '#666', marginBottom: '12px'}}>
+                                            📅 <strong>{new Date(o.createdAt).toLocaleDateString('it-IT', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'})}</strong>
+                                        </div>
+                                    </div>
+                                    <div style={{textAlign: 'right'}}>
+                                        <span className={`badge stato-${o.stato.toLowerCase()}`} style={{fontSize: '14px', padding: '8px 16px'}}>{o.stato}</span>
+                                        {o.tipoIntervento === 'MULTI INTERVENTO' && (
+                                            <span className="badge" style={{background: '#FFF3E0', color: '#e65100', fontSize: '12px', padding: '6px 12px', marginLeft: '8px', display: 'block', marginTop: '8px'}}>MULTI</span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div style={{background: '#f9f9f9', padding: '16px', borderRadius: '8px', marginBottom: '16px'}}>
+                                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '14px'}}>
+                                        <div>
+                                            <div style={{color: '#666', fontSize: '12px', marginBottom: '4px'}}>Cliente</div>
+                                            <div style={{fontWeight: '700', fontSize: '15px'}}>{o.tipologiaCliente}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{color: '#666', fontSize: '12px', marginBottom: '4px'}}>Importo Presunto</div>
+                                            <div style={{fontWeight: '700', fontSize: '18px', color: '#2E7D32'}}>€{(parseInt(o.importoPresunto) || 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{color: '#666', fontSize: '12px', marginBottom: '4px'}}>Tipologia Intervento</div>
+                                            <div style={{fontWeight: '600'}}>{TIPOLOGIE_INTERVENTO[o.tipologiaIntervento]?.label}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{color: '#666', fontSize: '12px', marginBottom: '4px'}}>Contrattualizzazione</div>
+                                            <div style={{fontWeight: '600'}}>{o.possibileContrattualizzazione}</div>
+                                        </div>
+                                        {(o.tipologiaIntervento === 'cratere_2016' || o.tipologiaIntervento === 'cratere_2009') && o.livelloOperativo && (
+                                            <div>
+                                                <div style={{color: '#666', fontSize: '12px', marginBottom: '4px'}}>Livello Operativo</div>
+                                                <span className="badge" style={{background: '#2196F3', color: 'white'}}>{o.livelloOperativo}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {o.vociSelezionate && o.vociSelezionate.length > 0 && (
+                                    <div style={{marginBottom: '16px'}}>
+                                        <div style={{color: '#666', fontSize: '12px', marginBottom: '8px', fontWeight: '600'}}>Voci Intervento:</div>
+                                        <div style={{display: 'flex', flexWrap: 'wrap', gap: '6px'}}>
+                                            {o.vociSelezionate.map(v => <span key={v} className="badge" style={{background: '#4CAF50', color: 'white'}}>{v}</span>)}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {(canEdit(o) || user.role === 'visualizzatore') && (
+                                    <div style={{display: 'flex', gap: '10px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e0e0e0', flexWrap: 'wrap'}}>
+                                        {o.descrizioneIntervento && (
+                                            <button className="btn btn-white" style={{padding: '10px 20px'}} onClick={() => { setSelectedDesc(o.descrizioneIntervento); setShowDescModal(true); }}>📄 Descrizione</button>
+                                        )}
+                                        <button className="btn btn-white" style={{padding: '10px 20px'}} onClick={() => printCardPDF(o)}>🖨️ Stampa</button>
+                                        {user.role !== 'visualizzatore' && (
+                                            <>
+                                                <button className="btn btn-white" style={{padding: '10px 20px'}} onClick={() => duplicateOpp(o)}>📋 Duplica</button>
+                                                <button className="btn btn-white" style={{padding: '10px 20px'}} onClick={() => { setEditOpp(o); setForm({...o, vociSelezionate: o.vociSelezionate || []}); setShowForm(true); }}>✏️ Modifica</button>
+                                                <button className="btn btn-red" style={{padding: '10px 20px'}} onClick={() => deleteOpp(o.id)}>🗑️ Elimina</button>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+
+                        {myOpps.length > 0 && (
+                            <div style={{marginTop: '40px'}} id="summary-table-print">
+                                <h2 style={{marginBottom: '16px', color: '#2E7D32'}}>📊 Riepilogo per Tipologia</h2>
+                                
+                                {user.role === 'admin' ? (
+                                    // ADMIN: Tabella per ogni client
+                                    [...new Set(opps.map(o => o.clientId))].filter(Boolean).map(clientId => {
+                                        const clientUser = users.find(u => u.id === clientId);
+                                        const clientOpps = opps.filter(o => o.clientId === clientId);
+                                        if (clientOpps.length === 0) return null;
+                                        
+                                        return (
+                                            <div key={clientId} style={{marginBottom: '30px'}}>
+                                                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px'}}>
+                                                    <h3 style={{color: '#2E7D32', fontSize: '16px', margin: 0}}>
+                                                        👤 {clientUser?.name || 'Utente sconosciuto'}
+                                                    </h3>
+                                                    <button className="btn btn-white" style={{padding: '8px 16px'}} onClick={() => printSingleClientTable(clientId, clientUser?.name)}>
+                                                        🖨️ Stampa Tabella
+                                                    </button>
+                                                </div>
+                                                <table>
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Tipologia Intervento</th>
+                                                            <th style={{textAlign: 'center'}}>CALDA</th>
+                                                            <th style={{textAlign: 'center'}}>TIEPIDA</th>
+                                                            <th style={{textAlign: 'center'}}>FREDDA</th>
+                                                            <th style={{textAlign: 'center'}}>KO</th>
+                                                            <th style={{textAlign: 'center'}}>OK</th>
+                                                            <th style={{textAlign: 'center'}}>Totale</th>
+                                                            <th style={{textAlign: 'right'}}>Importo Totale</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {Object.keys(TIPOLOGIE_INTERVENTO).map(tipKey => {
+                                                            const oppsPerTipo = clientOpps.filter(o => o.tipologiaIntervento === tipKey);
+                                                            if (oppsPerTipo.length === 0) return null;
+                                                            
+                                                            const calda = oppsPerTipo.filter(o => o.stato === 'CALDA').length;
+                                                            const tiepida = oppsPerTipo.filter(o => o.stato === 'TIEPIDA').length;
+                                                            const fredda = oppsPerTipo.filter(o => o.stato === 'FREDDA').length;
+                                                            const ko = oppsPerTipo.filter(o => o.stato === 'KO').length;
+                                                            const ok = oppsPerTipo.filter(o => o.stato === 'OK').length;
+                                                            const totale = oppsPerTipo.length;
+                                                            const importoTotale = oppsPerTipo.reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0);
+                                                            
+                                                            return (
+                                                                <tr key={tipKey}>
+                                                                    <td style={{fontWeight: '600'}}>{TIPOLOGIE_INTERVENTO[tipKey].label}</td>
+                                                                    <td style={{textAlign: 'center', background: '#FEF3C7'}}>{calda}</td>
+                                                                    <td style={{textAlign: 'center', background: '#FCE7F3'}}>{tiepida}</td>
+                                                                    <td style={{textAlign: 'center', background: '#DBEAFE'}}>{fredda}</td>
+                                                                    <td style={{textAlign: 'center', background: '#FEE2E2'}}>{ko}</td>
+                                                                    <td style={{textAlign: 'center', background: '#D1FAE5'}}>{ok}</td>
+                                                                    <td style={{textAlign: 'center', fontWeight: '700'}}>{totale}</td>
+                                                                    <td style={{textAlign: 'right', fontWeight: '700'}}>€{importoTotale.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                        <tr style={{background: '#81C784', fontWeight: '700'}}>
+                                                            <td>TOTALE OPPORTUNITÀ</td>
+                                                            <td style={{textAlign: 'center'}}>{clientOpps.filter(o => o.stato === 'CALDA').length}</td>
+                                                            <td style={{textAlign: 'center'}}>{clientOpps.filter(o => o.stato === 'TIEPIDA').length}</td>
+                                                            <td style={{textAlign: 'center'}}>{clientOpps.filter(o => o.stato === 'FREDDA').length}</td>
+                                                            <td style={{textAlign: 'center'}}>{clientOpps.filter(o => o.stato === 'KO').length}</td>
+                                                            <td style={{textAlign: 'center'}}>{clientOpps.filter(o => o.stato === 'OK').length}</td>
+                                                            <td style={{textAlign: 'center'}}>{clientOpps.length}</td>
+                                                            <td style={{textAlign: 'right'}}>€{clientOpps.reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                        </tr>
+                                                        <tr style={{background: '#2E7D32', color: 'white', fontWeight: '700'}}>
+                                                            <td>TOTALE IMPORTI</td>
+                                                            <td style={{textAlign: 'center'}}>€{clientOpps.filter(o => o.stato === 'CALDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                            <td style={{textAlign: 'center'}}>€{clientOpps.filter(o => o.stato === 'TIEPIDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                            <td style={{textAlign: 'center'}}>€{clientOpps.filter(o => o.stato === 'FREDDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                            <td style={{textAlign: 'center'}}>€{clientOpps.filter(o => o.stato === 'KO').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                            <td style={{textAlign: 'center'}}>€{clientOpps.filter(o => o.stato === 'OK').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                            <td></td>
+                                                            <td style={{textAlign: 'right'}}>€{clientOpps.reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    // CLIENT: Solo la propria tabella
+                                    <div>
+                                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px'}}>
+                                            <h3 style={{color: '#2E7D32', fontSize: '16px', margin: 0}}>
+                                                👤 {user.name}
+                                            </h3>
+                                            <button className="btn btn-white" style={{padding: '8px 16px'}} onClick={() => printSingleClientTable(user.id, user.name)}>
+                                                🖨️ Stampa Tabella
+                                            </button>
+                                        </div>
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th>Tipologia Intervento</th>
+                                                    <th style={{textAlign: 'center'}}>CALDA</th>
+                                                    <th style={{textAlign: 'center'}}>TIEPIDA</th>
+                                                    <th style={{textAlign: 'center'}}>FREDDA</th>
+                                                    <th style={{textAlign: 'center'}}>KO</th>
+                                                    <th style={{textAlign: 'center'}}>OK</th>
+                                                    <th style={{textAlign: 'center'}}>Totale</th>
+                                                    <th style={{textAlign: 'right'}}>Importo Totale</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {Object.keys(TIPOLOGIE_INTERVENTO).map(tipKey => {
+                                                    const oppsPerTipo = myOpps.filter(o => o.tipologiaIntervento === tipKey);
+                                                    if (oppsPerTipo.length === 0) return null;
+                                                    
+                                                    const calda = oppsPerTipo.filter(o => o.stato === 'CALDA').length;
+                                                    const tiepida = oppsPerTipo.filter(o => o.stato === 'TIEPIDA').length;
+                                                    const fredda = oppsPerTipo.filter(o => o.stato === 'FREDDA').length;
+                                                    const ko = oppsPerTipo.filter(o => o.stato === 'KO').length;
+                                                    const ok = oppsPerTipo.filter(o => o.stato === 'OK').length;
+                                                    const totale = oppsPerTipo.length;
+                                                    const importoTotale = oppsPerTipo.reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0);
+                                                    
+                                                    return (
+                                                        <tr key={tipKey}>
+                                                            <td style={{fontWeight: '600'}}>{TIPOLOGIE_INTERVENTO[tipKey].label}</td>
+                                                            <td style={{textAlign: 'center', background: '#FEF3C7'}}>{calda}</td>
+                                                            <td style={{textAlign: 'center', background: '#FCE7F3'}}>{tiepida}</td>
+                                                            <td style={{textAlign: 'center', background: '#DBEAFE'}}>{fredda}</td>
+                                                            <td style={{textAlign: 'center', background: '#FEE2E2'}}>{ko}</td>
+                                                            <td style={{textAlign: 'center', background: '#D1FAE5'}}>{ok}</td>
+                                                            <td style={{textAlign: 'center', fontWeight: '700'}}>{totale}</td>
+                                                            <td style={{textAlign: 'right', fontWeight: '700'}}>€{importoTotale.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                                <tr style={{background: '#81C784', fontWeight: '700'}}>
+                                                    <td>TOTALE OPPORTUNITÀ</td>
+                                                    <td style={{textAlign: 'center'}}>{myOpps.filter(o => o.stato === 'CALDA').length}</td>
+                                                    <td style={{textAlign: 'center'}}>{myOpps.filter(o => o.stato === 'TIEPIDA').length}</td>
+                                                    <td style={{textAlign: 'center'}}>{myOpps.filter(o => o.stato === 'FREDDA').length}</td>
+                                                    <td style={{textAlign: 'center'}}>{myOpps.filter(o => o.stato === 'KO').length}</td>
+                                                    <td style={{textAlign: 'center'}}>{myOpps.filter(o => o.stato === 'OK').length}</td>
+                                                    <td style={{textAlign: 'center'}}>{myOpps.length}</td>
+                                                    <td style={{textAlign: 'right'}}>€{myOpps.reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                </tr>
+                                                <tr style={{background: '#2E7D32', color: 'white', fontWeight: '700'}}>
+                                                    <td>TOTALE IMPORTI</td>
+                                                    <td style={{textAlign: 'center'}}>€{myOpps.filter(o => o.stato === 'CALDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                    <td style={{textAlign: 'center'}}>€{myOpps.filter(o => o.stato === 'TIEPIDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                    <td style={{textAlign: 'center'}}>€{myOpps.filter(o => o.stato === 'FREDDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                    <td style={{textAlign: 'center'}}>€{myOpps.filter(o => o.stato === 'KO').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                    <td style={{textAlign: 'center'}}>€{myOpps.filter(o => o.stato === 'OK').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                    <td></td>
+                                                    <td style={{textAlign: 'right'}}>€{myOpps.reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {user.role === 'admin' && (
+                            <>
+                                <h2 style={{margin: '40px 0 16px', color: '#2E7D32'}}>👥 Gestione Utenti</h2>
+                                <button className="btn btn-green" style={{marginBottom: '16px'}} onClick={() => setShowUserForm(true)}>+ Nuovo Utente</button>
+                                
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Nome</th>
+                                            <th>Username</th>
+                                            <th>Ruolo</th>
+                                            <th>Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {users.map(u => (
+                                            <tr key={u.id}>
+                                                <td style={{fontWeight: '600'}}>{u.name}</td>
+                                                <td>{u.username}</td>
                                                 <td>
-                                                    <span className={`badge stato-${opp.stato.toLowerCase()}`}>
-                                                        {opp.stato}
+                                                    <span className="badge" style={{
+                                                        background: u.role === 'admin' ? '#2E7D32' : u.role === 'diretto' ? '#1976D2' : u.role === 'interno' ? '#F57C00' : u.role === 'visualizzatore' ? '#9C27B0' : '#81C784',
+                                                        color: 'white'
+                                                    }}>
+                                                        {RUOLI[u.role]}
                                                     </span>
                                                 </td>
-                                                <td>{opp.importoPresunto ? `€ ${parseInt(opp.importoPresunto).toLocaleString()}` : '-'}</td>
-                                                <td>{opp.creatorName}</td>
                                                 <td>
-                                                    <button 
-                                                        className="btn btn-white" 
-                                                        style={{padding: '6px 12px', marginRight: '4px'}}
-                                                        onClick={() => {
-                                                            setEditOpp(opp);
-                                                            setShowForm(true);
-                                                        }}
-                                                    >
-                                                        ✏️
-                                                    </button>
-                                                    {(user.role === 'admin' || opp.creatorId === user.uid) && (
-                                                        <button 
-                                                            className="btn btn-red" 
-                                                            style={{padding: '6px 12px'}}
-                                                            onClick={() => deleteOpp(opp.id)}
-                                                        >
-                                                            🗑️
-                                                        </button>
-                                                    )}
+                                                    <button className="btn btn-white" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setEditUser(u); setUserForm({...u}); setShowUserForm(true); }}>Modifica</button>
+                                                    <button className="btn btn-red" style={{padding: '6px 12px'}} onClick={() => deleteUser(u.id)}>Elimina</button>
                                                 </td>
                                             </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </>
+                        )}
                     </div>
 
-                    {/* Modal Form Opportunità */}
                     {showForm && (
                         <div className="modal" onClick={() => { setShowForm(false); setEditOpp(null); }}>
                             <div className="modal-content" onClick={e => e.stopPropagation()}>
-                                <h2 style={{marginBottom: '20px', color: '#2E7D32'}}>
-                                    {editOpp ? '✏️ Modifica' : '➕ Nuova'} Opportunità
-                                </h2>
+                                <h2 style={{marginBottom: '20px', color: '#2E7D32'}}>{editOpp ? 'Modifica' : 'Nuova'} Opportunità</h2>
                                 <form onSubmit={saveOpp}>
+                                    <div className="section-title">📋 Dati Azienda</div>
+                                    <div className="mb">
+                                        <label className="label">Ragione Sociale *</label>
+                                        <input className="input" value={form.ragioneSociale} onChange={e => setForm({...form, ragioneSociale: e.target.value})} required />
+                                    </div>
                                     <div className="grid-2">
                                         <div className="mb">
-                                            <label className="label">Cliente *</label>
-                                            <input name="cliente" className="input" defaultValue={editOpp?.cliente} required />
+                                            <label className="label">Indirizzo</label>
+                                            <input className="input" value={form.indirizzo} onChange={e => setForm({...form, indirizzo: e.target.value})} />
                                         </div>
                                         <div className="mb">
-                                            <label className="label">Comune *</label>
-                                            <input name="comune" className="input" defaultValue={editOpp?.comune} required />
+                                            <label className="label">CAP</label>
+                                            <input className="input" value={form.cap} onChange={e => setForm({...form, cap: e.target.value})} />
+                                        </div>
+                                    </div>
+                                    <div className="grid-2">
+                                        <div className="mb">
+                                            <label className="label">Città</label>
+                                            <input className="input" value={form.citta} onChange={e => setForm({...form, citta: e.target.value})} />
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">Telefono</label>
+                                            <input className="input" value={form.telefono} onChange={e => setForm({...form, telefono: e.target.value})} />
+                                        </div>
+                                    </div>
+                                    <div className="mb">
+                                        <label className="label">Tipologia Cliente *</label>
+                                        <select className="input" value={form.tipologiaCliente} onChange={e => setForm({...form, tipologiaCliente: e.target.value})} required>
+                                            <option value="">Seleziona...</option>
+                                            {TIPOLOGIE_CLIENTE.map(t => <option key={t} value={t}>{t}</option>)}
+                                        </select>
+                                    </div>
+
+                                    <div className="section-title">👤 Referente</div>
+                                    <div className="grid-2">
+                                        <div className="mb">
+                                            <label className="label">Nome Referente</label>
+                                            <input className="input" value={form.nomeReferente} onChange={e => setForm({...form, nomeReferente: e.target.value})} />
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">Ruolo</label>
+                                            <input className="input" value={form.ruoloReferente} onChange={e => setForm({...form, ruoloReferente: e.target.value})} />
+                                        </div>
+                                    </div>
+                                    <div className="grid-2">
+                                        <div className="mb">
+                                            <label className="label">Telefono Referente</label>
+                                            <input className="input" value={form.telReferente} onChange={e => setForm({...form, telReferente: e.target.value})} />
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">Email Referente</label>
+                                            <input type="email" className="input" value={form.emailReferente} onChange={e => setForm({...form, emailReferente: e.target.value})} />
                                         </div>
                                     </div>
 
-                                    <div className="grid-2">
+                                    <div className="section-title">📍 Ubicazione Intervento</div>
+                                    <div className="grid-3">
                                         <div className="mb">
-                                            <label className="label">Tipologia Cliente *</label>
-                                            <select name="tipologiaCliente" className="input" defaultValue={editOpp?.tipologiaCliente} required>
-                                                {TIPOLOGIE_CLIENTE.map(t => <option key={t} value={t}>{t}</option>)}
-                                            </select>
+                                            <label className="label">Via</label>
+                                            <input className="input" value={form.viaIntervento} onChange={e => setForm({...form, viaIntervento: e.target.value})} />
                                         </div>
                                         <div className="mb">
-                                            <label className="label">Tipologia Intervento *</label>
-                                            <select name="tipologiaIntervento" className="input" defaultValue={editOpp?.tipologiaIntervento} required>
-                                                {Object.entries(TIPOLOGIE_INTERVENTO).map(([k, v]) => (
-                                                    <option key={k} value={k}>{v.label}</option>
-                                                ))}
-                                            </select>
+                                            <label className="label">Numero</label>
+                                            <input className="input" value={form.numeroIntervento} onChange={e => setForm({...form, numeroIntervento: e.target.value})} />
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">CAP</label>
+                                            <input className="input" value={form.capIntervento} onChange={e => setForm({...form, capIntervento: e.target.value})} />
                                         </div>
                                     </div>
+                                    <div className="mb">
+                                        <label className="label">Città Intervento</label>
+                                        <input className="input" value={form.cittaIntervento} onChange={e => setForm({...form, cittaIntervento: e.target.value})} />
+                                    </div>
+
+                                    <div className="section-title">🔧 Tecnico Incaricato</div>
+                                    <div className="mb">
+                                        <label className="label">Tecnico Incaricato</label>
+                                        <select className="input" value={form.hasTecnico} onChange={e => setForm({...form, hasTecnico: e.target.value})}>
+                                            <option value="no">NO</option>
+                                            <option value="si">SI</option>
+                                        </select>
+                                    </div>
+                                    {form.hasTecnico === 'si' && (
+                                        <>
+                                            <div className="mb">
+                                                <label className="label">Nome Studio Tecnico</label>
+                                                <input className="input" value={form.nomeStudioTecnico} onChange={e => setForm({...form, nomeStudioTecnico: e.target.value})} />
+                                            </div>
+                                            <div className="grid-2">
+                                                <div className="mb">
+                                                    <label className="label">Referente Studio</label>
+                                                    <input className="input" value={form.referenteStudio} onChange={e => setForm({...form, referenteStudio: e.target.value})} />
+                                                </div>
+                                                <div className="mb">
+                                                    <label className="label">Indirizzo Studio</label>
+                                                    <input className="input" value={form.indirizzoStudio} onChange={e => setForm({...form, indirizzoStudio: e.target.value})} />
+                                                </div>
+                                            </div>
+                                            <div className="grid-2">
+                                                <div className="mb">
+                                                    <label className="label">Telefono Studio</label>
+                                                    <input className="input" value={form.telefonoStudio} onChange={e => setForm({...form, telefonoStudio: e.target.value})} />
+                                                </div>
+                                                <div className="mb">
+                                                    <label className="label">Email Studio</label>
+                                                    <input type="email" className="input" value={form.emailStudio} onChange={e => setForm({...form, emailStudio: e.target.value})} />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    <div className="section-title">⚡ Intervento</div>
+                                    <div className="mb">
+                                        <label className="label">Tipologia Intervento *</label>
+                                        <select className="input" value={form.tipologiaIntervento} onChange={e => setForm({...form, tipologiaIntervento: e.target.value, vociSelezionate: []})} required>
+                                            <option value="">Seleziona...</option>
+                                            {Object.keys(TIPOLOGIE_INTERVENTO).map(k => <option key={k} value={k}>{TIPOLOGIE_INTERVENTO[k].label}</option>)}
+                                        </select>
+                                    </div>
+
+                                    {form.tipologiaIntervento && TIPOLOGIE_INTERVENTO[form.tipologiaIntervento].voci.length > 0 && (
+                                        <div className="mb">
+                                            <label className="label">Voci Intervento</label>
+                                            <div className="checkbox-group">
+                                                {TIPOLOGIE_INTERVENTO[form.tipologiaIntervento].voci.map(voce => (
+                                                    <label key={voce} className="checkbox-item">
+                                                        <input type="checkbox" checked={form.vociSelezionate.includes(voce)} onChange={() => toggleVoce(voce)} />
+                                                        <span>{voce}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {(form.tipologiaIntervento === 'cratere_2016' || form.tipologiaIntervento === 'cratere_2009') && (
+                                        <div className="mb">
+                                            <label className="label">Livello Operativo *</label>
+                                            <select className="input" value={form.livelloOperativo} onChange={e => setForm({...form, livelloOperativo: e.target.value})} required>
+                                                <option value="">Seleziona livello...</option>
+                                                <option value="L0">L0</option>
+                                                <option value="L1">L1</option>
+                                                <option value="L2">L2</option>
+                                                <option value="L3">L3</option>
+                                                <option value="L4">L4</option>
+                                            </select>
+                                        </div>
+                                    )}
 
                                     <div className="mb">
                                         <label className="label">Descrizione Intervento</label>
-                                        <textarea name="descrizioneIntervento" className="input" defaultValue={editOpp?.descrizioneIntervento} />
+                                        <textarea className="input" value={form.descrizioneIntervento} onChange={e => setForm({...form, descrizioneIntervento: e.target.value})} />
                                     </div>
 
                                     <div className="grid-2">
                                         <div className="mb">
                                             <label className="label">Tipo Intervento</label>
-                                            <select name="tipoIntervento" className="input" defaultValue={editOpp?.tipoIntervento || TIPO_INTERVENTO[0]}>
+                                            <select className="input" value={form.tipoIntervento} onChange={e => setForm({...form, tipoIntervento: e.target.value})}>
                                                 {TIPO_INTERVENTO.map(t => <option key={t} value={t}>{t}</option>)}
                                             </select>
                                         </div>
                                         <div className="mb">
                                             <label className="label">Importo Presunto (€)</label>
-                                            <input type="number" name="importoPresunto" className="input" defaultValue={editOpp?.importoPresunto} />
+                                            <input type="number" className="input" value={form.importoPresunto} onChange={e => setForm({...form, importoPresunto: e.target.value})} />
                                         </div>
                                     </div>
 
                                     <div className="grid-2">
                                         <div className="mb">
                                             <label className="label">Stato *</label>
-                                            <select name="stato" className="input" defaultValue={editOpp?.stato || 'CALDA'} required>
-                                                {STATI.map(s => <option key={s} value={s}>{s}</option>)}
+                                            <select className="input" value={form.stato} onChange={e => setForm({...form, stato: e.target.value})} style={{
+                                                background: form.stato === 'CALDA' ? '#FEF3C7' : form.stato === 'TIEPIDA' ? '#FCE7F3' : form.stato === 'FREDDA' ? '#DBEAFE' : form.stato === 'KO' ? '#FEE2E2' : '#D1FAE5',
+                                                fontWeight: '700'
+                                            }} required>
+                                                <option value="CALDA" style={{background: '#FEF3C7'}}>CALDA</option>
+                                                <option value="TIEPIDA" style={{background: '#FCE7F3'}}>TIEPIDA</option>
+                                                <option value="FREDDA" style={{background: '#DBEAFE'}}>FREDDA</option>
+                                                <option value="KO" style={{background: '#FEE2E2'}}>KO</option>
+                                                <option value="OK" style={{background: '#D1FAE5'}}>OK</option>
                                             </select>
                                         </div>
                                         <div className="mb">
                                             <label className="label">Possibile Contrattualizzazione</label>
-                                            <select name="possibileContrattualizzazione" className="input" defaultValue={editOpp?.possibileContrattualizzazione || CONTRATTUALIZZAZIONE[0]}>
+                                            <select className="input" value={form.possibileContrattualizzazione} onChange={e => setForm({...form, possibileContrattualizzazione: e.target.value})}>
                                                 {CONTRATTUALIZZAZIONE.map(c => <option key={c} value={c}>{c}</option>)}
                                             </select>
                                         </div>
@@ -656,120 +1211,56 @@
                         </div>
                     )}
 
-                    {/* Modal Gestione Utenti */}
                     {showUserForm && user.role === 'admin' && (
                         <div className="modal" onClick={() => { setShowUserForm(false); setEditUser(null); }}>
-                            <div className="modal-content" style={{maxWidth: '800px'}} onClick={e => e.stopPropagation()}>
-                                <h2 style={{marginBottom: '20px', color: '#2E7D32'}}>👥 Gestione Utenti</h2>
-                                
-                                {/* Form nuovo utente */}
-                                <div className="card">
-                                    <h3 style={{marginBottom: '16px'}}>{editUser ? 'Modifica' : 'Nuovo'} Utente</h3>
-                                    <form onSubmit={saveUser}>
-                                        <div className="grid-2">
-                                            <div className="mb">
-                                                <label className="label">Nome *</label>
-                                                <input className="input" value={userForm.name} onChange={e => setUserForm({...userForm, name: e.target.value})} required />
-                                            </div>
-                                            <div className="mb">
-                                                <label className="label">Username *</label>
-                                                <input className="input" value={userForm.username} onChange={e => setUserForm({...userForm, username: e.target.value})} required />
-                                            </div>
-                                        </div>
-                                        <div className="grid-2">
-                                            <div className="mb">
-                                                <label className="label">Password *</label>
-                                                <input type="password" className="input" value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} required />
-                                            </div>
-                                            <div className="mb">
-                                                <label className="label">Ruolo *</label>
-                                                <select className="input" value={userForm.role} onChange={e => setUserForm({...userForm, role: e.target.value})} required>
-                                                    {Object.entries(RUOLI).map(([k, v]) => (
-                                                        <option key={k} value={k}>{v}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div style={{display: 'flex', gap: '10px'}}>
-                                            <button type="submit" className="btn btn-green">Salva</button>
-                                            {editUser && (
-                                                <button type="button" className="btn btn-white" onClick={() => {
-                                                    setEditUser(null);
-                                                    setUserForm({ username: '', password: '', name: '', role: 'agenzia' });
-                                                }}>Annulla</button>
-                                            )}
-                                        </div>
-                                    </form>
-                                </div>
+                            <div className="modal-content" style={{maxWidth: '500px'}} onClick={e => e.stopPropagation()}>
+                                <h2 style={{marginBottom: '20px', color: '#2E7D32'}}>{editUser ? 'Modifica' : 'Nuovo'} Utente</h2>
+                                <form onSubmit={saveUser}>
+                                    <div className="mb">
+                                        <label className="label">Nome *</label>
+                                        <input className="input" value={userForm.name} onChange={e => setUserForm({...userForm, name: e.target.value})} required />
+                                    </div>
+                                    <div className="mb">
+                                        <label className="label">Username *</label>
+                                        <input className="input" value={userForm.username} onChange={e => setUserForm({...userForm, username: e.target.value})} required />
+                                    </div>
+                                    <div className="mb">
+                                        <label className="label">Password *</label>
+                                        <input type="password" className="input" value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} required />
+                                    </div>
+                                    <div className="mb">
+                                        <label className="label">Ruolo *</label>
+                                        <select className="input" value={userForm.role} onChange={e => setUserForm({...userForm, role: e.target.value})} required>
+                                            <option value="agenzia">Agenzia</option>
+                                            <option value="diretto">Diretto</option>
+                                            <option value="interno">Interno</option>
+                                            <option value="visualizzatore">Visualizzatore</option>
+                                            <option value="admin">Amministratore</option>
+                                        </select>
+                                    </div>
+                                    <div style={{display: 'flex', gap: '10px'}}>
+                                        <button type="submit" className="btn btn-green">Salva</button>
+                                        <button type="button" className="btn btn-white" onClick={() => { setShowUserForm(false); setEditUser(null); }}>Annulla</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
 
-                                {/* Lista utenti */}
-                                <div className="card" style={{marginTop: '20px'}}>
-                                    <h3 style={{marginBottom: '16px'}}>Utenti Esistenti ({users.length})</h3>
-                                    <table>
-                                        <thead>
-                                            <tr>
-                                                <th>Nome</th>
-                                                <th>Username</th>
-                                                <th>Ruolo</th>
-                                                <th>Azioni</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {users.map(u => (
-                                                <tr key={u.uid}>
-                                                    <td>{u.name}</td>
-                                                    <td>{u.username}</td>
-                                                    <td>{RUOLI[u.role]}</td>
-                                                    <td>
-                                                        <button 
-                                                            className="btn btn-white" 
-                                                            style={{padding: '6px 12px', marginRight: '4px'}}
-                                                            onClick={() => {
-                                                                setEditUser(u);
-                                                                setUserForm({
-                                                                    name: u.name,
-                                                                    username: u.username,
-                                                                    password: u.password,
-                                                                    role: u.role
-                                                                });
-                                                            }}
-                                                        >
-                                                            ✏️
-                                                        </button>
-                                                        {u.uid !== user.uid && (
-                                                            <button 
-                                                                className="btn btn-red" 
-                                                                style={{padding: '6px 12px'}}
-                                                                onClick={() => deleteUser(u.uid)}
-                                                            >
-                                                                🗑️
-                                                            </button>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                    {showDescModal && (
+                        <div className="modal" onClick={() => setShowDescModal(false)}>
+                            <div className="modal-content" style={{maxWidth: '600px'}} onClick={e => e.stopPropagation()}>
+                                <h2 style={{marginBottom: '20px', color: '#2E7D32'}}>📄 Descrizione Intervento</h2>
+                                <div style={{padding: '20px', background: '#f9f9f9', borderRadius: '8px', lineHeight: '1.6', whiteSpace: 'pre-wrap'}}>
+                                    {selectedDesc}
                                 </div>
-
-                                <button className="btn btn-white" style={{marginTop: '20px'}} onClick={() => setShowUserForm(false)}>
-                                    Chiudi
-                                </button>
+                                <button className="btn btn-white" style={{marginTop: '20px'}} onClick={() => setShowDescModal(false)}>Chiudi</button>
                             </div>
                         </div>
                     )}
                 </div>
             );
         }
-
-        // Gestione errori globale
-        window.addEventListener('error', (event) => {
-            console.error('❌ Errore globale:', event.error);
-        });
-
-        window.addEventListener('unhandledrejection', (event) => {
-            console.error('❌ Promise non gestita:', event.reason);
-        });
 
         ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>
