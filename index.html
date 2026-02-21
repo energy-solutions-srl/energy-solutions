@@ -624,6 +624,64 @@
                 setTimeout(() => printWindow.print(), 250);
             };
 
+            const downloadBackup = async () => {
+                try {
+                    const db = firebase.database();
+                    
+                    // Mostra messaggio di attesa
+                    const loadingMsg = document.createElement('div');
+                    loadingMsg.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 9999; text-align: center;';
+                    loadingMsg.innerHTML = '<h3 style="color: #2E7D32; margin-bottom: 10px;">💾 Creazione Backup...</h3><p style="color: #666;">Attendere prego...</p>';
+                    document.body.appendChild(loadingMsg);
+                    
+                    // Scarica tutti i dati
+                    const [usersSnap, oppsSnap] = await Promise.all([
+                        db.ref('users').once('value'),
+                        db.ref('opportunities').once('value')
+                    ]);
+                    
+                    const backupData = {
+                        metadata: {
+                            dataBackup: new Date().toISOString(),
+                            dataBackupLeggibile: new Date().toLocaleString('it-IT'),
+                            utenteBackup: user.name,
+                            versione: '1.0'
+                        },
+                        users: usersSnap.val() || {},
+                        opportunities: oppsSnap.val() || {},
+                        statistiche: {
+                            totaleUtenti: Object.keys(usersSnap.val() || {}).length,
+                            totaleOpportunita: Object.keys(oppsSnap.val() || {}).length
+                        }
+                    };
+                    
+                    // Crea file JSON
+                    const dataStr = JSON.stringify(backupData, null, 2);
+                    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                    
+                    // Download file
+                    const url = URL.createObjectURL(dataBlob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    const fileName = `backup-energy-solutions-${new Date().toISOString().split('T')[0]}.json`;
+                    link.download = fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    
+                    // Rimuovi messaggio di attesa
+                    document.body.removeChild(loadingMsg);
+                    
+                    // Mostra conferma
+                    alert(`✅ Backup completato!\n\nFile: ${fileName}\n\nUtenti: ${backupData.statistiche.totaleUtenti}\nOpportunità: ${backupData.statistiche.totaleOpportunita}\n\nIl file è stato scaricato nella cartella Download.`);
+                    
+                } catch (error) {
+                    console.error('Errore backup:', error);
+                    alert('❌ Errore durante il backup: ' + error.message);
+                }
+            };
+
             const printTablePDF = () => {
                 const printContent = document.getElementById('summary-table-print');
                 if (!printContent) {
@@ -803,6 +861,9 @@
                         <div style={{marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'center'}}>
                             {user.role !== 'visualizzatore' && (
                                 <button className="btn btn-green" onClick={() => setShowForm(true)}>+ Nuova Opportunità</button>
+                            )}
+                            {user.role === 'admin' && (
+                                <button className="btn btn-white" onClick={downloadBackup} style={{marginLeft: '10px'}}>💾 Backup Dati</button>
                             )}
                             <button className="btn btn-white" onClick={printTablePDF}>🖨️ Stampa Riepilogo</button>
                         </div>
