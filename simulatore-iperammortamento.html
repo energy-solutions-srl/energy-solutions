@@ -38,7 +38,7 @@ body {
     color: var(--text);
     line-height: 1.6;
     min-height: 100vh;
-    padding: 24px 20px 60px;
+
 }
 
 .container { max-width: 1200px; margin: 0 auto; }
@@ -484,17 +484,93 @@ footer, .footer {
     .riepilogo-grid { grid-template-columns: 1fr; }
 }
 
+    
+/* ── HEADER (same as simulatore-finanziario) ── */
+.site-header {
+  background: linear-gradient(135deg, var(--primary-darker) 0%, var(--primary-dark) 55%, var(--primary) 100%);
+  padding: 0 40px;
+  display: flex;
+  align-items: stretch;
+  min-height: 68px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 24px rgba(46,125,50,0.30);
+  overflow: hidden;
+}
+.site-header::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -40px;
+  width: 260px; height: 260px;
+  background: radial-gradient(circle, rgba(255,255,255,0.09) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 0;
+  flex: 1;
+  position: relative;
+  z-index: 1;
+}
+.header-text h1 {
+  font-family: Arial, sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.2px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.header-text p {
+  font-size: 11.5px;
+  color: rgba(255,255,255,0.65);
+  margin-top: 1px;
+  font-weight: 500;
+}
+.header-badge {
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  border-left: 1px solid rgba(255,255,255,0.20);
+  margin-left: 20px;
+  position: relative;
+  z-index: 1;
+}
+.header-badge span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--primary-darker);
+  background: #c8e6c9;
+  padding: 5px 14px;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+@media (max-width: 768px) {
+  .site-header { padding: 0 16px; }
+  .header-badge { display: none; }
+}
+
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="header-content">
-                <h1>💎 Simulatore Iperammortamento 2026</h1>
-                <p class="subtitle">Industria 5.0 — Legge di Bilancio 2026</p>
-            </div>
-            <button class="btn-back" onclick="window.location.href='dashboard.html'">← Dashboard</button>
-        </header>
+    <div class="main-wrapper"><div class="container">
+        <header class="site-header">
+  <div class="header-brand">
+    <div class="header-text">
+      <h1>Simulatore Iperammortamento 2026</h1>
+      <p>Industria 5.0 · Legge di Bilancio 2026</p>
+      <p style="font-size:10px; color:rgba(255,255,255,0.40); margin-top:2px; letter-spacing:0.5px;">Powered B.U. Progetti Speciali</p>
+    </div>
+  </div>
+  <div class="header-badge">
+    <span>Calcolo Indicativo</span>
+  </div>
+</header>
 
         <div class="info-banner">
             <h3>📋 Informazioni sulla Misura</h3>
@@ -1677,5 +1753,5 @@ footer, .footer {
             risultatiDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
     </script>
-</body>
+</div></body>
 </html>
