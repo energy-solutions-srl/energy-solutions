@@ -11,24 +11,24 @@
 
     <style>
         :root {
-            --ocra:       #b8860b;
-            --ocra-dark:  #7a5800;
-            --ocra-mid:   #c9960f;
-            --ocra-light: #f0c040;
-            --ocra-pale:  #fdf8e8;
-            --ocra-pale2: #faefc8;
-            --navy:       #1e3a5f;
-            --navy-dark:  #0f2440;
-            --bg:         #fffdf5;
+            --green:       #2d6a4f;
+            --green-dark:  #1b4332;
+            --green-mid:   #40916c;
+            --green-light: #95d5b2;
+            --green-pale:  #f0f7f2;
+            --green-pale2: #d8eddf;
+            --navy:        #1b4332;
+            --navy-dark:   #081c15;
+            --bg:          #f8fdf9;
             --surface:    #ffffff;
-            --border:     #e8d9a0;
-            --border2:    #c9b060;
-            --text:       #2a1f00;
-            --text-mid:   #5c4a18;
-            --text-muted: #9a8040;
-            --shadow-sm:  0 2px 8px rgba(184,134,11,0.10);
-            --shadow:     0 4px 20px rgba(184,134,11,0.13);
-            --shadow-lg:  0 8px 40px rgba(184,134,11,0.18);
+            --border:      #b7d8c3;
+            --border2:     #74b994;
+            --text:        #132a1e;
+            --text-mid:    #2d5a3d;
+            --text-muted:  #5a8a6a;
+            --shadow-sm:  0 2px 8px rgba(27,67,50,0.10);
+            --shadow:     0 4px 20px rgba(27,67,50,0.13);
+            --shadow-lg:  0 8px 40px rgba(27,67,50,0.18);
             --radius:     16px;
             --radius-sm:  10px;
         }
@@ -37,7 +37,7 @@
 
         body {
             font-family: 'Manrope', sans-serif;
-            background: linear-gradient(160deg, #fffdf5 0%, #fdf3cc 100%);
+            background: linear-gradient(160deg, #f8fdf9 0%, #d8eddf 100%);
             min-height: 100vh;
             color: var(--text);
             line-height: 1.6;
@@ -45,7 +45,7 @@
 
         /* ─── HEADER ─── */
         .site-header {
-            background: linear-gradient(135deg, var(--ocra-dark) 0%, var(--ocra) 60%, var(--ocra-mid) 100%);
+            background: linear-gradient(135deg, var(--green-dark) 0%, var(--green) 60%, var(--green-mid) 100%);
             padding: 0 48px;
             display: flex;
             align-items: center;
@@ -54,7 +54,7 @@
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: 0 4px 24px rgba(122,88,0,0.28);
+            box-shadow: 0 4px 24px rgba(27,67,50,0.28);
             overflow: hidden;
         }
 
@@ -112,12 +112,12 @@
 
         .user-avatar {
             width: 32px; height: 32px;
-            background: var(--ocra-light);
+            background: var(--green-light);
             border-radius: 50%;
             display: grid; place-items: center;
             font-size: 14px;
             font-weight: 700;
-            color: var(--ocra-dark);
+            color: var(--green-dark);
             flex-shrink: 0;
         }
 
@@ -161,7 +161,7 @@
             font-family: 'Instrument Serif', serif;
             font-size: 1.55rem;
             font-weight: 400;
-            color: var(--ocra-dark);
+            color: var(--green-dark);
         }
 
         .section-line {
@@ -196,7 +196,7 @@
             position: absolute;
             top: 0; left: 0; right: 0;
             height: 4px;
-            background: var(--card-color, var(--ocra));
+            background: var(--card-color, var(--green));
         }
 
         .sim-card:hover {
@@ -218,7 +218,7 @@
             display: grid; place-items: center;
             font-size: 26px;
             margin-bottom: 16px;
-            background: var(--ocra-pale);
+            background: var(--green-pale);
             border: 1px solid var(--border);
         }
 
@@ -240,15 +240,15 @@
             position: absolute;
             bottom: 20px; right: 20px;
             width: 28px; height: 28px;
-            background: var(--ocra-pale2);
+            background: var(--green-pale2);
             border-radius: 8px;
             display: grid; place-items: center;
             font-size: 13px;
-            color: var(--ocra);
+            color: var(--green);
             transition: all 0.2s;
         }
         .sim-card:not(.locked):hover .sim-arrow {
-            background: var(--ocra);
+            background: var(--green);
             color: #fff;
             transform: translateX(2px);
         }
@@ -281,7 +281,7 @@
             align-items: center;
             gap: 8px;
             padding: 12px 22px;
-            background: linear-gradient(135deg, var(--ocra-dark), var(--ocra));
+            background: linear-gradient(135deg, var(--green-dark), var(--green));
             color: #fff;
             border: none;
             border-radius: var(--radius-sm);
@@ -290,12 +290,12 @@
             font-weight: 700;
             cursor: pointer;
             transition: all 0.2s;
-            box-shadow: 0 3px 12px rgba(122,88,0,0.22);
+            box-shadow: 0 3px 12px rgba(27,67,50,0.22);
             letter-spacing: 0.2px;
         }
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(122,88,0,0.30);
+            box-shadow: 0 6px 20px rgba(27,67,50,0.30);
         }
 
         .btn-secondary {
@@ -303,8 +303,8 @@
             align-items: center;
             gap: 8px;
             padding: 12px 22px;
-            background: var(--ocra-pale);
-            color: var(--ocra-dark);
+            background: var(--green-pale);
+            color: var(--green-dark);
             border: 1.5px solid var(--border2);
             border-radius: var(--radius-sm);
             font-family: 'Manrope', sans-serif;
@@ -315,8 +315,8 @@
             letter-spacing: 0.2px;
         }
         .btn-secondary:hover {
-            background: var(--ocra-pale2);
-            border-color: var(--ocra);
+            background: var(--green-pale2);
+            border-color: var(--green);
             transform: translateY(-2px);
         }
 
@@ -325,7 +325,7 @@
             align-items: center;
             gap: 12px;
             padding: 16px 20px;
-            background: var(--ocra-pale);
+            background: var(--green-pale);
             border: 1px solid var(--border);
             border-radius: var(--radius-sm);
             color: var(--text-muted);
@@ -369,7 +369,7 @@
             max-height: 90vh;
             overflow-y: auto;
             box-shadow: 0 24px 80px rgba(0,0,0,0.30);
-            border-top: 5px solid var(--ocra);
+            border-top: 5px solid var(--green);
         }
 
         .modal-header {
@@ -382,12 +382,12 @@
         .modal-title {
             font-family: 'Instrument Serif', serif;
             font-size: 1.4rem;
-            color: var(--ocra-dark);
+            color: var(--green-dark);
         }
 
         .modal-close {
             width: 36px; height: 36px;
-            background: var(--ocra-pale);
+            background: var(--green-pale);
             border: 1px solid var(--border);
             border-radius: 8px;
             display: grid; place-items: center;
@@ -396,7 +396,7 @@
             color: var(--text-muted);
             transition: all 0.2s;
         }
-        .modal-close:hover { background: var(--ocra-pale2); color: var(--ocra-dark); }
+        .modal-close:hover { background: var(--green-pale2); color: var(--green-dark); }
 
         .modal-subtitle {
             font-size: 13px;
@@ -412,7 +412,7 @@
         }
 
         .perm-table thead th {
-            background: linear-gradient(135deg, var(--ocra-dark), var(--ocra));
+            background: linear-gradient(135deg, var(--green-dark), var(--green));
             color: #fff;
             padding: 12px 14px;
             text-align: center;
@@ -428,7 +428,7 @@
             border-bottom: 1px solid var(--border);
             transition: background 0.15s;
         }
-        .perm-table tbody tr:hover { background: var(--ocra-pale); }
+        .perm-table tbody tr:hover { background: var(--green-pale); }
         .perm-table tbody tr:last-child { border-bottom: none; }
 
         .perm-table td {
@@ -451,7 +451,7 @@
 
         .perm-table input[type="checkbox"] {
             width: 18px; height: 18px;
-            accent-color: var(--ocra);
+            accent-color: var(--green);
             cursor: pointer;
         }
 
@@ -474,7 +474,7 @@
         .footer-brand {
             font-family: 'Instrument Serif', serif;
             font-size: 1.1rem;
-            color: var(--ocra-dark);
+            color: var(--green-dark);
             margin-bottom: 4px;
         }
 
