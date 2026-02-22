@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulatore ZES Unica 2026 - Credito d'Imposta</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-auth-compat.min.js"></script>
+    
+    <style>
+:root {
+    --primary:        #4CAF50;
+    --primary-dark:   #2E7D32;
+    --primary-darker: #1b5e20;
+    --primary-light:  #45a049;
+    --primary-pale:   #f0f9f4;
+    --primary-pale2:  #e8f5e9;
+    --border:         #c8e6c9;
+    --border2:        #81C784;
+    --text:           #1a2e1a;
+    --text-mid:       #2d4d2d;
+    --text-muted:     #66a569;
+    --red:            #dc2626;
+    --warning-bg:     #fff8e1;
+    --warning-border: #fbbf24;
+    --warning-text:   #92400e;
+    --shadow-sm:      0 2px 8px rgba(76,175,80,0.10);
+    --shadow:         0 4px 20px rgba(76,175,80,0.13);
+    --shadow-lg:      0 8px 40px rgba(76,175,80,0.20);
+    --radius:         14px;
+    --radius-sm:      10px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Manrope', Arial, sans-serif;
+    background: linear-gradient(160deg, #f0f9f4 0%, #c8e6c9 100%);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+    padding: 24px 20px 60px;
+}
+
+.container { max-width: 1200px; margin: 0 auto; }
+
+/* ── HEADER ── */
+header {
+    background: linear-gradient(135deg, var(--primary-darker) 0%, var(--primary-dark) 55%, var(--primary) 100%);
+    padding: 28px 36px 28px;
+    border-radius: var(--radius);
+    margin-bottom: 28px;
+    box-shadow: 0 4px 24px rgba(46,125,50,0.28);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+header::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -50px;
+    width: 260px; height: 260px;
+    background: radial-gradient(circle, rgba(255,255,255,0.09) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.header-content { position: relative; z-index: 1; flex: 1; }
+
+h1 {
+    font-family: Arial, sans-serif;
+    font-weight: 800;
+    font-size: 30px;
+    color: #ffffff;
+    margin-bottom: 6px;
+    letter-spacing: -0.3px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.18);
+    line-height: 1.2;
+}
+
+.subtitle {
+    color: rgba(255,255,255,0.80);
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.btn-back {
+    position: relative; z-index: 1;
+    background: rgba(255,255,255,0.15);
+    color: white;
+    border: 1.5px solid rgba(255,255,255,0.30);
+    padding: 9px 18px;
+    border-radius: var(--radius-sm);
+    font-family: 'Manrope', Arial, sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.btn-back:hover { background: rgba(255,255,255,0.26); }
+
+/* ── CARD ── */
+.card {
+    background: #ffffff;
+    border-radius: var(--radius);
+    padding: 26px 26px 22px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+    border-top: 4px solid var(--primary);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+
+.card h2 {
+    font-family: Arial, sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: var(--primary-dark);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ── FORM ── */
+.form-group { margin-bottom: 20px; }
+
+label {
+    display: block;
+    margin-bottom: 7px;
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+input, select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    font-family: 'Manrope', Arial, sans-serif;
+    background: var(--primary-pale);
+    color: var(--text);
+    transition: all 0.2s;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2366a569' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-color: var(--primary-pale);
+    padding-right: 36px;
+    cursor: pointer;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(76,175,80,0.12);
+}
+
+input::placeholder { color: #a5c8a5; }
+
+input[type="checkbox"] {
+    width: 18px; height: 18px;
+    accent-color: var(--primary-dark);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+small { font-size: 11px; color: var(--text-muted); display: block; margin-top: 5px; font-style: italic; }
+
+/* ── BUTTON ── */
+.btn, button.btn, button[onclick] {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+    color: white;
+    padding: 13px 28px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.25s;
+    box-shadow: 0 3px 12px rgba(46,125,50,0.22);
+    font-family: 'Manrope', Arial, sans-serif;
+    letter-spacing: 0.3px;
+}
+.btn:hover, button.btn:hover, button[onclick]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(46,125,50,0.30);
+}
+
+/* ── INFO BANNER ── */
+.info-banner, .info-box {
+    background: var(--primary-pale);
+    border: 1.5px solid var(--border2);
+    border-left: 5px solid var(--primary);
+    border-radius: var(--radius-sm);
+    padding: 18px 20px;
+    margin-bottom: 20px;
+    line-height: 1.7;
+}
+.info-banner h3, .info-box h3 {
+    font-family: Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--primary-dark);
+    margin-bottom: 10px;
+}
+.info-banner p, .info-box p { font-size: 0.9rem; color: var(--text-mid); margin-bottom: 5px; }
+.info-banner strong, .info-box strong { color: var(--primary-dark); }
+
+/* ── INFO BOX VARIANTS ── */
+.info-box.warning, .warning-box, .warning {
+    background: var(--warning-bg);
+    border-color: var(--warning-border);
+    border-left-color: var(--warning-border);
+    color: var(--warning-text);
+}
+.info-box.warning h3, .warning-box h3, .warning h3 { color: #92400e; }
+.info-box.warning strong, .warning-box strong { color: #78350f; }
+
+.info-box.success, .success {
+    background: var(--primary-pale2);
+    border-color: var(--border2);
+    border-left-color: var(--primary);
+    color: var(--primary-darker);
+}
+
+/* ── RESULTS ── */
+.results, .result-box {
+    background: linear-gradient(135deg, var(--primary-darker) 0%, var(--primary-dark) 60%, #2d8a34 100%);
+    border-radius: var(--radius);
+    border-top: 5px solid var(--border2);
+    padding: 28px;
+    margin-top: 20px;
+    box-shadow: 0 8px 40px rgba(27,94,32,0.28);
+    position: relative;
+    overflow: hidden;
+    display: block;
+    animation: slideUp 0.4s ease-out;
+}
+
+.results::before, .result-box::before {
+    content: '';
+    position: absolute;
+    top: -50px; right: -50px;
+    width: 240px; height: 240px;
+    background: radial-gradient(circle, rgba(200,230,201,0.12) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.results h3 {
+    font-family: Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: rgba(255,255,255,0.60);
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.result-value {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 3rem;
+    font-weight: 700;
+    color: #c8e6c9;
+    text-align: center;
+    margin: 16px 0;
+    letter-spacing: -1px;
+}
+
+.result-item {
+    background: rgba(255,255,255,0.10);
+    padding: 16px 18px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 12px;
+    border: 1px solid rgba(255,255,255,0.14);
+}
+.result-item:last-child { margin-bottom: 0; }
+
+.result-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 5px;
+}
+
+.result-secondary {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.55);
+    margin-top: 4px;
+}
+
+/* result-box (ZES / Sabatini style) */
+.result-box { display: none; }
+.result-box h2 {
+    font-family: Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: rgba(255,255,255,0.55);
+    text-align: center;
+    margin-bottom: 16px;
+    border-bottom: none;
+}
+.result-box .info-box {
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-left: 4px solid #c8e6c9;
+    color: rgba(255,255,255,0.85);
+}
+.result-box .info-box strong { color: #c8e6c9; }
+.result-box .info-box h3 { color: #c8e6c9; }
+.result-box .info-box.warning {
+    background: rgba(251,191,36,0.15);
+    border-left-color: #fbbf24;
+    color: #fff8e1;
+}
+.result-box .info-box.warning h3 { color: #fde68a; }
+
+/* ── GRID HELPERS ── */
+.calculator-grid, .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.result-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin: 16px 0;
+    position: relative;
+}
+
+.result-grid .result-item {
+    background: rgba(255,255,255,0.10);
+}
+
+.result-amount {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #c8e6c9;
+}
+
+/* ── HIGHLIGHT BOX ── */
+.highlight-box {
+    background: rgba(255,255,255,0.10);
+    border: 1.5px solid rgba(200,230,201,0.35);
+    padding: 18px;
+    border-radius: var(--radius-sm);
+    margin-top: 16px;
+}
+.highlight-box h4 {
+    color: #c8e6c9;
+    margin-bottom: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* ── TABLES ── */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+th {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    color: white;
+    padding: 11px 14px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+    color: var(--text);
+}
+tr:hover td { background: var(--primary-pale); }
+tr:last-child td { border-bottom: none; }
+
+/* ── BADGE ── */
+.badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ── CHECKBOX GROUP ── */
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--primary-pale);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+.checkbox-group:hover { border-color: var(--primary); }
+.checkbox-group label {
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-mid);
+    cursor: pointer;
+    margin-bottom: 0;
+}
+
+/* ── RIEPILOGO GRID ── */
+.riepilogo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+/* ── FOOTER ── */
+footer, .footer {
+    background: linear-gradient(135deg, var(--primary-darker), var(--primary-dark));
+    color: rgba(255,255,255,0.80);
+    padding: 2rem;
+    margin-top: 2rem;
+    border-radius: var(--radius);
+    text-align: center;
+    font-size: 0.85rem;
+    line-height: 1.65;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+    body { padding: 14px 12px 50px; }
+    header { padding: 20px 18px; flex-direction: column; align-items: flex-start; }
+    h1 { font-size: 22px; }
+    .calculator-grid, .grid-2 { grid-template-columns: 1fr; }
+    .card { padding: 18px 16px; }
+    .result-value { font-size: 2.2rem; }
+    .riepilogo-grid { grid-template-columns: 1fr; }
+}
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>🗺️ Simulatore ZES Unica 2026</h1>
+                <p class="subtitle">Credito d'Imposta per Investimenti — Marche, Umbria e Sud Italia</p>
+            </div>
+            <button class="btn-back" onclick="window.location.href='dashboard.html'">← Dashboard</button>
+        </header>
+
+        <div class="card">
+            <h2>📋 Dati Investimento</h2>
+            
+            <div class="form-group">
+                <label for="regione">Regione:</label>
+                <select id="regione">
+                    <option value="">Seleziona regione...</option>
+                    <option value="sud">Sud (Abruzzo, Basilicata, Calabria, Campania, Molise, Puglia, Sicilia, Sardegna)</option>
+                    <option value="marche">Marche</option>
+                    <option value="umbria">Umbria</option>
+                </select>
+            </div>
+
+            <div id="comuneDiv" style="display: none;" class="form-group">
+                <label for="comune">Comune:</label>
+                <select id="comune"></select>
+            </div>
+
+            <div class="form-group">
+                <label for="dimensione">Dimensione Impresa:</label>
+                <select id="dimensione">
+                    <option value="piccola">Piccola Impresa</option>
+                    <option value="media">Media Impresa</option>
+                    <option value="grande">Grande Impresa</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="investimento">Importo Investimento (€):</label>
+                <input type="number" id="investimento" min="200000" max="100000000" step="0.01" placeholder="Min. €200.000 - Max. €100.000.000">
+            </div>
+
+            <button class="btn" onclick="calcolaZES()">🧮 Calcola Credito d'Imposta</button>
+        </div>
+
+        <div id="risultati" class="result-box"></div>
+    </div>
+
+    <script>
+        const comuniMarche = {
+            "Ancona": ["Castelbellino", "Cerreto d'Esi", "Cupramontana", "Fabriano", "Genga", "Jesi", "Monsano", "Monte Roberto", "San Paolo di Jesi", "Sassoferrato", "Serra San Quirico", "Staffolo"],
+            "Ascoli Piceno": ["Acquasanta Terme", "Acquaviva Picena", "Appignano del Tronto", "Arquata del Tronto", "Ascoli Piceno", "Carassai", "Castel di Lama", "Castignano", "Castorano", "Colli del Tronto", "Comunanza", "Cossignano", "Folignano", "Force", "Grottammare", "Maltignano", "Monsampolo del Tronto", "Montalto delle Marche", "Montedinove", "Montegallo", "Montemonaco", "Monteprandone", "Offida", "Palmiano", "Ripatransone", "Roccafluvione", "Rotella", "San Benedetto del Tronto", "Spinetoli", "Venarotta"],
+            "Pesaro-Urbino": ["Frontone", "Serra Sant'Abbondio"]
+        };
+
+        const comuniUmbria = [
+            "Bastia Umbra", "Bettona", "Campello sul Clitunno", "Cascia", "Castel Ritaldi", "Cerreto di Spoleto", "Citerna", "Città di Castello", "Collazzone", "Deruta", "Foligno", "Fossato di Vico", "Gualdo Cattaneo", "Gualdo Tadino", "Gubbio", "Marsciano", "Montefalco", "Monteleone di Spoleto", "Monte Santa Maria Tiberina", "Montone", "Narni", "Nocera Umbra", "Norcia", "Panicale", "Passignano sul Trasimeno", "Piegaro", "Poggiodomo", "Preci", "San Gemini", "Sant'Anatolia di Narco", "Scheggino", "Sellano", "Spoleto", "Terni", "Trevi", "Umbertide", "Vallo di Nera"
+        ];
+
+        document.getElementById('regione').addEventListener('change', function() {
+            const comuneDiv = document.getElementById('comuneDiv');
+            const comuneSelect = document.getElementById('comune');
+            
+            comuneSelect.innerHTML = '<option value="">Seleziona comune...</option>';
+            
+            if (this.value === 'marche') {
+                comuneDiv.style.display = 'block';
+                for (const [provincia, comuni] of Object.entries(comuniMarche)) {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = `Provincia ${provincia}`;
+                    comuni.forEach(c => {
+                        const option = document.createElement('option');
+                        option.value = c;
+                        option.textContent = c;
+                        optgroup.appendChild(option);
+                    });
+                    comuneSelect.appendChild(optgroup);
+                }
+            } else if (this.value === 'umbria') {
+                comuneDiv.style.display = 'block';
+                comuniUmbria.forEach(c => {
+                    const option = document.createElement('option');
+                    option.value = c;
+                    option.textContent = c;
+                    comuneSelect.appendChild(option);
+                });
+            } else {
+                comuneDiv.style.display = 'none';
+            }
+        });
+
+        function calcolaZES() {
+            const regione = document.getElementById('regione').value;
+            const dimensione = document.getElementById('dimensione').value;
+            const investimento = parseFloat(document.getElementById('investimento').value);
+            const comune = document.getElementById('comune').value;
+
+            if (!regione) {
+                alert('Seleziona una regione');
+                return;
+            }
+
+            if ((regione === 'marche' || regione === 'umbria') && !comune) {
+                alert('Seleziona un comune');
+                return;
+            }
+
+            if (!investimento || investimento < 200000) {
+                alert('Investimento minimo: €200.000');
+                return;
+            }
+
+            if (investimento > 100000000) {
+                alert('Investimento massimo: €100.000.000');
+                return;
+            }
+
+            // Calcolo aliquote (Carta aiuti finalità regionale 2022-2027)
+            let aliquota = 0;
+            if (regione === 'sud') {
+                // Zone 107.3.a (Sud)
+                if (dimensione === 'piccola') aliquota = 40;
+                else if (dimensione === 'media') aliquota = 30;
+                else aliquota = 15;
+            } else {
+                // Zone 107.3.c (Marche/Umbria)
+                if (dimensione === 'piccola') aliquota = 25;
+                else if (dimensione === 'media') aliquota = 15;
+                else aliquota = 15;
+            }
+
+            const creditoImposta = investimento * (aliquota / 100);
+            const percBeneficio = ((creditoImposta / investimento) * 100).toFixed(2);
+
+            const risultatiDiv = document.getElementById('risultati');
+            risultatiDiv.style.display = 'block';
+            risultatiDiv.innerHTML = `
+                <h2>💰 Risultato Simulazione</h2>
+
+                <div class="info-box success">
+                    <strong>✅ Zona Agevolata Ammessa</strong><br>
+                    ${regione === 'sud' ? 'ZES Unica Sud' : (regione === 'marche' ? `ZES Marche - ${comune}` : `ZES Umbria - ${comune}`)}
+                </div>
+
+                <div class="result-value">
+                    € ${creditoImposta.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                </div>
+
+                <div style="text-align:center; font-size:1.1rem; color:rgba(255,255,255,0.80); margin-bottom:16px; font-weight:700;">
+                    <strong>${percBeneficio}%</strong> dell'investimento
+                </div>
+
+                <div class="info-box">
+                    <h3>📊 Dettaglio Calcolo</h3>
+                    <p><strong>Investimento:</strong> € ${investimento.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                    <p><strong>Aliquota:</strong> ${aliquota}% (${dimensione} impresa)</p>
+                    <p><strong>Credito d'imposta:</strong> € ${creditoImposta.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                </div>
+
+                <div class="info-box warning">
+                    <h3>⚠️ Comunicazione Obbligatoria</h3>
+                    <p><strong>Periodo:</strong> 31 marzo - 30 maggio 2026</p>
+                    <p>Comunicazione preventiva all'Agenzia delle Entrate tramite portale telematico</p>
+                </div>
+
+                <div class="info-box">
+                    <h3>✅ Cumulabilità</h3>
+                    <p>Il credito ZES è <strong>cumulabile</strong> con:</p>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>Iperammortamento 180%</li>
+                        <li>Nuova Sabatini</li>
+                        <li>Aiuti de minimis</li>
+                        <li>Altri aiuti di Stato (nei limiti UE)</li>
+                    </ul>
+                </div>
+
+                <div class="info-box">
+                    <h3>📝 Requisiti</h3>
+                    <ul style="margin-left: 20px;">
+                        <li>Investimento min. €200.000 - max €100.000.000</li>
+                        <li>Beni strumentali nuovi</li>
+                        <li>Struttura produttiva in zona ZES</li>
+                        <li>Mantenimento attività per 5 anni</li>
+                        <li>Certificazione revisore contabile</li>
+                        <li>Regolarità contributiva e fiscale</li>
+                    </ul>
+                </div>
+            `;
+
+            risultatiDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAPdXkLXzz4zjScQX3_buEXGi2OytRfH2o",
+            authDomain: "bu-progetti-speciali.firebaseapp.com",
+            databaseURL: "https://bu-progetti-speciali-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "bu-progetti-speciali"
+        };
+        firebase.initializeApp(firebaseConfig);
+        
+        firebase.auth().onAuthStateChanged((user) => {
+            if (!user) window.location.href = 'dashboard.html';
+        });
+    </script>
