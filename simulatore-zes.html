@@ -336,19 +336,34 @@ small { font-size: 11px; color: var(--text-muted); display: block; margin-top: 5
     border-bottom: none;
 }
 .result-box .info-box {
-    background: rgba(255,255,255,0.10);
-    border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.20);
     border-left: 4px solid #c8e6c9;
-    color: rgba(255,255,255,0.85);
+    color: rgba(255,255,255,0.90) !important;
 }
-.result-box .info-box strong { color: #c8e6c9; }
-.result-box .info-box h3 { color: #c8e6c9; }
+.result-box .info-box p { color: rgba(255,255,255,0.85) !important; }
+.result-box .info-box li { color: rgba(255,255,255,0.85) !important; }
+.result-box .info-box strong { color: #ffffff !important; }
+.result-box .info-box h3 {
+    color: #c8e6c9 !important;
+    background: none;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.result-box .info-box.success {
+    background: rgba(255,255,255,0.14);
+    border-left-color: #a5d6a7;
+}
 .result-box .info-box.warning {
-    background: rgba(251,191,36,0.15);
+    background: rgba(251,191,36,0.18);
     border-left-color: #fbbf24;
-    color: #fff8e1;
+    color: #fff8e1 !important;
 }
-.result-box .info-box.warning h3 { color: #fde68a; }
+.result-box .info-box.warning p { color: #fde68a !important; }
+.result-box .info-box.warning strong { color: #ffffff !important; }
+.result-box .info-box.warning h3 { color: #fde68a !important; }
 
 /* ── GRID HELPERS ── */
 .calculator-grid, .grid-2 {
