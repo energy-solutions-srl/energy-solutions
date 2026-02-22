@@ -1,0 +1,1663 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energy Solutions - Edison Business Partner</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-database-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-auth-compat.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f0f9f4; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .btn-green { background: #4CAF50; color: white; }
+        .btn-green:hover { background: #45a049; }
+        .btn-white { background: white; color: #4CAF50; border: 2px solid #4CAF50; }
+        .btn-white:hover { background: #f0f9f4; }
+        .btn-red { background: #f44336; color: white; }
+        .btn-gray { background: #ddd; color: #666; }
+        .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid #4CAF50; }
+        .input { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; }
+        .input:focus { outline: none; border-color: #4CAF50; }
+        .label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px; color: #333; }
+        .mb { margin-bottom: 16px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+        .section-title { font-size: 18px; font-weight: 700; color: #2E7D32; margin: 24px 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid #81C784; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; overflow-y: auto; }
+        .modal-content { background: white; border-radius: 16px; padding: 24px; width: 95%; max-width: 900px; max-height: 90vh; overflow-y: auto; margin: 20px 0; }
+        .badge { display: inline-block; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-right: 8px; }
+        .stato-calda { background: #FEF3C7; color: #92400E; }
+        .stato-tiepida { background: #FCE7F3; color: #831843; }
+        .stato-fredda { background: #DBEAFE; color: #1E40AF; }
+        .stato-ko { background: #FEE2E2; color: #991B1B; }
+        .stato-ok { background: #D1FAE5; color: #065F46; }
+        .login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f0f9f4 0%, #c8e6c9 100%); }
+        .login-card { background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(76, 175, 80, 0.3); padding: 40px; max-width: 400px; width: 100%; }
+        .logo { background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%); padding: 20px; border-radius: 12px; color: white; text-align: center; margin-bottom: 24px; }
+        .logo h2 { font-size: 24px; margin: 0; font-weight: 700; }
+        .logo p { font-size: 13px; margin: 8px 0 0 0; opacity: 0.95; }
+        .header { background: white; border-bottom: 3px solid #4CAF50; padding: 16px; margin-bottom: 24px; }
+        .loading { text-align: center; padding: 60px; }
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        .checkbox-item { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: #f5f5f5; border-radius: 6px; cursor: pointer; }
+        .checkbox-item input[type="checkbox"] { cursor: pointer; }
+        .checkbox-item:hover { background: #e8f5e9; }
+        textarea { resize: vertical; font-family: Arial, sans-serif; min-height: 80px; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; }
+        th { background: #4CAF50; color: white; padding: 14px; text-align: left; font-size: 13px; font-weight: 700; }
+        td { padding: 14px; border-top: 1px solid #ddd; }
+        tr:hover { background: #f9f9f9; }
+        @keyframes slideIn {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(400px); opacity: 0; }
+        }
+        @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const firebaseConfig = {
+            apiKey: "AIzaSyAPdXkLXzz4zjScQX3_buEXGi2OytRfH2o",
+            authDomain: "bu-progetti-speciali.firebaseapp.com",
+            databaseURL: "https://bu-progetti-speciali-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "bu-progetti-speciali",
+            storageBucket: "bu-progetti-speciali.firebasestorage.app",
+            messagingSenderId: "86623187511",
+            appId: "1:86623187511:web:2a093d51719b458b4ec5b2"
+        };
+
+        const { useState, useEffect } = React;
+
+        const TIPOLOGIE_CLIENTE = ['P.A.', 'ETS NON COMMERCIALE', 'ETS COMMERCIALE', 'PRIVATO PMI', 'PRIVATO NON PMI', 'AZIENDA AGRICOLA'];
+        const TIPOLOGIE_INTERVENTO = {
+            'esco': { label: 'ESCO', voci: ['FTV', 'ILLUMINAZIONE', 'CENTRALE TERMICA', 'INFISSI', 'ISOLAMENTO', 'IMPIANTI INTERNI', 'BATTERIA DI ACCUMULO'] },
+            'conto_termico': { label: 'CONTO TERMICO 3.0', voci: ['FTV', 'ILLUMINAZIONE', 'CENTRALE TERMICA', 'INFISSI', 'ISOLAMENTO', 'IMPIANTI INTERNI', 'BATTERIA DI ACCUMULO', 'NZeb'] },
+            'industria_5': { label: 'INDUSTRIA 5.0', voci: ['FTV', 'IMPIANTI INTERNI'] },
+            'agrisolare': { label: 'AGRISOLARE 2026', voci: ['FTV', 'ACCUMULO', 'COLONNETTA RICARICA', 'INTERVENTI IN COPERTURA'] },
+            'cratere_2016': { label: 'CRATERE 2016', voci: ['DEMOLIZIONE E RICOSTRUZIONE', 'RISTRUTTURAZIONE', 'INTERVENTO SOLO IMPIANTI'] },
+            'cratere_2009': { label: 'CRATERE 2009', voci: ['DEMOLIZIONE E RICOSTRUZIONE', 'RISTRUTTURAZIONE', 'INTERVENTO SOLO IMPIANTI'] },
+            'privato': { label: 'PRIVATO', voci: [] }
+        };
+        const STATI = ['CALDA', 'TIEPIDA', 'FREDDA', 'KO', 'OK'];
+        const CONTRATTUALIZZAZIONE = ['entro 1 mese', 'entro 3 mesi', 'entro 6 mesi', 'entro 12 mesi'];
+        const TIPO_INTERVENTO = ['SINGOLO', 'MULTI INTERVENTO'];
+        const RUOLI = {
+            'admin': 'Amministratore',
+            'agenzia': 'Agenzia',
+            'diretto': 'Diretto',
+            'interno': 'Interno',
+            'visualizzatore': 'Visualizzatore'
+        };
+        const REGIONI_PROVINCE = {
+            'Abruzzo': ['Chieti', 'L\'Aquila', 'Pescara', 'Teramo'],
+            'Basilicata': ['Matera', 'Potenza'],
+            'Calabria': ['Catanzaro', 'Cosenza', 'Crotone', 'Reggio Calabria', 'Vibo Valentia'],
+            'Campania': ['Avellino', 'Benevento', 'Caserta', 'Napoli', 'Salerno'],
+            'Emilia-Romagna': ['Bologna', 'Ferrara', 'Forlì-Cesena', 'Modena', 'Parma', 'Piacenza', 'Ravenna', 'Reggio Emilia', 'Rimini'],
+            'Friuli-Venezia Giulia': ['Gorizia', 'Pordenone', 'Trieste', 'Udine'],
+            'Lazio': ['Frosinone', 'Latina', 'Rieti', 'Roma', 'Viterbo'],
+            'Liguria': ['Genova', 'Imperia', 'La Spezia', 'Savona'],
+            'Lombardia': ['Bergamo', 'Brescia', 'Como', 'Cremona', 'Lecco', 'Lodi', 'Mantova', 'Milano', 'Monza e Brianza', 'Pavia', 'Sondrio', 'Varese'],
+            'Marche': ['Ancona', 'Ascoli Piceno', 'Fermo', 'Macerata', 'Pesaro e Urbino'],
+            'Molise': ['Campobasso', 'Isernia'],
+            'Piemonte': ['Alessandria', 'Asti', 'Biella', 'Cuneo', 'Novara', 'Torino', 'Verbano-Cusio-Ossola', 'Vercelli'],
+            'Puglia': ['Bari', 'Barletta-Andria-Trani', 'Brindisi', 'Foggia', 'Lecce', 'Taranto'],
+            'Sardegna': ['Cagliari', 'Nuoro', 'Oristano', 'Sassari', 'Sud Sardegna'],
+            'Sicilia': ['Agrigento', 'Caltanissetta', 'Catania', 'Enna', 'Messina', 'Palermo', 'Ragusa', 'Siracusa', 'Trapani'],
+            'Toscana': ['Arezzo', 'Firenze', 'Grosseto', 'Livorno', 'Lucca', 'Massa-Carrara', 'Pisa', 'Pistoia', 'Prato', 'Siena'],
+            'Trentino-Alto Adige': ['Bolzano', 'Trento'],
+            'Umbria': ['Perugia', 'Terni'],
+            'Valle d\'Aosta': ['Aosta'],
+            'Veneto': ['Belluno', 'Padova', 'Rovigo', 'Treviso', 'Venezia', 'Verona', 'Vicenza']
+        };
+        const COLORI_REGIONI = {
+            'Abruzzo': '#E53935',           // Rosso
+            'Basilicata': '#8E24AA',        // Viola
+            'Calabria': '#00ACC1',          // Cyan
+            'Campania': '#FB8C00',          // Arancione
+            'Emilia-Romagna': '#D32F2F',    // Rosso scuro
+            'Friuli-Venezia Giulia': '#1976D2', // Blu
+            'Lazio': '#FFB300',             // Giallo oro
+            'Liguria': '#0097A7',           // Turchese
+            'Lombardia': '#388E3C',         // Verde
+            'Marche': '#7B1FA2',            // Viola scuro
+            'Molise': '#5D4037',            // Marrone
+            'Piemonte': '#C62828',          // Rosso bordeaux
+            'Puglia': '#F57C00',            // Arancione scuro
+            'Sardegna': '#0288D1',          // Blu cielo
+            'Sicilia': '#FFA000',           // Ambra
+            'Toscana': '#7CB342',           // Verde chiaro
+            'Trentino-Alto Adige': '#1565C0', // Blu reale
+            'Umbria': '#689F38',            // Verde oliva
+            'Valle d\'Aosta': '#5E35B1',    // Indaco
+            'Veneto': '#E64A19'             // Rosso arancio
+        };
+
+        function App() {
+            const [initComplete, setInitComplete] = useState(false);
+            const [user, setUser] = useState(null);
+            const [users, setUsers] = useState([]);
+            const [opps, setOpps] = useState([]);
+            const [showLogin, setShowLogin] = useState(true);
+            const [showForm, setShowForm] = useState(false);
+            const [showUserForm, setShowUserForm] = useState(false);
+            const [showUsersSection, setShowUsersSection] = useState(true);
+            const [editOpp, setEditOpp] = useState(null);
+            const [editUser, setEditUser] = useState(null);
+            const [login, setLogin] = useState({ username: '', password: '', remember: false });
+            const [userForm, setUserForm] = useState({ username: '', password: '', name: '', role: 'agenzia' });
+            const [filters, setFilters] = useState({ 
+                utente: '', 
+                tipologiaCliente: '', 
+                ruolo: '', 
+                tipologiaIntervento: '',
+                stato: '',
+                regione: '',
+                dataInizio: '',
+                dataFine: ''
+            });
+            const [showDescModal, setShowDescModal] = useState(false);
+            const [selectedDesc, setSelectedDesc] = useState('');
+            const [autoBackupEnabled, setAutoBackupEnabled] = useState(() => {
+                const saved = localStorage.getItem('autoBackupEnabled');
+                return saved !== null ? saved === 'true' : true; // Default: attivo
+            });
+            const [form, setForm] = useState({
+                ragioneSociale: '', regione: '', provincia: '', indirizzo: '', cap: '', citta: '', telefono: '', tipologiaCliente: '',
+                nomeReferente: '', ruoloReferente: '', telReferente: '', emailReferente: '',
+                regioneIntervento: '', provinciaIntervento: '', viaIntervento: '', numeroIntervento: '', capIntervento: '', cittaIntervento: '',
+                hasTecnico: 'no', regioneStudio: '', provinciaStudio: '', nomeStudioTecnico: '', referenteStudio: '', indirizzoStudio: '', telefonoStudio: '', emailStudio: '',
+                tipologiaIntervento: '', vociSelezionate: [], livelloOperativo: '', descrizioneIntervento: '', importoPresunto: '', stato: 'CALDA',
+                possibileContrattualizzazione: 'entro 3 mesi', tipoIntervento: 'SINGOLO'
+            });
+
+            useEffect(() => {
+                const savedUsername = localStorage.getItem('savedUsername');
+                const savedPassword = localStorage.getItem('savedPassword');
+                if (savedUsername && savedPassword) {
+                    setLogin({ username: savedUsername, password: savedPassword, remember: true });
+                }
+            }, []);
+
+
+            useEffect(() => {
+                const init = async () => {
+                    try {
+                        firebase.initializeApp(firebaseConfig);
+                        const db = firebase.database();
+
+                        // Listen per autenticazione
+                        firebase.auth().onAuthStateChanged(async (firebaseUser) => {
+                            if (firebaseUser) {
+                                try {
+                                    await new Promise(resolve => setTimeout(resolve, 500));
+                                    const userSnapshot = await db.ref(`users/${firebaseUser.uid}`).once('value');
+                                    const userData = userSnapshot.val();
+                                    
+                                    if (userData) {
+                                        // Check se arriva da dashboard (parametro URL ?from=dashboard)
+                                        const urlParams = new URLSearchParams(window.location.search);
+                                        const fromDashboard = urlParams.get('from') === 'dashboard';
+                                        
+                                        if (!fromDashboard && !sessionStorage.getItem('visitedDashboard')) {
+                                            // Primo login → vai a dashboard
+                                            window.location.href = 'dashboard.html';
+                                            return;
+                                        }
+                                        
+                                        // Già passato da dashboard o arriva con parametro → carica opportunità
+                                        sessionStorage.setItem('visitedDashboard', 'true');
+                                        setUser({ ...userData, id: firebaseUser.uid });
+                                        setShowLogin(false);
+                                        
+                                        // Carica opportunità
+                                        db.ref('opportunities').on('value', snap => {
+                                            const data = snap.val();
+                                            if (data) setOpps(Object.keys(data).map(k => ({ id: k, ...data[k] })));
+                                            else setOpps([]);
+                                        });
+                                        
+                                        // Carica utenti SOLO se admin
+                                        if (userData.role === 'admin') {
+                                            setTimeout(async () => {
+                                                try {
+                                                    const usersSnap = await db.ref('users').once('value');
+                                                    const data = usersSnap.val();
+                                                    if (data) setUsers(Object.keys(data).map(k => ({ id: k, ...data[k] })));
+                                                } catch (err) {
+                                                    console.error('Errore caricamento utenti:', err);
+                                                }
+                                            }, 1000);
+                                        }
+                                    } else {
+                                        await firebase.auth().signOut();
+                                    }
+                                } catch (err) {
+                                    console.error('Errore caricamento utente:', err);
+                                    await firebase.auth().signOut();
+                                }
+                            }
+                            setInitComplete(true);
+                        });
+
+                    } catch (error) {
+                        console.error('Errore:', error);
+                        alert('Errore connessione Firebase: ' + error.message);
+                        setInitComplete(true);
+                    }
+                };
+                init();
+            }, []);
+
+            const doLogin = async (e) => {
+                e.preventDefault();
+                
+                try {
+                    const db = firebase.database();
+                    
+                    // Leggi usernames/<username>
+                    const usernameSnapshot = await db.ref(`usernames/${login.username}`).once('value');
+                    const usernameData = usernameSnapshot.val();
+                    
+                    if (!usernameData || !usernameData.uid) {
+                        alert('❌ Username non trovato');
+                        return;
+                    }
+                    
+                    const email = `${login.username}@energy-solutions.local`;
+                    
+                    try {
+                        await firebase.auth().signInWithEmailAndPassword(email, login.password);
+                        
+                        if (login.remember) {
+                            localStorage.setItem('savedUsername', login.username);
+                            localStorage.setItem('savedPassword', login.password);
+                        } else {
+                            localStorage.removeItem('savedUsername');
+                            localStorage.removeItem('savedPassword');
+                        }
+                    } catch (authError) {
+                        if (authError.code === 'auth/user-not-found') {
+                            await firebase.auth().createUserWithEmailAndPassword(email, login.password);
+                            if (login.remember) {
+                                localStorage.setItem('savedUsername', login.username);
+                                localStorage.setItem('savedPassword', login.password);
+                            }
+                        } else if (authError.code === 'auth/wrong-password') {
+                            alert('❌ Password errata!');
+                        } else {
+                            alert('❌ Errore: ' + authError.message);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Errore login:', error);
+                    alert('❌ Errore login: ' + error.message);
+                }
+            };
+
+
+            const saveOpp = async (e) => {
+                e.preventDefault();
+                if (!form.ragioneSociale || !form.tipologiaCliente || !form.tipologiaIntervento) {
+                    alert('Compila tutti i campi obbligatori (*)');
+                    return;
+                }
+
+                const db = firebase.database();
+                const oppData = {
+                    ...form,
+                    agenzia: user.name,
+                    clientId: user.id,
+                    createdAt: editOpp ? editOpp.createdAt : new Date().toISOString()
+                };
+
+                if (editOpp) {
+                    await db.ref('opportunities/' + editOpp.id).set(oppData);
+                } else {
+                    await db.ref('opportunities').push(oppData);
+                }
+
+                setShowForm(false);
+                setEditOpp(null);
+                setForm({
+                    ragioneSociale: '', regione: '', provincia: '', indirizzo: '', cap: '', citta: '', telefono: '', tipologiaCliente: '',
+                    nomeReferente: '', ruoloReferente: '', telReferente: '', emailReferente: '',
+                    regioneIntervento: '', provinciaIntervento: '', viaIntervento: '', numeroIntervento: '', capIntervento: '', cittaIntervento: '',
+                    hasTecnico: 'no', regioneStudio: '', provinciaStudio: '', nomeStudioTecnico: '', referenteStudio: '', indirizzoStudio: '', telefonoStudio: '', emailStudio: '',
+                    tipologiaIntervento: '', vociSelezionate: [], livelloOperativo: '', descrizioneIntervento: '', importoPresunto: '', stato: 'CALDA',
+                    possibileContrattualizzazione: 'entro 3 mesi', tipoIntervento: 'SINGOLO'
+                });
+            };
+
+            const duplicateOpp = async (opp) => {
+                if (confirm('Duplicare questa opportunità?\n\nVerrà creata una copia con data odierna.')) {
+                    const db = firebase.database();
+                    const duplicatedData = {
+                        ...opp,
+                        ragioneSociale: opp.ragioneSociale + ' (Copia)',
+                        agenzia: user.name,
+                        clientId: user.id,
+                        createdAt: new Date().toISOString()
+                    };
+                    
+                    // Rimuovi l'ID dall'oggetto duplicato
+                    delete duplicatedData.id;
+                    
+                    await db.ref('opportunities').push(duplicatedData);
+                    alert('✅ Opportunità duplicata con successo!');
+                }
+            };
+
+            const deleteOpp = async (id) => {
+                if (confirm('Eliminare questa opportunità?')) {
+                    const db = firebase.database();
+                    await db.ref('opportunities/' + id).remove();
+                }
+            };
+
+            const saveUser = async (e) => {
+                e.preventDefault();
+                const db = firebase.database();
+                
+                try {
+                    const email = `${userForm.username}@energy-solutions.local`;
+                    
+                    if (editUser) {
+                        // Aggiorna utente esistente
+                        await db.ref('users/' + editUser.id).update({
+                            name: userForm.name,
+                            username: userForm.username,
+                            role: userForm.role
+                        });
+                    } else {
+                        // Crea nuovo utente
+                        const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, userForm.password);
+                        
+                        await db.ref(`users/${userCredential.user.uid}`).set({
+                            name: userForm.name,
+                            username: userForm.username,
+                            role: userForm.role,
+                            createdAt: new Date().toISOString(),
+                            simulatori: {
+                                zes: false,
+                                agrisolare: false,
+                                iperammortamento: false,
+                                sabatini: false,
+                                fotovoltaico: false
+                            },
+                            accessoOpportunita: false
+                        });
+                        
+                        await db.ref(`usernames/${userForm.username}`).set({
+                            uid: userCredential.user.uid
+                        });
+                        
+                        // Torna all'utente admin corrente
+                        const currentUser = firebase.auth().currentUser;
+                        if (currentUser && currentUser.uid !== userCredential.user.uid) {
+                            await firebase.auth().updateCurrentUser(currentUser);
+                        }
+                    }
+                    
+                    setShowUserForm(false);
+                    setEditUser(null);
+                    setUserForm({ username: '', password: '', name: '', role: 'agenzia' });
+                    alert('✅ Utente salvato con successo!');
+                } catch (error) {
+                    console.error('Errore salvataggio utente:', error);
+                    alert('❌ Errore: ' + error.message);
+                }
+            };
+
+            const deleteUser = async (id) => {
+                if (id === user.id) {
+                    alert('Non puoi eliminare il tuo account!');
+                    return;
+                }
+                if (confirm('Eliminare questo utente?')) {
+                    try {
+                        const db = firebase.database();
+                        
+                        // Leggi dati utente per prendere username
+                        const userSnapshot = await db.ref('users/' + id).once('value');
+                        const userData = userSnapshot.val();
+                        
+                        if (userData && userData.username) {
+                            await db.ref(`usernames/${userData.username}`).remove();
+                        }
+                        
+                        await db.ref('users/' + id).remove();
+                        alert('✅ Utente eliminato');
+                    } catch (error) {
+                        console.error('Errore eliminazione:', error);
+                        alert('❌ Errore: ' + error.message);
+                    }
+                }
+            };
+
+            const toggleVoce = (voce) => {
+                const voci = form.vociSelezionate || [];
+                if (voci.includes(voce)) {
+                    setForm({ ...form, vociSelezionate: voci.filter(v => v !== voce) });
+                } else {
+                    setForm({ ...form, vociSelezionate: [...voci, voce] });
+                }
+            };
+
+            const canEdit = (opp) => {
+                return user.role === 'admin' || opp.clientId === user.id;
+            };
+
+            const printCardPDF = (opp) => {
+                const printWindow = window.open('', '', 'width=800,height=600');
+                printWindow.document.write(`
+                    <html>
+                    <head>
+                        <title>Opportunità - ${opp.ragioneSociale}</title>
+                        <style>
+                            @page { size: A4; margin: 20mm; }
+                            @media print { body { margin: 0; } }
+                            body { 
+                                font-family: Arial, sans-serif; 
+                                padding: 20px; 
+                                font-size: 12px;
+                                line-height: 1.4;
+                            }
+                            h1 { 
+                                color: #2E7D32; 
+                                border-bottom: 4px solid #4CAF50; 
+                                padding-bottom: 10px; 
+                                margin-bottom: 20px;
+                                font-size: 24px;
+                            }
+                            .header-info {
+                                background: #f0f9f4;
+                                padding: 15px;
+                                border-radius: 8px;
+                                margin-bottom: 20px;
+                            }
+                            .section { 
+                                margin: 20px 0; 
+                                page-break-inside: avoid;
+                            }
+                            .section-title {
+                                font-size: 16px;
+                                font-weight: bold;
+                                color: #2E7D32;
+                                border-bottom: 2px solid #81C784;
+                                padding-bottom: 5px;
+                                margin-bottom: 10px;
+                            }
+                            .data-grid {
+                                display: grid;
+                                grid-template-columns: 1fr 1fr;
+                                gap: 10px 20px;
+                                margin-bottom: 15px;
+                            }
+                            .data-item {
+                                padding: 8px 0;
+                            }
+                            .label { 
+                                font-weight: bold; 
+                                color: #666; 
+                                font-size: 11px;
+                                display: block;
+                                margin-bottom: 3px;
+                            }
+                            .value { 
+                                color: #333;
+                                font-size: 13px;
+                            }
+                            .badge {
+                                display: inline-block;
+                                padding: 6px 12px;
+                                border-radius: 15px;
+                                font-weight: bold;
+                                font-size: 12px;
+                            }
+                            .stato-calda { background: #FEF3C7; color: #92400E; }
+                            .stato-tiepida { background: #FCE7F3; color: #831843; }
+                            .stato-fredda { background: #DBEAFE; color: #1E40AF; }
+                            .stato-ko { background: #FEE2E2; color: #991B1B; }
+                            .stato-ok { background: #D1FAE5; color: #065F46; }
+                            .description-box {
+                                background: #f9f9f9;
+                                border-left: 4px solid #4CAF50;
+                                padding: 15px;
+                                margin: 15px 0;
+                                white-space: pre-wrap;
+                                line-height: 1.6;
+                            }
+                            .footer {
+                                margin-top: 30px;
+                                padding-top: 15px;
+                                border-top: 2px solid #ddd;
+                                text-align: center;
+                                font-size: 10px;
+                                color: #999;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>🏢 ${opp.ragioneSociale}</h1>
+                        
+                        <div class="header-info">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <span class="label">Data creazione</span>
+                                    <span class="value">${new Date(opp.createdAt).toLocaleString('it-IT', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'})}</span>
+                                </div>
+                                <span class="badge stato-${opp.stato.toLowerCase()}">${opp.stato}</span>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">📋 Dati Azienda</div>
+                            <div class="data-grid">
+                                <div class="data-item">
+                                    <span class="label">Tipologia Cliente</span>
+                                    <span class="value">${opp.tipologiaCliente}</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="label">Telefono</span>
+                                    <span class="value">${opp.telefono || '-'}</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="label">Indirizzo</span>
+                                    <span class="value">${opp.indirizzo || '-'} ${opp.cap || ''} ${opp.citta || ''}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${opp.nomeReferente ? `
+                        <div class="section">
+                            <div class="section-title">👤 Referente</div>
+                            <div class="data-grid">
+                                <div class="data-item">
+                                    <span class="label">Nome</span>
+                                    <span class="value">${opp.nomeReferente} ${opp.ruoloReferente ? '(' + opp.ruoloReferente + ')' : ''}</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="label">Contatti</span>
+                                    <span class="value">${opp.telReferente || ''} ${opp.emailReferente || ''}</span>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        <div class="section">
+                            <div class="section-title">⚡ Intervento</div>
+                            <div class="data-grid">
+                                <div class="data-item">
+                                    <span class="label">Tipologia Intervento</span>
+                                    <span class="value">${TIPOLOGIE_INTERVENTO[opp.tipologiaIntervento]?.label}</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="label">Tipo</span>
+                                    <span class="value">${opp.tipoIntervento || 'SINGOLO'}</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="label">Importo Presunto</span>
+                                    <span class="value" style="font-size: 16px; font-weight: bold; color: #2E7D32;">€${(parseInt(opp.importoPresunto) || 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="label">Possibile Contrattualizzazione</span>
+                                    <span class="value">${opp.possibileContrattualizzazione || '-'}</span>
+                                </div>
+                                ${(opp.tipologiaIntervento === 'cratere_2016' || opp.tipologiaIntervento === 'cratere_2009') && opp.livelloOperativo ? `
+                                <div class="data-item">
+                                    <span class="label">Livello Operativo</span>
+                                    <span class="value">${opp.livelloOperativo}</span>
+                                </div>
+                                ` : ''}
+                            </div>
+                            ${opp.vociSelezionate && opp.vociSelezionate.length > 0 ? `
+                            <div style="margin-top: 10px;">
+                                <span class="label">Voci Intervento</span><br>
+                                ${opp.vociSelezionate.map(v => `<span class="badge" style="background: #4CAF50; color: white; margin-right: 5px;">${v}</span>`).join('')}
+                            </div>
+                            ` : ''}
+                        </div>
+
+                        ${opp.viaIntervento ? `
+                        <div class="section">
+                            <div class="section-title">📍 Ubicazione Intervento</div>
+                            <div class="value">${opp.viaIntervento} ${opp.numeroIntervento || ''}, ${opp.capIntervento || ''} ${opp.cittaIntervento || ''}</div>
+                        </div>
+                        ` : ''}
+
+                        ${opp.descrizioneIntervento ? `
+                        <div class="section">
+                            <div class="section-title">📄 Descrizione Intervento</div>
+                            <div class="description-box">${opp.descrizioneIntervento}</div>
+                        </div>
+                        ` : ''}
+
+                        <div class="footer">
+                            Energy Solutions - Edison Business Partner | Stampato il ${new Date().toLocaleString('it-IT')}
+                        </div>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+                setTimeout(() => printWindow.print(), 250);
+            };
+
+            const downloadBackup = async (silent = false) => {
+                try {
+                    const db = firebase.database();
+                    
+                    // Mostra messaggio di attesa solo se non silenzioso
+                    let loadingMsg;
+                    if (!silent) {
+                        loadingMsg = document.createElement('div');
+                        loadingMsg.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 9999; text-align: center;';
+                        loadingMsg.innerHTML = '<h3 style="color: #2E7D32; margin-bottom: 10px;">💾 Creazione Backup...</h3><p style="color: #666;">Attendere prego...</p>';
+                        document.body.appendChild(loadingMsg);
+                    }
+                    
+                    // Scarica tutti i dati
+                    const [usersSnap, oppsSnap] = await Promise.all([
+                        db.ref('users').once('value'),
+                        db.ref('opportunities').once('value')
+                    ]);
+                    
+                    const backupData = {
+                        metadata: {
+                            dataBackup: new Date().toISOString(),
+                            dataBackupLeggibile: new Date().toLocaleString('it-IT'),
+                            utenteBackup: user?.name || 'Sistema Automatico',
+                            versione: '1.0',
+                            tipoBackup: silent ? 'automatico' : 'manuale'
+                        },
+                        users: usersSnap.val() || {},
+                        opportunities: oppsSnap.val() || {},
+                        statistiche: {
+                            totaleUtenti: Object.keys(usersSnap.val() || {}).length,
+                            totaleOpportunita: Object.keys(oppsSnap.val() || {}).length
+                        }
+                    };
+                    
+                    // Crea file JSON
+                    const dataStr = JSON.stringify(backupData, null, 2);
+                    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                    
+                    // Download file
+                    const url = URL.createObjectURL(dataBlob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    const fileName = `backup-energy-solutions-${new Date().toISOString().split('T')[0]}.json`;
+                    link.download = fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    
+                    // Salva data ultimo backup
+                    localStorage.setItem('lastBackupDate', new Date().toISOString());
+                    
+                    // Rimuovi messaggio di attesa
+                    if (!silent && loadingMsg) {
+                        document.body.removeChild(loadingMsg);
+                    }
+                    
+                    // Mostra conferma
+                    if (silent) {
+                        // Notifica discreta
+                        const notification = document.createElement('div');
+                        notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #4CAF50; color: white; padding: 16px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999; animation: slideIn 0.3s ease-out;';
+                        notification.innerHTML = `<strong>✅ Backup Automatico Completato</strong><br><small>${fileName}</small>`;
+                        document.body.appendChild(notification);
+                        setTimeout(() => {
+                            notification.style.animation = 'slideOut 0.3s ease-out';
+                            setTimeout(() => document.body.removeChild(notification), 300);
+                        }, 4000);
+                    } else {
+                        alert(`✅ Backup completato!\n\nFile: ${fileName}\n\nUtenti: ${backupData.statistiche.totaleUtenti}\nOpportunità: ${backupData.statistiche.totaleOpportunita}\n\nIl file è stato scaricato nella cartella Download.`);
+                    }
+                    
+                } catch (error) {
+                    console.error('Errore backup:', error);
+                    if (!silent) {
+                        alert('❌ Errore durante il backup: ' + error.message);
+                    }
+                }
+            };
+
+            const checkAutoBackup = async () => {
+                if (!autoBackupEnabled || !user || user.role !== 'admin') return;
+                
+                const lastBackup = localStorage.getItem('lastBackupDate');
+                const now = new Date();
+                
+                if (!lastBackup) {
+                    // Primo backup
+                    console.log('🔄 Primo backup automatico...');
+                    await downloadBackup(true);
+                    return;
+                }
+                
+                const lastBackupDate = new Date(lastBackup);
+                const hoursSinceBackup = (now - lastBackupDate) / (1000 * 60 * 60);
+                
+                // Se sono passate più di 24 ore
+                if (hoursSinceBackup >= 24) {
+                    console.log(`🔄 Backup automatico (${Math.floor(hoursSinceBackup)}h dall'ultimo)`);
+                    await downloadBackup(true);
+                }
+            };
+
+            // Controlla backup automatico quando l'utente fa login
+            useEffect(() => {
+                if (user && user.role === 'admin') {
+                    // Aspetta 3 secondi dopo il login per non interferire con il caricamento
+                    const timer = setTimeout(() => {
+                        checkAutoBackup();
+                    }, 3000);
+                    return () => clearTimeout(timer);
+                }
+            }, [user, autoBackupEnabled]);
+
+            const printTablePDF = () => {
+                const printContent = document.getElementById('summary-table-print');
+                if (!printContent) {
+                    alert('Nessuna tabella da stampare');
+                    return;
+                }
+                
+                const printWindow = window.open('', '', 'width=1000,height=800');
+                printWindow.document.write(`
+                    <html>
+                    <head>
+                        <title>Riepilogo Opportunità</title>
+                        <style>
+                            @page { size: A4 landscape; margin: 15mm; }
+                            @media print { 
+                                body { margin: 0; }
+                                .no-print { display: none; }
+                            }
+                            body { 
+                                font-family: Arial, sans-serif; 
+                                padding: 20px; 
+                                font-size: 11px;
+                            }
+                            h1 { 
+                                color: #2E7D32; 
+                                border-bottom: 3px solid #4CAF50; 
+                                padding-bottom: 10px; 
+                                margin-bottom: 20px;
+                            }
+                            h3 { 
+                                color: #2E7D32; 
+                                margin: 20px 0 10px 0;
+                                font-size: 14px;
+                            }
+                            table { 
+                                width: 100%; 
+                                border-collapse: collapse; 
+                                margin-bottom: 30px;
+                                font-size: 10px;
+                            }
+                            th { 
+                                background: #4CAF50; 
+                                color: white; 
+                                padding: 8px; 
+                                text-align: center; 
+                                font-size: 10px;
+                                border: 1px solid #ddd;
+                            }
+                            td { 
+                                padding: 6px 8px; 
+                                border: 1px solid #ddd; 
+                                text-align: center;
+                            }
+                            tr:nth-child(even) { background: #f9f9f9; }
+                            .total-row { background: #81C784 !important; font-weight: bold; }
+                            .grand-total-row { background: #2E7D32 !important; color: white !important; font-weight: bold; }
+                            .footer {
+                                margin-top: 20px;
+                                padding-top: 10px;
+                                border-top: 2px solid #ddd;
+                                text-align: center;
+                                font-size: 9px;
+                                color: #999;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>📊 Riepilogo Opportunità per Tipologia</h1>
+                        ${printContent.innerHTML}
+                        <div class="footer">
+                            Energy Solutions - Edison Business Partner | Stampato il ${new Date().toLocaleString('it-IT')}
+                        </div>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+                setTimeout(() => printWindow.print(), 250);
+            };
+
+            const getFilteredOpps = () => {
+                let filtered = (user.role === 'admin' || user.role === 'visualizzatore') ? opps : opps.filter(o => o.clientId === user.id);
+                
+                if (filters.utente) {
+                    filtered = filtered.filter(o => o.agenzia?.toLowerCase().includes(filters.utente.toLowerCase()));
+                }
+                if (filters.tipologiaCliente) {
+                    filtered = filtered.filter(o => o.tipologiaCliente === filters.tipologiaCliente);
+                }
+                if (filters.ruolo && (user.role === 'admin' || user.role === 'visualizzatore')) {
+                    const usersByRole = users.filter(u => u.role === filters.ruolo).map(u => u.id);
+                    filtered = filtered.filter(o => usersByRole.includes(o.clientId));
+                }
+                if (filters.tipologiaIntervento) {
+                    filtered = filtered.filter(o => o.tipologiaIntervento === filters.tipologiaIntervento);
+                }
+                if (filters.regione) {
+                    filtered = filtered.filter(o => o.regione === filters.regione || o.regioneIntervento === filters.regione);
+                }
+                if (filters.stato) {
+                    filtered = filtered.filter(o => o.stato === filters.stato);
+                }
+                if (filters.dataInizio) {
+                    filtered = filtered.filter(o => new Date(o.createdAt) >= new Date(filters.dataInizio));
+                }
+                if (filters.dataFine) {
+                    const endDate = new Date(filters.dataFine);
+                    endDate.setHours(23, 59, 59);
+                    filtered = filtered.filter(o => new Date(o.createdAt) <= endDate);
+                }
+                
+                return filtered;
+            };
+
+            if (!initComplete) {
+                return <div className="loading">⏳ Inizializzazione...</div>;
+            }
+
+            if (showLogin) {
+                return (
+                    <div className="login-container">
+                        <div className="login-card">
+                            <div className="logo">
+                                <h2>ENERGY SOLUTIONS</h2>
+                                <p>Edison Business Partner</p>
+                                <p style={{"fontSize": "11px", "marginTop": "8px", "opacity": "0.8", "fontStyle": "italic"}}>Powered by B.U. Progetti Speciali</p>
+                            </div>
+                            <form onSubmit={doLogin}>
+                                <div className="mb">
+                                    <label className="label">Username</label>
+                                    <input className="input" value={login.username} onChange={e => setLogin({...login, username: e.target.value})} required autoComplete="username" />
+                                </div>
+                                <div className="mb">
+                                    <label className="label">Password</label>
+                                    <input type="password" className="input" value={login.password} onChange={e => setLogin({...login, password: e.target.value})} required autoComplete="current-password" />
+                                </div>
+                                <div className="mb" style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                                    <input 
+                                        type="checkbox" 
+                                        id="remember" 
+                                        checked={login.remember}
+                                        onChange={e => setLogin({...login, remember: e.target.checked})}
+                                        style={{width: '18px', height: '18px', cursor: 'pointer'}}
+                                    />
+                                    <label htmlFor="remember" style={{cursor: 'pointer', fontSize: '14px', margin: 0, color: '#666'}}>
+                                        Ricorda le mie credenziali
+                                    </label>
+                                </div>
+                                <button 
+                                    type="submit" 
+                                    className="btn btn-green" 
+                                    style={{"width": "100%", "cursor": "pointer", "fontSize": "16px", "padding": "14px"}}
+                                >
+                                    Accedi
+                                </button>
+                            </form>
+                            <div style={{"textAlign": "center", "marginTop": "24px", "paddingTop": "20px", "borderTop": "1px solid #e0e0e0"}}>
+                                <p style={{"fontSize": "11px", "color": "#999", "margin": "0"}}>
+                                    © 2026 Energy Solutions
+                                </p>
+                                <p style={{"fontSize": "11px", "color": "#999", "margin": "4px 0 0 0"}}>
+                                    Powered by <strong style={{"color": "#2E7D32"}}>B.U. Progetti Speciali</strong>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // SCHERMATA CAPTCHA
+
+            const myOpps = getFilteredOpps();
+
+            return (
+                <div style={{minHeight: '100vh'}}>
+                    <div className="header">
+                        <div className="container" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                            <div>
+                                <h1 style={{fontSize: '20px', color: '#2E7D32'}}>Energy Solutions - Opportunità</h1>
+                                <p style={{fontSize: '14px', color: '#666'}}>{user.name} - {RUOLI[user.role]}</p>
+                            </div>
+                            <div style={{display: 'flex', gap: '10px'}}>
+                                <button className="btn btn-white" onClick={() => { sessionStorage.removeItem('visitedDashboard'); window.location.href = 'dashboard.html'; }}>← Dashboard</button>
+                                <button className="btn btn-white" onClick={async () => { await firebase.auth().signOut(); sessionStorage.clear(); setUser(null); setShowLogin(true); }}>Esci</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="container">
+                        <div style={{marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'center'}}>
+                            {user.role !== 'visualizzatore' && (
+                                <button className="btn btn-green" onClick={() => setShowForm(true)}>+ Nuova Opportunità</button>
+                            )}
+                            {user.role === 'admin' && (
+                                <>
+                                    <button className="btn btn-white" onClick={downloadBackup}>💾 Backup Dati</button>
+                                    <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '10px', padding: '8px 12px', background: '#f0f9f4', borderRadius: '8px', border: '1px solid #4CAF50'}}>
+                                        <input 
+                                            type="checkbox" 
+                                            id="autoBackup" 
+                                            checked={autoBackupEnabled} 
+                                            onChange={(e) => {
+                                                const enabled = e.target.checked;
+                                                setAutoBackupEnabled(enabled);
+                                                localStorage.setItem('autoBackupEnabled', enabled);
+                                            }}
+                                            style={{cursor: 'pointer', width: '18px', height: '18px'}}
+                                        />
+                                        <label htmlFor="autoBackup" style={{cursor: 'pointer', margin: 0, fontSize: '13px', fontWeight: '600', color: '#2E7D32'}}>
+                                            Backup Automatico (ogni 24h)
+                                        </label>
+                                        <span style={{fontSize: '11px', color: '#666', marginLeft: '4px'}}>
+                                            {localStorage.getItem('lastBackupDate') ? 
+                                                `Ultimo: ${new Date(localStorage.getItem('lastBackupDate')).toLocaleDateString('it-IT')}` : 
+                                                'Mai eseguito'}
+                                        </span>
+                                    </div>
+                                </>
+                            )}
+                            <button className="btn btn-white" onClick={printTablePDF}>🖨️ Stampa Riepilogo</button>
+                        </div>
+
+                        <div className="card" style={{marginBottom: '20px'}}>
+                            <h3 style={{marginBottom: '16px', color: '#2E7D32'}}>🔍 Filtri Ricerca</h3>
+                            <div className="grid-3">
+                                <div className="mb">
+                                    <label className="label">Utente</label>
+                                    <input className="input" placeholder="Nome utente..." value={filters.utente} onChange={e => setFilters({...filters, utente: e.target.value})} />
+                                </div>
+                                <div className="mb">
+                                    <label className="label">Tipologia Cliente</label>
+                                    <select className="input" value={filters.tipologiaCliente} onChange={e => setFilters({...filters, tipologiaCliente: e.target.value})}>
+                                        <option value="">Tutte</option>
+                                        {TIPOLOGIE_CLIENTE.map(t => <option key={t} value={t}>{t}</option>)}
+                                    </select>
+                                </div>
+                                {user.role === 'admin' && (
+                                    <div className="mb">
+                                        <label className="label">Ruolo</label>
+                                        <select className="input" value={filters.ruolo} onChange={e => setFilters({...filters, ruolo: e.target.value})}>
+                                            <option value="">Tutti</option>
+                                            {Object.keys(RUOLI).map(r => <option key={r} value={r}>{RUOLI[r]}</option>)}
+                                        </select>
+                                    </div>
+                                )}
+                                <div className="mb">
+                                    <label className="label">Tipologia Intervento</label>
+                                    <select className="input" value={filters.tipologiaIntervento} onChange={e => setFilters({...filters, tipologiaIntervento: e.target.value})}>
+                                        <option value="">Tutte</option>
+                                        {Object.keys(TIPOLOGIE_INTERVENTO).map(k => <option key={k} value={k}>{TIPOLOGIE_INTERVENTO[k].label}</option>)}
+                                    </select>
+                                </div>
+                                <div className="mb">
+                                    <label className="label">Regione</label>
+                                    <select className="input" value={filters.regione} onChange={e => setFilters({...filters, regione: e.target.value})}>
+                                        <option value="">Tutte</option>
+                                        {Object.keys(REGIONI_PROVINCE).map(r => <option key={r} value={r}>{r}</option>)}
+                                    </select>
+                                </div>
+                                <div className="mb">
+                                    <label className="label">Stato</label>
+                                    <select className="input" value={filters.stato} onChange={e => setFilters({...filters, stato: e.target.value})} style={{
+                                        background: filters.stato === 'CALDA' ? '#FEF3C7' : filters.stato === 'TIEPIDA' ? '#FCE7F3' : filters.stato === 'FREDDA' ? '#DBEAFE' : filters.stato === 'KO' ? '#FEE2E2' : filters.stato === 'OK' ? '#D1FAE5' : 'white'
+                                    }}>
+                                        <option value="">Tutti</option>
+                                        <option value="CALDA">CALDA</option>
+                                        <option value="TIEPIDA">TIEPIDA</option>
+                                        <option value="FREDDA">FREDDA</option>
+                                        <option value="KO">KO</option>
+                                        <option value="OK">OK</option>
+                                    </select>
+                                </div>
+                                <div className="mb">
+                                    <label className="label">Data da</label>
+                                    <input type="date" className="input" value={filters.dataInizio} onChange={e => setFilters({...filters, dataInizio: e.target.value})} />
+                                </div>
+                                <div className="mb">
+                                    <label className="label">Data a</label>
+                                    <input type="date" className="input" value={filters.dataFine} onChange={e => setFilters({...filters, dataFine: e.target.value})} />
+                                </div>
+                            </div>
+                            <button className="btn btn-gray" onClick={() => setFilters({ utente: '', tipologiaCliente: '', ruolo: '', tipologiaIntervento: '', stato: '', dataInizio: '', dataFine: '' })}>🔄 Azzera Filtri</button>
+                        </div>
+
+                        <h2 style={{margin: '20px 0 16px'}}>Le Mie Opportunità ({myOpps.length})</h2>
+                        
+                        {myOpps.length === 0 && (
+                            <div className="card">
+                                <p style={{textAlign: 'center', color: '#666'}}>Nessuna opportunità. Clicca "+ Nuova Opportunità"!</p>
+                            </div>
+                        )}
+
+                        {myOpps.map(o => (
+                            <div className="card" key={o.id} style={{borderLeft: `6px solid ${o.stato === 'CALDA' ? '#FEF3C7' : o.stato === 'FREDDA' ? '#DBEAFE' : o.stato === 'KO' ? '#FEE2E2' : '#D1FAE5'}`, padding: '16px', marginBottom: '12px'}}>
+                                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '10px'}}>
+                                    <div style={{flex: 1}}>
+                                        <h3 style={{fontSize: '18px', marginBottom: '4px', color: '#2E7D32', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap'}}>
+                                            <span>🏢 {o.ragioneSociale}</span>
+                                            {(o.regione || o.regioneIntervento) && (
+                                                <span style={{
+                                                    fontSize: '16px', 
+                                                    color: COLORI_REGIONI[o.regione || o.regioneIntervento] || '#FF9800', 
+                                                    fontWeight: '700',
+                                                    letterSpacing: '0.5px'
+                                                }}>
+                                                    {o.regione || o.regioneIntervento}
+                                                </span>
+                                            )}
+                                        </h3>
+                                        <div style={{fontSize: '12px', color: '#666', marginBottom: '8px'}}>
+                                            📅 {new Date(o.createdAt).toLocaleDateString('it-IT', {day: '2-digit', month: '2-digit', year: 'numeric'})}
+                                        </div>
+                                    </div>
+                                    <div style={{textAlign: 'right'}}>
+                                        <span className={`badge stato-${o.stato.toLowerCase()}`} style={{fontSize: '13px', padding: '6px 12px'}}>{o.stato}</span>
+                                        {o.tipoIntervento === 'MULTI INTERVENTO' && (
+                                            <span className="badge" style={{background: '#FFF3E0', color: '#e65100', fontSize: '11px', padding: '4px 8px', marginLeft: '6px', display: 'block', marginTop: '6px'}}>MULTI</span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div style={{background: '#f9f9f9', padding: '12px', borderRadius: '8px', marginBottom: '10px'}}>
+                                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '13px'}}>
+                                        <div>
+                                            <div style={{color: '#666', fontSize: '11px', marginBottom: '2px'}}>Cliente</div>
+                                            <div style={{fontWeight: '700', fontSize: '14px'}}>{o.tipologiaCliente}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{color: '#666', fontSize: '11px', marginBottom: '2px'}}>Importo Presunto</div>
+                                            <div style={{fontWeight: '700', fontSize: '16px', color: '#2E7D32'}}>€{(parseInt(o.importoPresunto) || 0).toLocaleString('it-IT')}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{color: '#666', fontSize: '11px', marginBottom: '2px'}}>Tipologia Intervento</div>
+                                            <div style={{fontWeight: '600', fontSize: '13px'}}>{TIPOLOGIE_INTERVENTO[o.tipologiaIntervento]?.label}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{color: '#666', fontSize: '11px', marginBottom: '2px'}}>Contrattualizzazione</div>
+                                            <div style={{fontWeight: '600', fontSize: '13px'}}>{o.possibileContrattualizzazione}</div>
+                                        </div>
+                                        {(o.tipologiaIntervento === 'cratere_2016' || o.tipologiaIntervento === 'cratere_2009') && o.livelloOperativo && (
+                                            <div>
+                                                <div style={{color: '#666', fontSize: '11px', marginBottom: '2px'}}>Livello Operativo</div>
+                                                <span className="badge" style={{background: '#2196F3', color: 'white', fontSize: '12px', padding: '4px 8px'}}>{o.livelloOperativo}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {o.vociSelezionate && o.vociSelezionate.length > 0 && (
+                                    <div style={{marginBottom: '10px'}}>
+                                        <div style={{color: '#666', fontSize: '11px', marginBottom: '6px', fontWeight: '600'}}>Voci Intervento:</div>
+                                        <div style={{display: 'flex', flexWrap: 'wrap', gap: '4px'}}>
+                                            {o.vociSelezionate.map(v => <span key={v} className="badge" style={{background: '#4CAF50', color: 'white', fontSize: '11px', padding: '4px 8px'}}>{v}</span>)}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {(canEdit(o) || user.role === 'visualizzatore') && (
+                                    <div style={{display: 'flex', gap: '8px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #e0e0e0', flexWrap: 'wrap'}}>
+                                        {o.descrizioneIntervento && (
+                                            <button className="btn btn-white" style={{padding: '8px 14px', fontSize: '13px'}} onClick={() => { setSelectedDesc(o.descrizioneIntervento); setShowDescModal(true); }}>📄 Descrizione</button>
+                                        )}
+                                        <button className="btn btn-white" style={{padding: '8px 14px', fontSize: '13px'}} onClick={() => printCardPDF(o)}>🖨️ Stampa</button>
+                                        {user.role !== 'visualizzatore' && (
+                                            <>
+                                                <button className="btn btn-white" style={{padding: '8px 14px', fontSize: '13px'}} onClick={() => duplicateOpp(o)}>📋 Duplica</button>
+                                                <button className="btn btn-white" style={{padding: '8px 14px', fontSize: '13px'}} onClick={() => { setEditOpp(o); setForm({...o, vociSelezionate: o.vociSelezionate || []}); setShowForm(true); }}>✏️ Modifica</button>
+                                                <button className="btn btn-red" style={{padding: '8px 14px', fontSize: '13px'}} onClick={() => deleteOpp(o.id)}>🗑️ Elimina</button>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+
+                        {myOpps.length > 0 && (
+                            <div style={{marginTop: '40px'}} id="summary-table-print">
+                                <h2 style={{marginBottom: '16px', color: '#2E7D32'}}>📊 Riepilogo per Tipologia</h2>
+                                
+                                {user.role === 'admin' ? (
+                                    // ADMIN: Tabella per ogni client
+                                    [...new Set(opps.map(o => o.clientId))].filter(Boolean).map(clientId => {
+                                        const clientUser = users.find(u => u.id === clientId);
+                                        const clientOpps = opps.filter(o => o.clientId === clientId);
+                                        if (clientOpps.length === 0) return null;
+                                        
+                                        return (
+                                            <div key={clientId} style={{marginBottom: '30px'}}>
+                                                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px'}}>
+                                                    <h3 style={{color: '#2E7D32', fontSize: '16px', margin: 0}}>
+                                                        👤 {clientUser?.name || 'Utente sconosciuto'}
+                                                    </h3>
+                                                    <button className="btn btn-white" style={{padding: '8px 16px'}} onClick={() => printSingleClientTable(clientId, clientUser?.name)}>
+                                                        🖨️ Stampa Tabella
+                                                    </button>
+                                                </div>
+                                                <table>
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Tipologia Intervento</th>
+                                                            <th style={{textAlign: 'center'}}>CALDA</th>
+                                                            <th style={{textAlign: 'center'}}>TIEPIDA</th>
+                                                            <th style={{textAlign: 'center'}}>FREDDA</th>
+                                                            <th style={{textAlign: 'center'}}>KO</th>
+                                                            <th style={{textAlign: 'center'}}>OK</th>
+                                                            <th style={{textAlign: 'center'}}>Totale</th>
+                                                            <th style={{textAlign: 'right'}}>Importo Totale</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {Object.keys(TIPOLOGIE_INTERVENTO).map(tipKey => {
+                                                            const oppsPerTipo = clientOpps.filter(o => o.tipologiaIntervento === tipKey);
+                                                            if (oppsPerTipo.length === 0) return null;
+                                                            
+                                                            const calda = oppsPerTipo.filter(o => o.stato === 'CALDA').length;
+                                                            const tiepida = oppsPerTipo.filter(o => o.stato === 'TIEPIDA').length;
+                                                            const fredda = oppsPerTipo.filter(o => o.stato === 'FREDDA').length;
+                                                            const ko = oppsPerTipo.filter(o => o.stato === 'KO').length;
+                                                            const ok = oppsPerTipo.filter(o => o.stato === 'OK').length;
+                                                            const totale = oppsPerTipo.length;
+                                                            const importoTotale = oppsPerTipo.reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0);
+                                                            
+                                                            return (
+                                                                <tr key={tipKey}>
+                                                                    <td style={{fontWeight: '600'}}>{TIPOLOGIE_INTERVENTO[tipKey].label}</td>
+                                                                    <td style={{textAlign: 'center', background: '#FEF3C7'}}>{calda}</td>
+                                                                    <td style={{textAlign: 'center', background: '#FCE7F3'}}>{tiepida}</td>
+                                                                    <td style={{textAlign: 'center', background: '#DBEAFE'}}>{fredda}</td>
+                                                                    <td style={{textAlign: 'center', background: '#FEE2E2'}}>{ko}</td>
+                                                                    <td style={{textAlign: 'center', background: '#D1FAE5'}}>{ok}</td>
+                                                                    <td style={{textAlign: 'center', fontWeight: '700'}}>{totale}</td>
+                                                                    <td style={{textAlign: 'right', fontWeight: '700'}}>€{importoTotale.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                        <tr style={{background: '#81C784', fontWeight: '700'}}>
+                                                            <td>TOTALE OPPORTUNITÀ</td>
+                                                            <td style={{textAlign: 'center'}}>{clientOpps.filter(o => o.stato === 'CALDA').length}</td>
+                                                            <td style={{textAlign: 'center'}}>{clientOpps.filter(o => o.stato === 'TIEPIDA').length}</td>
+                                                            <td style={{textAlign: 'center'}}>{clientOpps.filter(o => o.stato === 'FREDDA').length}</td>
+                                                            <td style={{textAlign: 'center'}}>{clientOpps.filter(o => o.stato === 'KO').length}</td>
+                                                            <td style={{textAlign: 'center'}}>{clientOpps.filter(o => o.stato === 'OK').length}</td>
+                                                            <td style={{textAlign: 'center'}}>{clientOpps.length}</td>
+                                                            <td style={{textAlign: 'right'}}>€{clientOpps.reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                        </tr>
+                                                        <tr style={{background: '#2E7D32', color: 'white', fontWeight: '700'}}>
+                                                            <td>TOTALE IMPORTI</td>
+                                                            <td style={{textAlign: 'center'}}>€{clientOpps.filter(o => o.stato === 'CALDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                            <td style={{textAlign: 'center'}}>€{clientOpps.filter(o => o.stato === 'TIEPIDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                            <td style={{textAlign: 'center'}}>€{clientOpps.filter(o => o.stato === 'FREDDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                            <td style={{textAlign: 'center'}}>€{clientOpps.filter(o => o.stato === 'KO').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                            <td style={{textAlign: 'center'}}>€{clientOpps.filter(o => o.stato === 'OK').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                            <td></td>
+                                                            <td style={{textAlign: 'right'}}>€{clientOpps.reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    // CLIENT: Solo la propria tabella
+                                    <div>
+                                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px'}}>
+                                            <h3 style={{color: '#2E7D32', fontSize: '16px', margin: 0}}>
+                                                👤 {user.name}
+                                            </h3>
+                                            <button className="btn btn-white" style={{padding: '8px 16px'}} onClick={() => printSingleClientTable(user.id, user.name)}>
+                                                🖨️ Stampa Tabella
+                                            </button>
+                                        </div>
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th>Tipologia Intervento</th>
+                                                    <th style={{textAlign: 'center'}}>CALDA</th>
+                                                    <th style={{textAlign: 'center'}}>TIEPIDA</th>
+                                                    <th style={{textAlign: 'center'}}>FREDDA</th>
+                                                    <th style={{textAlign: 'center'}}>KO</th>
+                                                    <th style={{textAlign: 'center'}}>OK</th>
+                                                    <th style={{textAlign: 'center'}}>Totale</th>
+                                                    <th style={{textAlign: 'right'}}>Importo Totale</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {Object.keys(TIPOLOGIE_INTERVENTO).map(tipKey => {
+                                                    const oppsPerTipo = myOpps.filter(o => o.tipologiaIntervento === tipKey);
+                                                    if (oppsPerTipo.length === 0) return null;
+                                                    
+                                                    const calda = oppsPerTipo.filter(o => o.stato === 'CALDA').length;
+                                                    const tiepida = oppsPerTipo.filter(o => o.stato === 'TIEPIDA').length;
+                                                    const fredda = oppsPerTipo.filter(o => o.stato === 'FREDDA').length;
+                                                    const ko = oppsPerTipo.filter(o => o.stato === 'KO').length;
+                                                    const ok = oppsPerTipo.filter(o => o.stato === 'OK').length;
+                                                    const totale = oppsPerTipo.length;
+                                                    const importoTotale = oppsPerTipo.reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0);
+                                                    
+                                                    return (
+                                                        <tr key={tipKey}>
+                                                            <td style={{fontWeight: '600'}}>{TIPOLOGIE_INTERVENTO[tipKey].label}</td>
+                                                            <td style={{textAlign: 'center', background: '#FEF3C7'}}>{calda}</td>
+                                                            <td style={{textAlign: 'center', background: '#FCE7F3'}}>{tiepida}</td>
+                                                            <td style={{textAlign: 'center', background: '#DBEAFE'}}>{fredda}</td>
+                                                            <td style={{textAlign: 'center', background: '#FEE2E2'}}>{ko}</td>
+                                                            <td style={{textAlign: 'center', background: '#D1FAE5'}}>{ok}</td>
+                                                            <td style={{textAlign: 'center', fontWeight: '700'}}>{totale}</td>
+                                                            <td style={{textAlign: 'right', fontWeight: '700'}}>€{importoTotale.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                                <tr style={{background: '#81C784', fontWeight: '700'}}>
+                                                    <td>TOTALE OPPORTUNITÀ</td>
+                                                    <td style={{textAlign: 'center'}}>{myOpps.filter(o => o.stato === 'CALDA').length}</td>
+                                                    <td style={{textAlign: 'center'}}>{myOpps.filter(o => o.stato === 'TIEPIDA').length}</td>
+                                                    <td style={{textAlign: 'center'}}>{myOpps.filter(o => o.stato === 'FREDDA').length}</td>
+                                                    <td style={{textAlign: 'center'}}>{myOpps.filter(o => o.stato === 'KO').length}</td>
+                                                    <td style={{textAlign: 'center'}}>{myOpps.filter(o => o.stato === 'OK').length}</td>
+                                                    <td style={{textAlign: 'center'}}>{myOpps.length}</td>
+                                                    <td style={{textAlign: 'right'}}>€{myOpps.reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                </tr>
+                                                <tr style={{background: '#2E7D32', color: 'white', fontWeight: '700'}}>
+                                                    <td>TOTALE IMPORTI</td>
+                                                    <td style={{textAlign: 'center'}}>€{myOpps.filter(o => o.stato === 'CALDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                    <td style={{textAlign: 'center'}}>€{myOpps.filter(o => o.stato === 'TIEPIDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                    <td style={{textAlign: 'center'}}>€{myOpps.filter(o => o.stato === 'FREDDA').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                    <td style={{textAlign: 'center'}}>€{myOpps.filter(o => o.stato === 'KO').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                    <td style={{textAlign: 'center'}}>€{myOpps.filter(o => o.stato === 'OK').reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                    <td></td>
+                                                    <td style={{textAlign: 'right'}}>€{myOpps.reduce((sum, o) => sum + (parseInt(o.importoPresunto) || 0), 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {user.role === 'admin' && (
+                            <>
+                                <div style={{"display": "flex", "justifyContent": "space-between", "alignItems": "center", "margin": "40px 0 16px"}}>
+                                    <h2 style={{"color": "#2E7D32", "margin": "0", "cursor": "pointer"}} onClick={() => setShowUsersSection(!showUsersSection)}>
+                                        {showUsersSection ? '▼' : '▶'} 👥 Gestione Utenti
+                                    </h2>
+                                    {showUsersSection && (
+                                        <button className="btn btn-green" onClick={() => setShowUserForm(true)}>+ Nuovo Utente</button>
+                                    )}
+                                </div>
+                                
+                                {showUsersSection && (
+                                    <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Nome</th>
+                                            <th>Username</th>
+                                            <th>Ruolo</th>
+                                            <th>Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {users.map(u => (
+                                            <tr key={u.id}>
+                                                <td style={{fontWeight: '600'}}>{u.name}</td>
+                                                <td>{u.username}</td>
+                                                <td>
+                                                    <span className="badge" style={{
+                                                        background: u.role === 'admin' ? '#2E7D32' : u.role === 'diretto' ? '#1976D2' : u.role === 'interno' ? '#F57C00' : u.role === 'visualizzatore' ? '#9C27B0' : '#81C784',
+                                                        color: 'white'
+                                                    }}>
+                                                        {RUOLI[u.role]}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <button className="btn btn-white" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setEditUser(u); setUserForm({...u}); setShowUserForm(true); }}>Modifica</button>
+                                                    <button className="btn btn-red" style={{padding: '6px 12px'}} onClick={() => deleteUser(u.id)}>Elimina</button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                                )}
+                            </>
+                        )}
+                    </div>
+
+                    {showForm && (
+                        <div className="modal" onClick={() => { setShowForm(false); setEditOpp(null); }}>
+                            <div className="modal-content" onClick={e => e.stopPropagation()}>
+                                <h2 style={{marginBottom: '20px', color: '#2E7D32'}}>{editOpp ? 'Modifica' : 'Nuova'} Opportunità</h2>
+                                <form onSubmit={saveOpp}>
+                                    <div className="section-title">📋 Dati Azienda</div>
+                                    <div className="mb">
+                                        <label className="label">Ragione Sociale *</label>
+                                        <input className="input" value={form.ragioneSociale} onChange={e => setForm({...form, ragioneSociale: e.target.value})} required />
+                                    </div>
+                                    <div className="grid-2">
+                                        <div className="mb">
+                                            <label className="label">Regione</label>
+                                            <select className="input" value={form.regione} onChange={e => setForm({...form, regione: e.target.value, provincia: ''})}>
+                                                <option value="">Seleziona regione...</option>
+                                                {Object.keys(REGIONI_PROVINCE).map(r => <option key={r} value={r}>{r}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">Provincia</label>
+                                            <select className="input" value={form.provincia} onChange={e => setForm({...form, provincia: e.target.value})} disabled={!form.regione}>
+                                                <option value="">Seleziona provincia...</option>
+                                                {form.regione && REGIONI_PROVINCE[form.regione].map(p => <option key={p} value={p}>{p}</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="grid-2">
+                                        <div className="mb">
+                                            <label className="label">Indirizzo</label>
+                                            <input className="input" value={form.indirizzo} onChange={e => setForm({...form, indirizzo: e.target.value})} />
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">CAP</label>
+                                            <input className="input" value={form.cap} onChange={e => setForm({...form, cap: e.target.value})} />
+                                        </div>
+                                    </div>
+                                    <div className="grid-2">
+                                        <div className="mb">
+                                            <label className="label">Città</label>
+                                            <input className="input" value={form.citta} onChange={e => setForm({...form, citta: e.target.value})} />
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">Telefono</label>
+                                            <input className="input" value={form.telefono} onChange={e => setForm({...form, telefono: e.target.value})} />
+                                        </div>
+                                    </div>
+                                    <div className="mb">
+                                        <label className="label">Tipologia Cliente *</label>
+                                        <select className="input" value={form.tipologiaCliente} onChange={e => setForm({...form, tipologiaCliente: e.target.value})} required>
+                                            <option value="">Seleziona...</option>
+                                            {TIPOLOGIE_CLIENTE.map(t => <option key={t} value={t}>{t}</option>)}
+                                        </select>
+                                    </div>
+
+                                    <div className="section-title">👤 Referente</div>
+                                    <div className="grid-2">
+                                        <div className="mb">
+                                            <label className="label">Nome Referente</label>
+                                            <input className="input" value={form.nomeReferente} onChange={e => setForm({...form, nomeReferente: e.target.value})} />
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">Ruolo</label>
+                                            <input className="input" value={form.ruoloReferente} onChange={e => setForm({...form, ruoloReferente: e.target.value})} />
+                                        </div>
+                                    </div>
+                                    <div className="grid-2">
+                                        <div className="mb">
+                                            <label className="label">Telefono Referente</label>
+                                            <input className="input" value={form.telReferente} onChange={e => setForm({...form, telReferente: e.target.value})} />
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">Email Referente</label>
+                                            <input type="email" className="input" value={form.emailReferente} onChange={e => setForm({...form, emailReferente: e.target.value})} />
+                                        </div>
+                                    </div>
+
+                                    <div className="section-title">📍 Ubicazione Intervento</div>
+                                    <div className="grid-2">
+                                        <div className="mb">
+                                            <label className="label">Regione Intervento</label>
+                                            <select className="input" value={form.regioneIntervento} onChange={e => setForm({...form, regioneIntervento: e.target.value, provinciaIntervento: ''})}>
+                                                <option value="">Seleziona regione...</option>
+                                                {Object.keys(REGIONI_PROVINCE).map(r => <option key={r} value={r}>{r}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">Provincia Intervento</label>
+                                            <select className="input" value={form.provinciaIntervento} onChange={e => setForm({...form, provinciaIntervento: e.target.value})} disabled={!form.regioneIntervento}>
+                                                <option value="">Seleziona provincia...</option>
+                                                {form.regioneIntervento && REGIONI_PROVINCE[form.regioneIntervento].map(p => <option key={p} value={p}>{p}</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="grid-3">
+                                        <div className="mb">
+                                            <label className="label">Via</label>
+                                            <input className="input" value={form.viaIntervento} onChange={e => setForm({...form, viaIntervento: e.target.value})} />
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">Numero</label>
+                                            <input className="input" value={form.numeroIntervento} onChange={e => setForm({...form, numeroIntervento: e.target.value})} />
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">CAP</label>
+                                            <input className="input" value={form.capIntervento} onChange={e => setForm({...form, capIntervento: e.target.value})} />
+                                        </div>
+                                    </div>
+                                    <div className="mb">
+                                        <label className="label">Città Intervento</label>
+                                        <input className="input" value={form.cittaIntervento} onChange={e => setForm({...form, cittaIntervento: e.target.value})} />
+                                    </div>
+
+                                    <div className="section-title">🔧 Tecnico Incaricato</div>
+                                    <div className="mb">
+                                        <label className="label">Tecnico Incaricato</label>
+                                        <select className="input" value={form.hasTecnico} onChange={e => setForm({...form, hasTecnico: e.target.value})}>
+                                            <option value="no">NO</option>
+                                            <option value="si">SI</option>
+                                        </select>
+                                    </div>
+                                    {form.hasTecnico === 'si' && (
+                                        <>
+                                            <div className="mb">
+                                                <label className="label">Nome Studio Tecnico</label>
+                                                <input className="input" value={form.nomeStudioTecnico} onChange={e => setForm({...form, nomeStudioTecnico: e.target.value})} />
+                                            </div>
+                                            <div className="grid-2">
+                                                <div className="mb">
+                                                    <label className="label">Regione Studio</label>
+                                                    <select className="input" value={form.regioneStudio} onChange={e => setForm({...form, regioneStudio: e.target.value, provinciaStudio: ''})}>
+                                                        <option value="">Seleziona regione...</option>
+                                                        {Object.keys(REGIONI_PROVINCE).map(r => <option key={r} value={r}>{r}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div className="mb">
+                                                    <label className="label">Provincia Studio</label>
+                                                    <select className="input" value={form.provinciaStudio} onChange={e => setForm({...form, provinciaStudio: e.target.value})} disabled={!form.regioneStudio}>
+                                                        <option value="">Seleziona provincia...</option>
+                                                        {form.regioneStudio && REGIONI_PROVINCE[form.regioneStudio].map(p => <option key={p} value={p}>{p}</option>)}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div className="grid-2">
+                                                <div className="mb">
+                                                    <label className="label">Referente Studio</label>
+                                                    <input className="input" value={form.referenteStudio} onChange={e => setForm({...form, referenteStudio: e.target.value})} />
+                                                </div>
+                                                <div className="mb">
+                                                    <label className="label">Indirizzo Studio</label>
+                                                    <input className="input" value={form.indirizzoStudio} onChange={e => setForm({...form, indirizzoStudio: e.target.value})} />
+                                                </div>
+                                            </div>
+                                            <div className="grid-2">
+                                                <div className="mb">
+                                                    <label className="label">Telefono Studio</label>
+                                                    <input className="input" value={form.telefonoStudio} onChange={e => setForm({...form, telefonoStudio: e.target.value})} />
+                                                </div>
+                                                <div className="mb">
+                                                    <label className="label">Email Studio</label>
+                                                    <input type="email" className="input" value={form.emailStudio} onChange={e => setForm({...form, emailStudio: e.target.value})} />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    <div className="section-title">⚡ Intervento</div>
+                                    <div className="mb">
+                                        <label className="label">Tipologia Intervento *</label>
+                                        <select className="input" value={form.tipologiaIntervento} onChange={e => setForm({...form, tipologiaIntervento: e.target.value, vociSelezionate: []})} required>
+                                            <option value="">Seleziona...</option>
+                                            {Object.keys(TIPOLOGIE_INTERVENTO).map(k => <option key={k} value={k}>{TIPOLOGIE_INTERVENTO[k].label}</option>)}
+                                        </select>
+                                    </div>
+
+                                    {form.tipologiaIntervento && TIPOLOGIE_INTERVENTO[form.tipologiaIntervento].voci.length > 0 && (
+                                        <div className="mb">
+                                            <label className="label">Voci Intervento</label>
+                                            <div className="checkbox-group">
+                                                {TIPOLOGIE_INTERVENTO[form.tipologiaIntervento].voci.map(voce => (
+                                                    <label key={voce} className="checkbox-item">
+                                                        <input type="checkbox" checked={form.vociSelezionate.includes(voce)} onChange={() => toggleVoce(voce)} />
+                                                        <span>{voce}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {(form.tipologiaIntervento === 'cratere_2016' || form.tipologiaIntervento === 'cratere_2009') && (
+                                        <div className="mb">
+                                            <label className="label">Livello Operativo *</label>
+                                            <select className="input" value={form.livelloOperativo} onChange={e => setForm({...form, livelloOperativo: e.target.value})} required>
+                                                <option value="">Seleziona livello...</option>
+                                                <option value="L0">L0</option>
+                                                <option value="L1">L1</option>
+                                                <option value="L2">L2</option>
+                                                <option value="L3">L3</option>
+                                                <option value="L4">L4</option>
+                                            </select>
+                                        </div>
+                                    )}
+
+                                    <div className="mb">
+                                        <label className="label">Descrizione Intervento</label>
+                                        <textarea className="input" value={form.descrizioneIntervento} onChange={e => setForm({...form, descrizioneIntervento: e.target.value})} />
+                                    </div>
+
+                                    <div className="grid-2">
+                                        <div className="mb">
+                                            <label className="label">Tipo Intervento</label>
+                                            <select className="input" value={form.tipoIntervento} onChange={e => setForm({...form, tipoIntervento: e.target.value})}>
+                                                {TIPO_INTERVENTO.map(t => <option key={t} value={t}>{t}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">Importo Presunto (€)</label>
+                                            <input type="number" className="input" value={form.importoPresunto} onChange={e => setForm({...form, importoPresunto: e.target.value})} />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid-2">
+                                        <div className="mb">
+                                            <label className="label">Stato *</label>
+                                            <select className="input" value={form.stato} onChange={e => setForm({...form, stato: e.target.value})} style={{
+                                                background: form.stato === 'CALDA' ? '#FEF3C7' : form.stato === 'TIEPIDA' ? '#FCE7F3' : form.stato === 'FREDDA' ? '#DBEAFE' : form.stato === 'KO' ? '#FEE2E2' : '#D1FAE5',
+                                                fontWeight: '700'
+                                            }} required>
+                                                <option value="CALDA" style={{background: '#FEF3C7'}}>CALDA</option>
+                                                <option value="TIEPIDA" style={{background: '#FCE7F3'}}>TIEPIDA</option>
+                                                <option value="FREDDA" style={{background: '#DBEAFE'}}>FREDDA</option>
+                                                <option value="KO" style={{background: '#FEE2E2'}}>KO</option>
+                                                <option value="OK" style={{background: '#D1FAE5'}}>OK</option>
+                                            </select>
+                                        </div>
+                                        <div className="mb">
+                                            <label className="label">Possibile Contrattualizzazione</label>
+                                            <select className="input" value={form.possibileContrattualizzazione} onChange={e => setForm({...form, possibileContrattualizzazione: e.target.value})}>
+                                                {CONTRATTUALIZZAZIONE.map(c => <option key={c} value={c}>{c}</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div style={{display: 'flex', gap: '10px', marginTop: '24px'}}>
+                                        <button type="submit" className="btn btn-green">Salva</button>
+                                        <button type="button" className="btn btn-white" onClick={() => { setShowForm(false); setEditOpp(null); }}>Annulla</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {showUserForm && user.role === 'admin' && (
+                        <div className="modal" onClick={() => { setShowUserForm(false); setEditUser(null); }}>
+                            <div className="modal-content" style={{maxWidth: '500px'}} onClick={e => e.stopPropagation()}>
+                                <h2 style={{marginBottom: '20px', color: '#2E7D32'}}>{editUser ? 'Modifica' : 'Nuovo'} Utente</h2>
+                                <form onSubmit={saveUser}>
+                                    <div className="mb">
+                                        <label className="label">Nome *</label>
+                                        <input className="input" value={userForm.name} onChange={e => setUserForm({...userForm, name: e.target.value})} required />
+                                    </div>
+                                    <div className="mb">
+                                        <label className="label">Username *</label>
+                                        <input className="input" value={userForm.username} onChange={e => setUserForm({...userForm, username: e.target.value})} required />
+                                    </div>
+                                    <div className="mb">
+                                        <label className="label">Password *</label>
+                                        <input type="password" className="input" value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} required />
+                                    </div>
+                                    <div className="mb">
+                                        <label className="label">Ruolo *</label>
+                                        <select className="input" value={userForm.role} onChange={e => setUserForm({...userForm, role: e.target.value})} required>
+                                            <option value="agenzia">Agenzia</option>
+                                            <option value="diretto">Diretto</option>
+                                            <option value="interno">Interno</option>
+                                            <option value="visualizzatore">Visualizzatore</option>
+                                            <option value="admin">Amministratore</option>
+                                        </select>
+                                    </div>
+                                    <div style={{display: 'flex', gap: '10px'}}>
+                                        <button type="submit" className="btn btn-green">Salva</button>
+                                        <button type="button" className="btn btn-white" onClick={() => { setShowUserForm(false); setEditUser(null); }}>Annulla</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {showDescModal && (
+                        <div className="modal" onClick={() => setShowDescModal(false)}>
+                            <div className="modal-content" style={{maxWidth: '600px'}} onClick={e => e.stopPropagation()}>
+                                <h2 style={{marginBottom: '20px', color: '#2E7D32'}}>📄 Descrizione Intervento</h2>
+                                <div style={{padding: '20px', background: '#f9f9f9', borderRadius: '8px', lineHeight: '1.6', whiteSpace: 'pre-wrap'}}>
+                                    {selectedDesc}
+                                </div>
+                                <button className="btn btn-white" style={{marginTop: '20px'}} onClick={() => setShowDescModal(false)}>Chiudi</button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
