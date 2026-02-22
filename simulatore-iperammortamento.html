@@ -145,7 +145,7 @@ label {
     color: var(--text-muted);
 }
 
-input, select {
+input:not([type="checkbox"]):not([type="radio"]), select {
     width: 100%;
     padding: 10px 14px;
     border: 2px solid var(--border);
@@ -168,7 +168,7 @@ select {
     cursor: pointer;
 }
 
-input:focus, select:focus {
+input:not([type="checkbox"]):not([type="radio"]):focus, select:focus {
     outline: none;
     border-color: var(--primary);
     background: #ffffff;
@@ -187,7 +187,7 @@ input[type="checkbox"] {
 small { font-size: 11px; color: var(--text-muted); display: block; margin-top: 5px; font-style: italic; }
 
 /* ── BUTTON ── */
-.btn, button.btn, button[onclick] {
+.btn, button.btn {
     background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
     color: white;
     padding: 13px 28px;
@@ -202,7 +202,7 @@ small { font-size: 11px; color: var(--text-muted); display: block; margin-top: 5
     font-family: 'Manrope', Arial, sans-serif;
     letter-spacing: 0.3px;
 }
-.btn:hover, button.btn:hover, button[onclick]:hover {
+.btn:hover, button.btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(46,125,50,0.30);
 }
@@ -444,8 +444,8 @@ tr:last-child td { border-bottom: none; }
 }
 .checkbox-group:hover { border-color: var(--primary); }
 .checkbox-group label {
-    text-transform: none;
-    letter-spacing: 0;
+    text-transform: none !important;
+    letter-spacing: normal !important;
     font-size: 0.9rem;
     font-weight: 600;
     color: var(--text-mid);
@@ -555,7 +555,26 @@ footer, .footer {
   .header-badge { display: none; }
 }
 
-    </style>
+    .form-control {
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    font-family: 'Manrope', Arial, sans-serif;
+    background: var(--primary-pale);
+    color: var(--text);
+    transition: all 0.2s;
+    appearance: none;
+    -webkit-appearance: none;
+}
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(76,175,80,0.12);
+}
+</style>
 </head>
 <body>
     <div class="main-wrapper"><div class="container">
@@ -720,7 +739,7 @@ footer, .footer {
                 </div>
 
                 <div class="form-group" style="background: rgba(76,175,80,0.1); padding: 15px; border-radius: 8px; border: 1px solid rgba(76,175,80,0.3);">
-                    <h4 style="margin-top: 0; color: var(--secondary);">💰 Nuova Sabatini 2026 (solo PMI)</h4>
+                    <h4 style="margin-top: 0; color: var(--primary-dark);">💰 Nuova Sabatini 2026 (solo PMI)</h4>
                     <div class="checkbox-group">
                         <input type="checkbox" id="applicaSabatini">
                         <label style="margin-bottom: 0;">Calcola contributo Nuova Sabatini</label>
@@ -761,7 +780,7 @@ footer, .footer {
                     </small>
                 </div>
 
-                <button onclick="calcolaIperammortamento()">📊 Calcola Risparmio</button>
+                <button class="btn" onclick="calcolaIperammortamento()">📊 Calcola Risparmio</button>
             </div>
         </div>
 
@@ -771,7 +790,7 @@ footer, .footer {
                 <strong>ATTENZIONE:</strong> La modalità di acquisizione influisce sul periodo di deduzione fiscale, non sul periodo di ammortamento.
             </p>
             
-            <div style="background: #e8f5e9; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+            <div style="background: var(--primary-pale); padding: 20px; border-radius: 10px; margin-bottom: 20px; border:1px solid var(--border);">
                 <h3 style="color: var(--secondary); font-size: 1.2rem; margin-bottom: 15px;">✅ ACQUISTO DIRETTO</h3>
                 <ul style="line-height: 1.9; margin-left: 20px;">
                     <li><strong>Ammortamento:</strong> Secondo coefficienti ministeriali (es. 12,5% = 8 anni)</li>
@@ -781,7 +800,7 @@ footer, .footer {
                 </ul>
             </div>
 
-            <div style="background: #fff3e0; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+            <div style="background: #fff8e1; padding: 20px; border-radius: 10px; margin-bottom: 20px; border:1px solid #fde68a;">
                 <h3 style="color: var(--primary); font-size: 1.2rem; margin-bottom: 15px;">🚀 LEASING FINANZIARIO</h3>
                 <ul style="line-height: 1.9; margin-left: 20px;">
                     <li><strong>Durata contratto:</strong> Liberamente concordabile</li>
@@ -864,7 +883,7 @@ footer, .footer {
                 <strong>ATTENZIONE:</strong> La classificazione dell'impianto fotovoltaico determina coefficiente di ammortamento e obblighi fiscali.
             </p>
             
-            <div style="background: #f0f7e6; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+            <div style="background: var(--primary-pale); padding: 20px; border-radius: 10px; margin-bottom: 20px; border:1px solid var(--border);">
                 <h3 style="color: var(--secondary); font-size: 1.2rem; margin-bottom: 15px;">📱 BENE MOBILE - Aliquota 9% (11 anni)</h3>
                 <ul style="line-height: 1.9; margin-left: 20px;">
                     <li>Potenza nominale <strong>≤ 3 kW</strong> per ogni unità immobiliare</li>
@@ -876,7 +895,7 @@ footer, .footer {
                 </ul>
             </div>
 
-            <div style="background: #fef5e7; padding: 20px; border-radius: 10px;">
+            <div style="background: #fff8e1; padding: 20px; border-radius: 10px; border:1px solid #fde68a;">
                 <h3 style="color: var(--primary); font-size: 1.2rem; margin-bottom: 15px;">🏢 BENE IMMOBILE - Aliquota 4% (25 anni)</h3>
                 <ul style="line-height: 1.9; margin-left: 20px;">
                     <li><strong>Impianti a terra</strong> con centrale autonoma (categorie D/1 "opifici" o D/10 "agricoli")</li>
@@ -939,7 +958,7 @@ footer, .footer {
                 <strong>ATTENZIONE:</strong> La normativa fiscale prevede la riduzione al 50% del coefficiente di ammortamento nel primo esercizio.
             </p>
             
-            <div style="background: #e3f2fd; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+            <div style="background: var(--primary-pale2); padding: 20px; border-radius: 10px; margin-bottom: 20px; border:1px solid var(--border2);">
                 <h3 style="color: var(--primary); font-size: 1.2rem; margin-bottom: 15px;">✅ BENI MATERIALI - Riduzione OBBLIGATORIA</h3>
                 <ul style="line-height: 1.9; margin-left: 20px;">
                     <li><strong>Art. 102, comma 2, TUIR:</strong> "ridotti alla metà per il primo esercizio"</li>
@@ -1115,8 +1134,8 @@ footer, .footer {
                 rows += '<tr style="background: ' + bgColor + ';">' +
                     '<td style="padding: 10px; text-align: center; font-weight: bold;">' + annoLabel + '</td>' +
                     '<td style="padding: 10px; text-align: right;">€ ' + ammOrdAnno.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>' +
-                    '<td style="padding: 10px; text-align: right; font-weight: bold; color: var(--primary);">€ ' + ammMagAnno.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>' +
-                    '<td style="padding: 10px; text-align: right; color: var(--secondary);">€ ' + maggioreAmmAnno.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>' +
+                    '<td style="padding: 10px; text-align: right; font-weight: bold; color: #c8e6c9;">€ ' + ammMagAnno.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>' +
+                    '<td style="padding: 10px; text-align: right; color: var(--primary-dark);">€ ' + maggioreAmmAnno.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>' +
                     '<td style="padding: 10px; text-align: right; font-weight: bold; color: #2e7d32;">€ ' + risparmioAnno.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>' +
                     '<td style="padding: 10px; text-align: right; opacity: 0.7;">€ ' + fondoOrd.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>' +
                     '<td style="padding: 10px; text-align: right; opacity: 0.7;">€ ' + fondoMag.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>' +
@@ -1124,11 +1143,11 @@ footer, .footer {
             }
             
             // Riga totale
-            rows += '<tr style="background: var(--accent); font-weight: bold; border-top: 3px solid var(--secondary);">' +
+            rows += '<tr style="background: rgba(255,255,255,0.15); font-weight: bold; border-top: 2px solid rgba(200,230,201,0.5);">' +
                 '<td style="padding: 12px; text-align: center;">TOTALE</td>' +
                 '<td style="padding: 12px; text-align: right;">€ ' + investimento.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>' +
                 '<td style="padding: 12px; text-align: right; color: var(--primary);">€ ' + valoreAiFiniFiscali.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>' +
-                '<td style="padding: 12px; text-align: right; color: var(--secondary);">€ ' + (valoreAiFiniFiscali - investimento).toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>' +
+                '<td style="padding: 12px; text-align: right; color: var(--primary-dark);">€ ' + (valoreAiFiniFiscali - investimento).toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>' +
                 '<td style="padding: 12px; text-align: right; color: #2e7d32; font-size: 1.1rem;">€ ' + risparmioTotale.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>' +
                 '<td style="padding: 12px; text-align: right;">-</td>' +
                 '<td style="padding: 12px; text-align: right;">-</td>' +
@@ -1204,8 +1223,8 @@ footer, .footer {
                 html += '<tr style="background: ' + bgColor + ';">';
                 html += '<td style="padding: 10px; text-align: center; font-weight: bold; color: #000;">' + annoLabel + '</td>';
                 html += '<td style="padding: 10px; text-align: right; color: #424242; font-weight: 500;">€ ' + ammOrdAnno.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>';
-                html += '<td style="padding: 10px; text-align: right; font-weight: bold; color: var(--primary);">€ ' + ammMagAnno.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>';
-                html += '<td style="padding: 10px; text-align: right; color: var(--secondary);">€ ' + maggioreAmmAnno.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>';
+                html += '<td style="padding: 10px; text-align: right; font-weight: bold; color: #c8e6c9;">€ ' + ammMagAnno.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>';
+                html += '<td style="padding: 10px; text-align: right; color: var(--primary-dark);">€ ' + maggioreAmmAnno.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>';
                 html += '<td style="padding: 10px; text-align: right; font-weight: bold; color: #2e7d32;">€ ' + risparmioAnno.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>';
                 html += '<td style="padding: 10px; text-align: right; color: #1976d2; font-weight: 500;">€ ' + fondoOrd.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>';
                 html += '<td style="padding: 10px; text-align: right; color: #7b1fa2; font-weight: 500;">€ ' + fondoMag.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>';
@@ -1213,11 +1232,11 @@ footer, .footer {
             }
             
             // Riga totale
-            html += '<tr style="background: var(--accent); font-weight: bold; border-top: 3px solid var(--secondary);">';
+            html += '<tr style="background: rgba(255,255,255,0.15); font-weight: bold; border-top: 2px solid rgba(200,230,201,0.5);">';
             html += '<td style="padding: 12px; text-align: center; color: #000;">TOTALE</td>';
             html += '<td style="padding: 12px; text-align: right; color: #000;">€ ' + investimento.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>';
             html += '<td style="padding: 12px; text-align: right; color: var(--primary);">€ ' + valoreAiFiniFiscali.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>';
-            html += '<td style="padding: 12px; text-align: right; color: var(--secondary);">€ ' + (valoreAiFiniFiscali - investimento).toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>';
+            html += '<td style="padding: 12px; text-align: right; color: var(--primary-dark);">€ ' + (valoreAiFiniFiscali - investimento).toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>';
             html += '<td style="padding: 12px; text-align: right; color: #2e7d32; font-size: 1.1rem;">€ ' + risparmioTotale.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>';
             html += '<td style="padding: 12px; text-align: right; color: #1976d2;">€ ' + investimento.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>';
             html += '<td style="padding: 12px; text-align: right; color: #7b1fa2;">€ ' + valoreAiFiniFiscali.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>';
@@ -1544,15 +1563,15 @@ footer, .footer {
                         </div>
                         
                         <div class="highlight-box" style="background: rgba(255,255,255,0.10); border: 1.5px solid rgba(200,230,201,0.35);">
-                            <h4 style="color: #000;">🎯 BENEFICIO TOTALE COMBINATO</h4>
-                            <div class="result-value" style="font-size: 3rem; text-align: center; margin: 15px 0; color: #000;">
+                            <h4 style="color: #c8e6c9;">🎯 BENEFICIO TOTALE COMBINATO</h4>
+                            <div class="result-value" style="font-size: 3rem; text-align: center; margin: 15px 0; color: #c8e6c9;">
                                 € ${(risparmioTotale + contributoSabatini).toLocaleString('it-IT', {minimumFractionDigits: 0})}
                             </div>
-                            <div style="text-align: center; font-size: 1.3rem; color: #000; font-weight: bold;">
+                            <div style="text-align: center; font-size: 1.3rem; color: rgba(255,255,255,0.85); font-weight: bold;">
                                 ${((risparmioTotale + contributoSabatini) / investimento * 100).toFixed(2)}% dell'investimento
                             </div>
                             <div style="text-align: center; margin-top: 15px; padding: 12px; background: rgba(0,0,0,0.1); border-radius: 8px;">
-                                <small style="color: #000; font-size: 0.9rem;">
+                                <small style="color: rgba(255,255,255,0.80); font-size: 0.9rem;">
                                     💡 <strong>Strategia ottimale:</strong> Iperammortamento riduce tasse (immediato), 
                                     Sabatini dà liquidità (6 anni)
                                 </small>
@@ -1653,10 +1672,10 @@ footer, .footer {
                                     <span style="color: #1976d2; font-weight: 600;">▸ Aliquota Fiscale:</span> 
                                     <strong style="color: #000; font-size: 1.05rem;">${aliquotaFiscale}%</strong> <span style="color: #666;">(IRES/IRPEF)</span>
                                 </div>
-                                <div style="background: #f0f7ff; padding: 10px; border-radius: 6px; margin-top: 10px;">
-                                    <span style="color: #2e7d32; font-weight: 600;">▸ Risparmio:</span> 
-                                    <strong style="color: #000;">€ ${maggioreAmmortamento.toLocaleString('it-IT', {minimumFractionDigits: 0})} × ${aliquotaFiscale}% = 
-                                    <span style="color: #2e7d32; font-size: 1.1rem;">€ ${risparmioFiscaleAnnuo.toLocaleString('it-IT', {minimumFractionDigits: 2})}</span></strong>
+                                <div style="background: rgba(255,255,255,0.12); padding: 10px; border-radius: 6px; margin-top: 10px;">
+                                    <span style="color: #c8e6c9; font-weight: 600;">▸ Risparmio:</span> 
+                                    <strong style="color: #ffffff;">€ ${maggioreAmmortamento.toLocaleString('it-IT', {minimumFractionDigits: 0})} × ${aliquotaFiscale}% = 
+                                    <span style="color: #c8e6c9; font-size: 1.1rem;">€ ${risparmioFiscaleAnnuo.toLocaleString('it-IT', {minimumFractionDigits: 2})}</span></strong>
                                 </div>
                             </div>
                         </div>
@@ -1693,11 +1712,11 @@ footer, .footer {
                     ` : ''}
 
                     <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-top: 20px;">
-                        <h4 style="color: var(--secondary); margin-bottom: 15px; text-align: center;">📊 Dettaglio Anno per Anno</h4>
+                        <h4 style="color: rgba(255,255,255,0.80); margin-bottom: 15px; text-align: center;">📊 Dettaglio Anno per Anno</h4>
                         <div style="overflow-x: auto;">
                             <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; font-size: 0.9rem;">
                                 <thead>
-                                    <tr style="background: var(--secondary); color: white;">
+                                    <tr style="background: linear-gradient(135deg,#1b5e20,#2E7D32); color: white;">
                                         <th style="padding: 12px; text-align: center;">Anno</th>
                                         <th style="padding: 12px; text-align: right;">Ammort. Ordinario</th>
                                         <th style="padding: 12px; text-align: right;">Ammort. Maggiorato</th>
