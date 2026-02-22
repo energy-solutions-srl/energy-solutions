@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulatore Nuova Sabatini 2026 - MIMIT</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #0066CC;
+            --primary-dark: #004C99;
+            --secondary: #00A3E0;
+            --success: #00C851;
+            --warning: #FFB300;
+            --bg: #F5F7FA;
+            --surface: #FFFFFF;
+            --text: #2C3E50;
+            --border: #E1E8ED;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 40px 30px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 102, 204, 0.2);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid var(--border);
+        }
+
+        .card h2 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 16px 32px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 102, 204, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 102, 204, 0.4);
+        }
+
+        .info-box {
+            background: #E3F2FD;
+            border-left: 4px solid var(--primary);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .info-box strong {
+            color: var(--primary);
+        }
+
+        .warning-box {
+            background: #FFF3E0;
+            border-left: 4px solid var(--warning);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .result-box {
+            background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+            border: 3px solid var(--success);
+            border-radius: 16px;
+            padding: 30px;
+            margin-top: 30px;
+            display: none;
+        }
+
+        .result-value {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--success);
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .result-item {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+        }
+
+        .result-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .result-amount {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            .grid-2 { grid-template-columns: 1fr; }
+            .result-value { font-size: 2rem; }
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin: 5px;
+        }
+
+        .badge-success { background: #D1FAE5; color: #065F46; }
+        .badge-info { background: #DBEAFE; color: #1E40AF; }
+        .badge-warning { background: #FEF3C7; color: #92400E; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: var(--bg);
+            font-weight: 600;
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💼 Simulatore Nuova Sabatini 2026</h1>
+            <p class="subtitle">Contributo MIMIT per Investimenti in Beni Strumentali - PMI</p>
+        </header>
+
+        <div class="info-box">
+            <strong>ℹ️ Requisiti PMI:</strong> Micro, Piccole e Medie Imprese regolarmente costituite, iscritte al Registro Imprese, con sede in Italia. <strong>Escluse:</strong> Attività finanziarie/assicurative (ATECO K/L) e imprese in difficoltà.
+        </div>
+
+        <div class="card">
+            <h2>📊 Dati Investimento</h2>
+            
+            <div class="form-group">
+                <label>Importo Finanziamento (€):</label>
+                <input type="text" id="importo" placeholder="Es: 100.000,00" oninput="formatImporto(this)">
+                <small style="color: #666;">Min. 20.000 € - Max. 4.000.000 €</small>
+            </div>
+
+            <div class="form-group">
+                <label>Tipologia Investimento:</label>
+                <select id="tipologia">
+                    <option value="">Seleziona...</option>
+                    <option value="ordinaria">Linea Ordinaria (2,75%) - Beni strumentali tradizionali</option>
+                    <option value="4.0">Linea 4.0 (3,575%) - Tecnologie digitali Industria 4.0</option>
+                    <option value="green">Linea Green (3,575%) - Investimenti ecosostenibili</option>
+                    <option value="capitalizzazione-micro">Capitalizzazione Micro/Piccola (5,00%) - Con aumento capitale +30%</option>
+                    <option value="capitalizzazione-media">Capitalizzazione Media (3,575%) - Con aumento capitale +30%</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Dimensione Impresa:</label>
+                <select id="dimensione">
+                    <option value="micro">Micro Impresa (< 10 dipendenti)</option>
+                    <option value="piccola">Piccola Impresa (10-49 dipendenti)</option>
+                    <option value="media">Media Impresa (50-249 dipendenti)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Durata Finanziamento (anni):</label>
+                <select id="durata">
+                    <option value="3">3 anni</option>
+                    <option value="4">4 anni</option>
+                    <option value="5">5 anni (massimo)</option>
+                </select>
+            </div>
+
+            <button class="btn" onclick="calcolaSabatini()">🧮 Calcola Contributo</button>
+        </div>
+
+        <div id="risultati" class="result-box"></div>
+
+        <div class="card">
+            <h2>📋 Beni Ammissibili</h2>
+            <div class="grid-2">
+                <div>
+                    <h3 style="color: var(--success); margin-bottom: 10px;">✅ SI può finanziare:</h3>
+                    <ul style="line-height: 2; padding-left: 20px;">
+                        <li>Macchinari e impianti</li>
+                        <li>Attrezzature industriali/commerciali</li>
+                        <li>Hardware e software</li>
+                        <li>Tecnologie digitali</li>
+                        <li>Beni nuovi con autonomia funzionale</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 style="color: #EF4444; margin-bottom: 10px;">❌ NON si può finanziare:</h3>
+                    <ul style="line-height: 2; padding-left: 20px;">
+                        <li>Beni usati o rigenerati</li>
+                        <li>Terreni e fabbricati</li>
+                        <li>Immobilizzazioni in corso</li>
+                        <li>Acconti</li>
+                        <li>Parti di ricambio singole</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>⏱️ Tempistiche e Erogazione</h2>
+            <table>
+                <tr>
+                    <th>Fase</th>
+                    <th>Dettaglio</th>
+                </tr>
+                <tr>
+                    <td><strong>Completamento investimento</strong></td>
+                    <td>Entro 12 mesi dalla stipula del finanziamento</td>
+                </tr>
+                <tr>
+                    <td><strong>Durata massima</strong></td>
+                    <td>5 anni (incluso preammortamento)</td>
+                </tr>
+                <tr>
+                    <td><strong>Erogazione ≤ 200.000 €</strong></td>
+                    <td>Unica soluzione dal MIMIT</td>
+                </tr>
+                <tr>
+                    <td><strong>Erogazione > 200.000 €</strong></td>
+                    <td>Quote annuali frazionate</td>
+                </tr>
+                <tr>
+                    <td><strong>Garanzia Fondo PMI</strong></td>
+                    <td>Fino all'80% dell'importo finanziato</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="info-box">
+            <strong>🎯 Settori Ammessi:</strong> Tutti i settori produttivi (inclusi agricoltura e pesca).<br>
+            <strong>🚫 Settori Esclusi:</strong> Attività finanziarie e assicurative (Sezione K/L ATECO).
+        </div>
+
+        <div class="card" style="background: #FFF9E6; border: 2px solid var(--warning); margin-top: 30px;">
+            <h3 style="color: var(--warning); margin-bottom: 15px;">⚠️ Disclaimer Legale</h3>
+            <p style="line-height: 1.8; color: #666;">
+                <strong>Simulazione Indicativa:</strong> I risultati forniti da questo simulatore hanno carattere puramente informativo e orientativo. 
+                Il calcolo è basato sulla formula ufficiale MIMIT vigente, ma <strong>non costituisce in alcun modo consulenza fiscale, legale o finanziaria</strong>.
+            </p>
+            <p style="line-height: 1.8; color: #666; margin-top: 10px;">
+                <strong>Verifica Ufficiale:</strong> Per informazioni definitive, requisiti aggiornati e presentazione della domanda, 
+                consultare esclusivamente il sito ufficiale del <strong>Ministero delle Imprese e del Made in Italy (MIMIT)</strong> 
+                e rivolgersi a professionisti abilitati (commercialisti, consulenti del lavoro, avvocati).
+            </p>
+            <p style="line-height: 1.8; color: #666; margin-top: 10px;">
+                <strong>Responsabilità:</strong> L'utilizzo di questo strumento è a esclusivo rischio dell'utente. 
+                Il creatore non assume alcuna responsabilità per eventuali errori, omissioni o danni derivanti dall'uso delle informazioni fornite.
+            </p>
+            <p style="line-height: 1.8; color: #666; margin-top: 10px;">
+                <strong>Aggiornamenti Normativi:</strong> Le normative possono subire modifiche. Si raccomanda di verificare sempre 
+                le informazioni più recenti presso le fonti ufficiali.
+            </p>
+            <p style="text-align: center; margin-top: 20px; font-size: 0.9rem; color: #999;">
+                Ultimo aggiornamento simulatore: Febbraio 2026 | Normativa di riferimento: Nuova Sabatini 2026
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Formattazione input con separatori migliaia
+        function formatImporto(input) {
+            // Rimuovi tutto tranne numeri e virgola
+            let value = input.value.replace(/[^\d,]/g, '');
+            
+            // Separa parte intera e decimale
+            let parts = value.split(',');
+            let intero = parts[0];
+            let decimali = parts[1];
+            
+            // Aggiungi separatori migliaia alla parte intera
+            intero = intero.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            
+            // Ricomponi
+            input.value = decimali !== undefined ? intero + ',' + decimali.substring(0, 2) : intero;
+        }
+
+        // Converte stringa formattata in numero
+        function parseImporto(str) {
+            if (!str) return 0;
+            // Rimuovi punti (separatori migliaia) e sostituisci virgola con punto
+            return parseFloat(str.replace(/\./g, '').replace(',', '.'));
+        }
+
+        function calcolaSabatini() {
+            const importoStr = document.getElementById('importo').value;
+            const importo = parseImporto(importoStr);
+            const tipologia = document.getElementById('tipologia').value;
+            const dimensione = document.getElementById('dimensione').value;
+            const durata = parseInt(document.getElementById('durata').value);
+
+            // Validazioni
+            if (!importo || importo < 20000) {
+                alert('L\'importo minimo è 20.000 €');
+                return;
+            }
+
+            if (importo > 4000000) {
+                alert('L\'importo massimo è 4.000.000 €');
+                return;
+            }
+
+            if (!tipologia) {
+                alert('Seleziona una tipologia di investimento');
+                return;
+            }
+
+            // Aliquote contributo (tassi di interesse convenzionali)
+            const aliquote = {
+                'ordinaria': 2.75,
+                '4.0': 3.575,
+                'green': 3.575,
+                'capitalizzazione-micro': 5.00,
+                'capitalizzazione-media': 3.575
+            };
+
+            // Coefficienti ministeriali fissi MIMIT 2026
+            const coefficienti = {
+                'ordinaria': 0.0721,        // 2,75% → coeff. 7,21%
+                '4.0': 0.0937,              // 3,575% → coeff. 9,37%
+                'green': 0.0937,            // 3,575% → coeff. 9,37%
+                'capitalizzazione-micro': 0.1309,  // 5,00% → coeff. 13,09%
+                'capitalizzazione-media': 0.0937   // 3,575% → coeff. 9,37%
+            };
+
+            const coefficiente = coefficienti[tipologia];
+            const aliquota = aliquote[tipologia];
+            
+            // FORMULA CORRETTA MIMIT: C_tot = I × c_m
+            const contributoTotale = importo * coefficiente;
+            
+            // Erogazione
+            const erogazioneUnica = importo <= 200000;
+            const quotaAnnua = contributoTotale / durata;
+
+            // Descrizioni
+            const tipologieDesc = {
+                'ordinaria': 'Linea Ordinaria - Beni strumentali tradizionali',
+                '4.0': 'Linea 4.0 - Tecnologie digitali Industria 4.0',
+                'green': 'Linea Green - Investimenti ecosostenibili',
+                'capitalizzazione-micro': 'Capitalizzazione Micro/Piccola - Con aumento capitale +30%',
+                'capitalizzazione-media': 'Capitalizzazione Media - Con aumento capitale +30%'
+            };
+
+            // Percentuale sul finanziamento
+            const percSulFinanziamento = ((contributoTotale / importo) * 100).toFixed(2);
+
+            const risultatiDiv = document.getElementById('risultati');
+            risultatiDiv.style.display = 'block';
+            risultatiDiv.innerHTML = `
+                <h2 style="color: var(--success); text-align: center; margin-bottom: 20px;">
+                    💰 Risultato Simulazione
+                </h2>
+
+                <div class="result-value">
+                    € ${contributoTotale.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                </div>
+
+                <div style="text-align: center; font-size: 1.3rem; margin-bottom: 30px;">
+                    <strong>${percSulFinanziamento}%</strong> del finanziamento
+                </div>
+
+                <div class="result-grid">
+                    <div class="result-item">
+                        <div class="result-label">Finanziamento</div>
+                        <div class="result-amount">€ ${importo.toLocaleString('it-IT')}</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">Coefficiente Ministeriale</div>
+                        <div class="result-amount">${(coefficiente * 100).toFixed(2)}%</div>
+                        <small style="color: #666;">Tasso base: ${aliquota}%</small>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">Durata Finanziamento</div>
+                        <div class="result-amount">${durata} anni</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">Quota Annua</div>
+                        <div class="result-amount">€ ${quotaAnnua.toLocaleString('it-IT', {minimumFractionDigits: 2})}</div>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <h3 style="color: var(--primary); margin-bottom: 10px;">📊 Dettaglio Calcolo</h3>
+                    <p><strong>Tipologia:</strong> ${tipologieDesc[tipologia]}</p>
+                    <p><strong>Formula MIMIT:</strong> C<sub>tot</sub> = I × c<sub>m</sub></p>
+                    <p><strong>Coefficiente Ministeriale (c<sub>m</sub>):</strong> ${(coefficiente * 100).toFixed(2)}%</p>
+                    <p><strong>Contributo Totale:</strong> € ${contributoTotale.toLocaleString('it-IT', {minimumFractionDigits: 2})}</p>
+                    <p><strong>Erogazione:</strong> ${erogazioneUnica ? 
+                        '<span class="badge badge-success">Unica soluzione (importo ≤ 200.000 €)</span>' : 
+                        '<span class="badge badge-warning">Quote annuali (importo > 200.000 €)</span>'
+                    }</p>
+                </div>
+
+                ${tipologia.includes('capitalizzazione') ? `
+                    <div class="warning-box">
+                        <strong>⚠️ Linea Capitalizzazione - Requisiti Aggiuntivi:</strong><br>
+                        • Aumento del capitale sociale di almeno il <strong>30%</strong><br>
+                        • Solo per società di capitali (PMI)<br>
+                        • Aliquota maggiorata: ${aliquota}%
+                    </div>
+                ` : ''}
+
+                <div class="info-box">
+                    <h3 style="color: var(--primary); margin-bottom: 10px;">✅ Requisiti</h3>
+                    <ul style="padding-left: 20px; line-height: 1.8;">
+                        <li>Finanziamento bancario o leasing tra 20.000 € e 4.000.000 €</li>
+                        <li>Copertura 100% dei costi ammissibili</li>
+                        <li>Beni nuovi di fabbrica con autonomia funzionale</li>
+                        <li>Completamento entro 12 mesi dalla stipula</li>
+                        <li>Durata massima 5 anni (incluso preammortamento)</li>
+                        <li>Possibile garanzia Fondo PMI fino all'80%</li>
+                    </ul>
+                </div>
+
+                <div class="info-box" style="background: #FFF3E0; border-left-color: var(--warning);">
+                    <h3 style="color: var(--warning); margin-bottom: 10px;">📐 Come viene calcolato il contributo</h3>
+                    <p><strong>Formula Ufficiale MIMIT:</strong></p>
+                    <p style="font-size: 1.2rem; text-align: center; margin: 15px 0; padding: 15px; background: white; border-radius: 8px;">
+                        <strong>C<sub>tot</sub> = I × c<sub>m</sub></strong>
+                    </p>
+                    <p>Dove:</p>
+                    <ul style="padding-left: 20px; line-height: 1.8;">
+                        <li><strong>C<sub>tot</sub></strong> = Contributo Totale spettante</li>
+                        <li><strong>I</strong> = Importo dell'investimento ammissibile</li>
+                        <li><strong>c<sub>m</sub></strong> = Coefficiente ministeriale fisso</li>
+                    </ul>
+                    <p style="margin-top: 15px;"><strong>Esempio Linea Ordinaria:</strong></p>
+                    <p>100.000 € × 0,0721 (7,21%) = <strong>7.210 €</strong></p>
+                    <p style="margin-top: 10px;"><strong>Esempio Capitalizzazione Micro:</strong></p>
+                    <p>100.000 € × 0,1309 (13,09%) = <strong>13.090 €</strong></p>
+                </div>
+
+                <div class="info-box" style="background: #E8F5E9;">
+                    <h3 style="color: var(--success); margin-bottom: 10px;">🎁 Vantaggi</h3>
+                    <ul style="padding-left: 20px; line-height: 1.8;">
+                        <li><strong>Contributo a fondo perduto</strong> dal MIMIT</li>
+                        <li><strong>Riduzione costo finanziamento</strong> grazie al rimborso interessi</li>
+                        <li><strong>Cumulabile</strong> con altre agevolazioni (verificare limiti aiuti di Stato)</li>
+                        <li><strong>Garanzia pubblica</strong> disponibile fino all'80%</li>
+                        <li><strong>Tutti i settori produttivi</strong> ammessi (esclusi K/L ATECO)</li>
+                    </ul>
+                </div>
+            `;
+
+            risultatiDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
