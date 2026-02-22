@@ -1192,11 +1192,12 @@
                     
                     // CALCOLO CORRETTO con coefficienti
                     const coefficientiMinisteriali = {
-                        2.75: 0.0721,
-                        3.575: 0.0937,
-                        5.00: 0.1309
+                        '2.75': 0.0721,
+                        '3.575': 0.0937,
+                        '5': 0.1309
                     };
-                    const coefficienteMax = coefficientiMinisteriali[tassoEffettivo];
+                    const chiaveCoeff = tassoEffettivo.toString();
+                    const coefficienteMax = coefficientiMinisteriali[chiaveCoeff] || (tassoEffettivo * 0.0262);
                     const contributoMax = 4000000 * coefficienteMax;
                     infoSabatini = `
                         <div class="result-item" style="background: rgba(255,152,0,0.15); border: 2px solid #ff9800;">
@@ -1260,12 +1261,19 @@
                         
                         // CALCOLO CORRETTO: Coefficienti ministeriali fissi
                         const coefficientiMinisteriali = {
-                            2.75: 0.0721,   // Ordinario 7,21%
-                            3.575: 0.0937,  // 4.0/Green 9,37%
-                            5.00: 0.1309    // Capitalizzazione Micro/Piccola 13,09%
+                            '2.75': 0.0721,   // Ordinario 7,21%
+                            '3.575': 0.0937,  // 4.0/Green 9,37%
+                            '5': 0.1309       // Capitalizzazione Micro/Piccola 13,09%
                         };
                         
-                        const coefficiente = coefficientiMinisteriali[tassoSabatini];
+                        // Normalizza la chiave per il lookup
+                        const chiaveCoeff = tassoSabatini.toString();
+                        const coefficiente = coefficientiMinisteriali[chiaveCoeff] || (tassoSabatini * 0.0262); // fallback
+                        
+                        if (!coefficientiMinisteriali[chiaveCoeff]) {
+                            console.warn('Coefficiente non trovato per tasso:', tassoSabatini, '- uso formula approssimata');
+                        }
+                        
                         contributoSabatini = importoFinanziamento * coefficiente;
                         
                         // Modalità erogazione
