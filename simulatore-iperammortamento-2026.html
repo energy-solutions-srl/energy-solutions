@@ -489,41 +489,25 @@
                     <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 5px;">
                         ✅ Limiti: €20.000 - €4.000.000 | ✅ Cumulabile con iperammortamento
                     </small>
-                    <div id="sabatiniOptions" style="display: none; margin-top: 15px;">
+                    <div id="sabatiniOptions" style="display: none; margin-top: 10px;">
+                        <select id="tipoSabatini" class="form-control" style="margin-bottom: 10px;">
+                            <option value="2.75">Beni ordinari (2,75%)</option>
+                            <option value="3.575">Beni 4.0 / Green (3,575%)</option>
+                            <option value="5">Capitalizzazione (5% micro/piccola → 3,575% media)</option>
+                        </select>
                         
-                        <div style="margin-bottom: 12px;">
-                            <label style="font-size: 0.9rem; font-weight: 600; display: block; margin-bottom: 5px;">Tipo di investimento:</label>
-                            <select id="tipoSabatini" class="form-control">
-                                <option value="2.75">Ordinario (2,75%) - Macchinari, impianti, attrezzature tradizionali</option>
-                                <option value="3.575-40">4.0 (3,575%) - Tecnologie digitali Industria 4.0</option>
-                                <option value="3.575-green">Green (3,575%) - Beni ecosostenibili</option>
-                                <option value="5">Capitalizzazione (5% micro/piccola, 3,575% media) - Con aumento capitale</option>
-                            </select>
-                            <small style="display: block; margin-top: 5px; color: #666;">
-                                💡 Capitalizzazione: richiede aumento capitale sociale ≥30% dell'investimento
-                            </small>
+                        <div style="background: #fff3cd; padding: 12px; border-radius: 6px; border-left: 4px solid #ffc107; margin: 10px 0; font-size: 0.85rem;">
+                            <strong>💡 Capitalizzazione:</strong> Se scegli questa linea e sei Media impresa, il tasso scende automaticamente al 3,575% (coeff. 9,37%). 
+                            Requisito: aumento capitale sociale ≥30% dell'investimento.
                         </div>
                         
-                        <div style="margin-bottom: 12px;">
-                            <label style="font-size: 0.9rem; font-weight: 600; display: block; margin-bottom: 5px;">Dimensione impresa:</label>
-                            <select id="dimensioneImpresa" class="form-control">
-                                <option value="micro">Microimpresa (< 10 dipendenti, fatturato/patrimonio ≤ €2M)</option>
-                                <option value="piccola">Piccola impresa (< 50 dipendenti, fatturato ≤ €10M, patrimonio ≤ €10M)</option>
-                                <option value="media">Media impresa (< 250 dipendenti, fatturato ≤ €50M, patrimonio ≤ €43M)</option>
+                        <div style="margin-top: 10px;">
+                            <label style="font-size: 0.9rem; font-weight: 600;">Dimensione impresa (per requisiti):</label>
+                            <select id="dimensioneImpresa" class="form-control" style="margin-top: 5px;">
+                                <option value="micro">Microimpresa (< 10 dip., ≤ €2M)</option>
+                                <option value="piccola">Piccola impresa (< 50 dip., ≤ €10M)</option>
+                                <option value="media">Media impresa (< 250 dip., ≤ €50M)</option>
                             </select>
-                        </div>
-
-                        <div style="margin-bottom: 12px;">
-                            <label style="font-size: 0.9rem; font-weight: 600; display: block; margin-bottom: 5px;">Importo finanziamento richiesto (€):</label>
-                            <input type="number" id="importoFinanziamento" class="form-control" min="20000" max="4000000" step="1000" placeholder="Es: 500.000">
-                            <small style="display: block; margin-top: 5px; color: #666;">
-                                ⚠️ Deve coprire il 100% dell'investimento | Max 5 anni di durata
-                            </small>
-                        </div>
-
-                        <div class="checkbox-group" style="margin-top: 10px;">
-                            <input type="checkbox" id="garanteFMI">
-                            <label style="margin-bottom: 0; font-size: 0.9rem;">Richiederò Garanzia Fondo PMI (fino 80%)</label>
                         </div>
                     </div>
                 </div>
@@ -1156,7 +1140,6 @@
             if (applicaSabatini) {
                 const dimensioneEl = document.getElementById('dimensioneImpresa');
                 const tipoSabatiniEl = document.getElementById('tipoSabatini');
-                const importoFinanziamentoEl = document.getElementById('importoFinanziamento');
                 
                 // Verifica che gli elementi esistano
                 if (!dimensioneEl || !tipoSabatiniEl) {
@@ -1165,173 +1148,133 @@
                 }
                 
                 const dimensione = dimensioneEl.value;
-                const importoFinanziamento = importoFinanziamentoEl && importoFinanziamentoEl.value ? 
-                    parseFloat(importoFinanziamentoEl.value) : investimento;
                 
                 // 1. VERIFICA LIMITI SABATINI
-                if (importoFinanziamento < 20000) {
+                if (investimento < 20000) {
                     infoSabatini = `
                         <div class="result-item" style="background: rgba(244,67,54,0.15); border: 2px solid #f44336;">
                             <div class="result-label">⚠️ Nuova Sabatini NON Applicabile</div>
-                            <div class="result-value" style="color: #f44336; font-size: 1.3rem;">Finanziamento < €20.000</div>
+                            <div class="result-value" style="color: #f44336; font-size: 1.3rem;">Investimento < €20.000</div>
                             <div class="result-secondary">
                                 <strong>Limite minimo:</strong> €20.000<br>
-                                <strong>Finanziamento richiesto:</strong> €${importoFinanziamento.toLocaleString('it-IT')}<br>
-                                <strong>Mancano:</strong> €${(20000 - importoFinanziamento).toLocaleString('it-IT')}
+                                <strong>Investimento attuale:</strong> €${investimento.toLocaleString('it-IT')}<br>
+                                <strong>Mancano:</strong> €${(20000 - investimento).toLocaleString('it-IT')}
                             </div>
                         </div>
                     `;
-                } else if (importoFinanziamento > 4000000) {
-                    // Gestione capitalizzazione per medie imprese
-                    let tipoSabatiniValue = tipoSabatiniEl.value;
-                    let tassoEffettivo = parseFloat(tipoSabatiniValue);
-                    
-                    if (tipoSabatiniValue === "5" && dimensione === "media") {
-                        tassoEffettivo = 3.575; // Media impresa con capitalizzazione: 3,575%
+                } else if (investimento > 4000000) {
+                    // Gestione capitalizzazione e dimensione
+                    const tassoTmp = parseFloat(tipoSabatiniEl.value);
+                    let coefficienteMax;
+                    if (tassoTmp === 2.75) {
+                        coefficienteMax = 0.0721;
+                    } else if (tassoTmp === 3.575) {
+                        coefficienteMax = 0.0937;
+                    } else if (tassoTmp === 5 || tassoTmp === 5.00) {
+                        // Capitalizzazione: media impresa usa 3.575% (coeff 0.0937)
+                        coefficienteMax = (dimensione === 'media') ? 0.0937 : 0.1309;
+                    } else {
+                        coefficienteMax = tassoTmp * 0.0262;
                     }
-                    
-                    // CALCOLO CORRETTO con coefficienti
-                    const coefficientiMinisteriali = {
-                        '2.75': 0.0721,
-                        '3.575': 0.0937,
-                        '5': 0.1309
-                    };
-                    const chiaveCoeff = tassoEffettivo.toString();
-                    const coefficienteMax = coefficientiMinisteriali[chiaveCoeff] || (tassoEffettivo * 0.0262);
                     const contributoMax = 4000000 * coefficienteMax;
                     infoSabatini = `
                         <div class="result-item" style="background: rgba(255,152,0,0.15); border: 2px solid #ff9800;">
-                            <div class="result-label">⚠️ Finanziamento oltre limite Sabatini</div>
+                            <div class="result-label">⚠️ Investimento oltre limite Sabatini</div>
                             <div class="result-value" style="color: #f57c00; font-size: 1.3rem;">Contributo su max €4M</div>
                             <div class="result-secondary">
                                 <strong>Limite massimo finanziabile:</strong> €4.000.000<br>
-                                <strong>Finanziamento richiesto:</strong> €${importoFinanziamento.toLocaleString('it-IT')}<br>
-                                <strong>Eccedenza non agevolabile:</strong> €${(importoFinanziamento - 4000000).toLocaleString('it-IT')}<br>
+                                <strong>Investimento totale:</strong> €${investimento.toLocaleString('it-IT')}<br>
+                                <strong>Eccedenza non agevolabile:</strong> €${(investimento - 4000000).toLocaleString('it-IT')}<br>
                                 <strong>Contributo massimo:</strong> €${contributoMax.toLocaleString('it-IT', {minimumFractionDigits: 2})}<br>
-                                <em style="display: block; margin-top: 8px;">💡 Considera di frazionare in più annualità</em>
+                                <em style="display: block; margin-top: 8px;">💡 Considera di frazionare in più annualità o domande</em>
                             </div>
                         </div>
                     `;
                     contributoSabatini = contributoMax;
                 } else {
-                    // Verifica copertura 100% investimento
-                    if (importoFinanziamento < investimento) {
-                        infoSabatini = `
-                            <div class="result-item" style="background: rgba(244,67,54,0.15); border: 2px solid #f44336;">
-                                <div class="result-label">⚠️ Finanziamento Insufficiente</div>
-                                <div class="result-value" style="color: #f44336; font-size: 1.3rem;">Deve coprire 100% investimento</div>
-                                <div class="result-secondary">
-                                    <strong>Investimento totale:</strong> €${investimento.toLocaleString('it-IT')}<br>
-                                    <strong>Finanziamento richiesto:</strong> €${importoFinanziamento.toLocaleString('it-IT')}<br>
-                                    <strong>Scopertura:</strong> €${(investimento - importoFinanziamento).toLocaleString('it-IT')}<br>
-                                    <em style="display: block; margin-top: 8px;">💡 Il finanziamento deve coprire almeno il 100% dell'investimento</em>
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        // 2. CALCOLO CONTRIBUTO SABATINI
-                        let tipoSabatiniValue = tipoSabatiniEl.value;
-                        let tassoSabatini = parseFloat(tipoSabatiniValue);
-                        let tipoLabel = '';
-                        let infoCapitalizzazione = '';
-                        
-                        // Gestione capitalizzazione
-                        if (tipoSabatiniValue === "5") {
-                            if (dimensione === "media") {
-                                tassoSabatini = 3.575;
-                                tipoLabel = 'Capitalizzazione Media Impresa (3,575%)';
-                            } else {
-                                tipoLabel = 'Capitalizzazione Micro/Piccola (5%)';
-                            }
-                            const aumentoMinimo = importoFinanziamento * 0.30;
+                    // 2. CALCOLO CONTRIBUTO SABATINI - Formula corretta MIMIT 2026
+                    const tassoSabatini = parseFloat(tipoSabatiniEl.value);
+                    
+                    // Usa coefficienti ministeriali pre-calcolati
+                    let coefficienteSabatini;
+                    let infoCapitalizzazione = '';
+                    
+                    if (tassoSabatini === 2.75) {
+                        coefficienteSabatini = 0.0721;  // Ordinario 7,21%
+                    } else if (tassoSabatini === 3.575) {
+                        coefficienteSabatini = 0.0937;  // 4.0/Green 9,37%
+                    } else if (tassoSabatini === 5 || tassoSabatini === 5.00) {
+                        // Capitalizzazione: media impresa usa 3.575% (coeff 0.0937), micro/piccola 5% (coeff 0.1309)
+                        if (dimensione === 'media') {
+                            coefficienteSabatini = 0.0937;
                             infoCapitalizzazione = `
-                                <div style="margin-top: 10px; padding: 10px; background: rgba(255,193,7,0.2); border-radius: 6px;">
-                                    <strong>⚠️ REQUISITO CAPITALIZZAZIONE:</strong><br>
-                                    Aumento capitale sociale richiesto: ≥ €${aumentoMinimo.toLocaleString('it-IT', {minimumFractionDigits: 2})}<br>
-                                    (almeno 30% del finanziamento: €${importoFinanziamento.toLocaleString('it-IT')} × 30%)
+                                <div style="background: #e3f2fd; padding: 12px; border-radius: 6px; border-left: 4px solid #2196f3; margin-top: 10px;">
+                                    <strong>🏢 Media Impresa - Capitalizzazione:</strong><br>
+                                    Tasso ridotto applicato: 3,575% (coefficiente 9,37%)<br>
+                                    <strong>Requisito:</strong> Aumento capitale sociale ≥ €${(investimento * 0.30).toLocaleString('it-IT', {minimumFractionDigits: 2})} (30% investimento)
                                 </div>
                             `;
-                        } else if (tipoSabatiniValue === "2.75") {
-                            tipoLabel = 'Ordinario (2,75%)';
-                        } else if (tipoSabatiniValue.includes("40")) {
-                            tipoLabel = '4.0 (3,575%)';
                         } else {
-                            tipoLabel = 'Green (3,575%)';
-                        }
-                        
-                        // CALCOLO CORRETTO: Coefficienti ministeriali fissi
-                        const coefficientiMinisteriali = {
-                            '2.75': 0.0721,   // Ordinario 7,21%
-                            '3.575': 0.0937,  // 4.0/Green 9,37%
-                            '5': 0.1309       // Capitalizzazione Micro/Piccola 13,09%
-                        };
-                        
-                        // Normalizza la chiave per il lookup
-                        const chiaveCoeff = tassoSabatini.toString();
-                        const coefficiente = coefficientiMinisteriali[chiaveCoeff] || (tassoSabatini * 0.0262); // fallback
-                        
-                        if (!coefficientiMinisteriali[chiaveCoeff]) {
-                            console.warn('Coefficiente non trovato per tasso:', tassoSabatini, '- uso formula approssimata');
-                        }
-                        
-                        contributoSabatini = importoFinanziamento * coefficiente;
-                        
-                        // Modalità erogazione
-                        let modalitaErogazione = '';
-                        if (importoFinanziamento <= 200000) {
-                            modalitaErogazione = '<strong>Erogazione:</strong> Unica soluzione (≤ €200.000)';
-                        } else {
-                            const quotaAnnua = contributoSabatini / 6;
-                            modalitaErogazione = `<strong>Erogazione:</strong> 6 quote annuali di €${quotaAnnua.toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
-                        }
-                        
-                        // Requisiti PMI
-                        let limiti = '';
-                        if (dimensione === 'micro') {
-                            limiti = '< 10 dipendenti | Fatturato/Patrimonio ≤ €2M';
-                        } else if (dimensione === 'piccola') {
-                            limiti = '< 50 dipendenti | Fatturato ≤ €10M | Patrimonio ≤ €10M';
-                        } else {
-                            limiti = '< 250 dipendenti | Fatturato ≤ €50M | Patrimonio ≤ €43M';
-                        }
-                        
-                        infoSabatini = `
-                            <div class="result-item" style="background: rgba(76,175,80,0.2); border: 2px solid var(--secondary);">
-                                <div class="result-label">💰 Contributo Nuova Sabatini</div>
-                                <div class="result-value" style="color: #fff; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">€ ${contributoSabatini.toLocaleString('it-IT', {minimumFractionDigits: 2})}</div>
-                                <div class="result-secondary">
-                                    <strong>Tipo:</strong> ${tipoLabel}<br>
-                                    <strong>Formula:</strong> Importo × Coefficiente Ministeriale<br>
-                                    <strong>Coefficiente:</strong> ${(coefficiente * 100).toFixed(2)}% (Tasso base: ${tassoSabatini}%)<br>
-                                    ${modalitaErogazione}<br>
-                                    <strong>✅ CUMULABILE</strong> con iperammortamento
-                                    ${infoCapitalizzazione}
+                            coefficienteSabatini = 0.1309;
+                            infoCapitalizzazione = `
+                                <div style="background: #e8f5e9; padding: 12px; border-radius: 6px; border-left: 4px solid #4caf50; margin-top: 10px;">
+                                    <strong>🏪 Micro/Piccola Impresa - Capitalizzazione:</strong><br>
+                                    Tasso maggiorato applicato: 5% (coefficiente 13,09%)<br>
+                                    <strong>Requisito:</strong> Aumento capitale sociale ≥ €${(investimento * 0.30).toLocaleString('it-IT', {minimumFractionDigits: 2})} (30% investimento)
                                 </div>
+                            `;
+                        }
+                    } else {
+                        // Fallback per tassi non standard
+                        coefficienteSabatini = tassoSabatini * 0.0262;
+                    }
+                    
+                    contributoSabatini = investimento * coefficienteSabatini;
+                    const quotaAnnua = contributoSabatini / 6;
+                    
+                    // Requisiti PMI
+                    let limiti = '';
+                    if (dimensione === 'micro') {
+                        limiti = '< 10 dipendenti | Fatturato/Stato patrimoniale ≤ €2M';
+                    } else if (dimensione === 'piccola') {
+                        limiti = '< 50 dipendenti | Fatturato/Stato patrimoniale ≤ €10M';
+                    } else {
+                        limiti = '< 250 dipendenti | Fatturato ≤ €50M | Stato patrimoniale ≤ €43M';
+                    }
+                    
+                    infoSabatini = `
+                        <div class="result-item" style="background: rgba(76,175,80,0.2); border: 2px solid var(--secondary);">
+                            <div class="result-label">💰 Contributo Nuova Sabatini</div>
+                            <div class="result-value" style="color: #fff; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">€ ${contributoSabatini.toLocaleString('it-IT', {minimumFractionDigits: 2})}</div>
+                            <div class="result-secondary">
+                                <strong>Formula MIMIT:</strong> Investimento × Coefficiente ${(coefficienteSabatini * 100).toFixed(2)}%<br>
+                                (Tasso base ${tassoSabatini}% → Coeff. ministeriale ${(coefficienteSabatini * 100).toFixed(2)}%)<br>
+                                <strong>✅ CUMULABILE</strong> con iperammortamento
+                                ${infoCapitalizzazione}
                             </div>
+                        </div>
 
-                            <div class="result-item" style="background: rgba(33,150,243,0.15);">
-                                <div class="result-label">📅 Timeline e Modalità</div>
-                                <div class="result-secondary" style="line-height: 1.8;">
-                                    <strong>1. Finanziamento:</strong><br>
-                                    • Importo: €${importoFinanziamento.toLocaleString('it-IT')}<br>
-                                    • Durata massima: 5 anni (incluso preammortamento)<br>
-                                    • Copertura richiesta: 100% investimento ✅<br>
-                                    • Garanzia Fondo PMI: disponibile fino 80%<br>
-                                    <br>
-                                    <strong>2. Completamento:</strong><br>
-                                    • Termine investimento: entro 12 mesi da erogazione finanziamento<br>
-                                    <br>
-                                    <strong>3. Tempistiche:</strong><br>
-                                    • Domanda: sportello sempre aperto<br>
-                                    • Istruttoria: 3-6 mesi<br>
-                                    • Erogazione contributo: dopo collaudo e rendicontazione
-                                </div>
+                        <div class="result-item" style="background: rgba(33,150,243,0.15);">
+                            <div class="result-label">📅 Timeline Erogazione Sabatini</div>
+                            <div class="result-secondary" style="line-height: 1.8;">
+                                <strong>Quota annua:</strong> €${quotaAnnua.toLocaleString('it-IT', {minimumFractionDigits: 2})}/anno<br>
+                                <strong>Durata erogazione:</strong> 6 anni (dal completamento investimento)<br>
+                                <strong>Modalità:</strong> Bonifico automatico annuale MIMIT → conto corrente impresa<br>
+                                <br>
+                                <strong>⏱️ Tempistiche indicative:</strong><br>
+                                • Presentazione domanda: da subito (sportello sempre aperto)<br>
+                                • Istruttoria banca + MIMIT: 3-6 mesi<br>
+                                • Erogazione finanziamento: dopo concessione<br>
+                                • Completamento investimento: entro 12 mesi da erogazione<br>
+                                • Prima quota contributo: dopo collaudo e rendicontazione<br>
+                                • Quote successive: annuali automatiche (anni 2-6)
                             </div>
+                        </div>
 
-                            <div class="result-item" style="background: rgba(156,39,176,0.15);">
-                                <div class="result-label">✅ Requisiti da Verificare</div>
-                                <div class="result-secondary" style="line-height: 1.8;">
-                                    <strong>PMI ${dimensione.charAt(0).toUpperCase() + dimensione.slice(1)} impresa:</strong><br>
+                        <div class="result-item" style="background: rgba(156,39,176,0.15);">
+                            <div class="result-label">✅ Requisiti PMI da Verificare</div>
+                            <div class="result-secondary" style="line-height: 1.8;">
+                                <strong>Dimensione ${dimensione.charAt(0).toUpperCase() + dimensione.slice(1)} impresa:</strong><br>
                                 ${limiti}<br>
                                 <br>
                                 <strong>Altri requisiti obbligatori:</strong><br>
@@ -1571,8 +1514,5 @@
             risultatiDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
     </script>
-</body>
-</html>
-    <script>
 </body>
 </html>
