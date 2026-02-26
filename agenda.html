@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agenda Interna B.U. Progetti Speciali</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-database-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-auth-compat.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; background: #f0f9f4; color: #333; min-height: 100vh; }
+
+  /* HEADER */
+  .header { background: white; border-bottom: 3px solid #4CAF50; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 64px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .logo-block { display: flex; align-items: center; gap: 12px; }
+  .logo-icon { background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%); color: white; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 700; }
+  .logo-text h1 { font-size: 0.95rem; font-weight: 700; color: #2E7D32; }
+  .logo-text p  { font-size: 0.72rem; color: #888; }
+  .header-actions { display: flex; gap: 10px; align-items: center; }
+
+  /* TABS */
+  .tabs-nav { background: white; border-bottom: 2px solid #e8f5e9; display: flex; padding: 0 24px; }
+  .tab-btn { padding: 13px 20px; background: none; border: none; border-bottom: 3px solid transparent; margin-bottom: -2px; font-family: Arial, sans-serif; font-size: 0.85rem; font-weight: 600; color: #888; cursor: pointer; transition: all 0.2s; }
+  .tab-btn.active { color: #2E7D32; border-bottom-color: #4CAF50; }
+  .tab-btn:hover:not(.active) { color: #4CAF50; }
+
+  /* CONTAINER */
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+  /* BUTTONS */
+  .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: Arial, sans-serif; font-size: 0.85rem; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+  .btn-green { background: #4CAF50; color: white; } .btn-green:hover { background: #45a049; }
+  .btn-white { background: white; color: #4CAF50; border: 2px solid #4CAF50; } .btn-white:hover { background: #f0f9f4; }
+  .btn-red   { background: #f44336; color: white; } .btn-red:hover { background: #d32f2f; }
+  .btn-gray  { background: #ddd; color: #666; } .btn-gray:hover { background: #ccc; }
+  .btn-sm    { padding: 7px 14px; font-size: 0.78rem; }
+  .btn-icon  { background: none; border: 1px solid #ddd; border-radius: 6px; padding: 6px 9px; cursor: pointer; font-size: 0.9rem; transition: all 0.15s; color: #666; }
+  .btn-icon:hover { border-color: #4CAF50; color: #2E7D32; background: #f0f9f4; }
+  .btn-restore { border-color: #4CAF50 !important; color: #2E7D32 !important; background: #f0f9f4 !important; font-weight: 700; }
+  .btn-restore:hover { background: #c8e6c9 !important; }
+
+  /* SECTION TITLE */
+  .section-title { font-size: 18px; font-weight: 700; color: #2E7D32; margin: 20px 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid #81C784; }
+
+  /* STATS */
+  .stats-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  .stat-card { background: white; border-radius: 12px; padding: 16px 22px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); border-left: 4px solid #ddd; min-width: 120px; display: flex; flex-direction: column; gap: 2px; }
+  .stat-card.s-priority { border-left-color: #f44336; } .stat-card.s-standby { border-left-color: #FF9800; }
+  .stat-card.s-wip      { border-left-color: #9C27B0; } .stat-card.s-done { border-left-color: #4CAF50; }
+  .stat-num   { font-size: 2rem; font-weight: 700; line-height: 1; }
+  .stat-label { font-size: 0.72rem; color: #888; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+  .s-priority .stat-num { color: #f44336; } .s-standby .stat-num { color: #FF9800; }
+  .s-wip .stat-num      { color: #9C27B0; } .s-done .stat-num    { color: #4CAF50; }
+
+  /* SEARCH BAR */
+  .search-bar { background: white; border-radius: 12px; padding: 16px 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); margin-bottom: 20px; display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; border-left: 4px solid #4CAF50; }
+  .search-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 150px; }
+  .label { display: block; font-weight: 600; font-size: 13px; color: #333; margin-bottom: 4px; }
+  .input { width: 100%; padding: 9px 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 13px; font-family: Arial, sans-serif; transition: border-color 0.2s; background: white; color: #333; }
+  .input:focus { outline: none; border-color: #4CAF50; }
+
+  /* LEGEND */
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: #555; font-weight: 600; }
+  .legend-dot  { width: 12px; height: 12px; border-radius: 50%; }
+
+  /* CARDS */
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; }
+  .card { background: white; border-radius: 12px; padding: 20px 20px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 5px solid #4CAF50; transition: transform 0.18s, box-shadow 0.18s; animation: fadeUp 0.25s ease; position: relative; }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  .card.priority { border-left-color: #f44336; } .card.standby  { border-left-color: #FF9800; }
+  .card.wip      { border-left-color: #9C27B0; } .card.done     { border-left-color: #4CAF50; }
+  .card.archived { border-left-color: #9E9E9E; opacity: 0.85; }
+  .card.expiring::after { content: '⚠ IN SCADENZA'; position: absolute; top: 0; right: 18px; background: #FF9800; color: white; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em; padding: 2px 9px; border-radius: 0 0 8px 8px; }
+  .card.expired::after  { content: '✕ SCADUTA'; background: #f44336; }
+  .card-title   { font-size: 1rem; font-weight: 700; color: #222; margin-bottom: 6px; }
+  .card-header  { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+  .card-actions { display: flex; gap: 5px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+  .card-desc    { font-size: 0.85rem; color: #555; line-height: 1.55; margin-bottom: 12px; }
+
+  /* BADGES */
+  .badge          { display: inline-block; padding: 5px 13px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+  .badge-priority { background: #FEE2E2; color: #991B1B; } .badge-standby  { background: #FEF3C7; color: #92400E; }
+  .badge-wip      { background: #F3E8FF; color: #6B21A8; } .badge-done     { background: #D1FAE5; color: #065F46; }
+  .badge-archived { background: #F3F4F6; color: #6B7280; }
+
+  /* META */
+  .card-meta { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.75rem; color: #888; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0; }
+  .meta-item { display: flex; align-items: center; gap: 4px; }
+  .meta-item.overdue      { color: #f44336; font-weight: 700; }
+  .meta-item.expiring-soon { color: #FF9800; font-weight: 700; }
+
+  /* USER TAG */
+  .user-tag    { display: inline-flex; align-items: center; gap: 6px; background: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 20px; padding: 4px 12px; font-size: 0.75rem; font-weight: 600; color: #2E7D32; }
+  .user-avatar { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; color: white; flex-shrink: 0; }
+
+  /* REPROG NOTE STRIP */
+  .resch-strip { background: #fff3e0; border: 1px solid #ffe0b2; border-radius: 6px; padding: 6px 10px; font-size: 0.75rem; color: #e65100; margin-bottom: 10px; display: flex; gap: 6px; align-items: flex-start; }
+
+  /* MODAL */
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
+  .modal.hidden { display: none; }
+  .modal-content { background: white; border-radius: 16px; padding: 28px; width: 95%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
+  .modal-title   { font-size: 1.25rem; font-weight: 700; color: #2E7D32; margin-bottom: 22px; }
+  .mb { margin-bottom: 14px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .readonly-field { background: #f5f5f5; border: 2px solid #e0e0e0; border-radius: 8px; padding: 9px 12px; font-size: 13px; color: #888; }
+  .modal-actions  { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
+  textarea.input  { resize: vertical; font-family: Arial, sans-serif; min-height: 80px; }
+
+  /* RESCHEDULE MODAL INFO BOX */
+  .resch-info { background: #f0f9f4; border: 1px solid #c8e6c9; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; }
+  .resch-info .ri-name { font-weight: 700; font-size: 0.95rem; color: #2E7D32; }
+  .resch-info .ri-sub  { font-size: 0.78rem; color: #888; margin-top: 3px; }
+
+  /* HISTORY LOG */
+  .history-box { background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px; padding: 10px 14px; font-size: 0.78rem; color: #555; line-height: 1.8; max-height: 130px; overflow-y: auto; }
+  .history-entry { padding: 4px 0; border-bottom: 1px dashed #e8e8e8; }
+  .history-entry:last-child { border-bottom: none; }
+  .history-date { color: #9E9E9E; font-size: 0.72rem; }
+
+  /* CONFIRM */
+  .confirm-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 300; }
+  .confirm-modal.hidden { display: none; }
+  .confirm-box   { background: white; border-radius: 14px; padding: 28px; max-width: 380px; width: 95%; text-align: center; }
+  .confirm-box h3 { font-size: 1.1rem; font-weight: 700; color: #2E7D32; margin-bottom: 10px; }
+  .confirm-box p  { font-size: 0.88rem; color: #555; margin-bottom: 22px; }
+  .confirm-actions { display: flex; gap: 10px; justify-content: center; }
+
+  /* USERS */
+  .users-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .user-card  { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 4px solid #4CAF50; display: flex; align-items: center; gap: 14px; }
+  .big-avatar { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 700; color: white; flex-shrink: 0; }
+  .uname { font-weight: 700; font-size: 0.95rem; color: #222; }
+  .urole { font-size: 0.8rem; color: #888; margin-top: 2px; }
+  .ustats { font-size: 0.78rem; color: #4CAF50; font-weight: 600; margin-top: 6px; }
+
+  /* EMPTY STATE */
+  .empty-state { grid-column: 1/-1; text-align: center; padding: 60px 20px; color: #aaa; }
+  .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
+  .empty-state p { font-size: 0.9rem; }
+
+  /* PAGES */
+  .page { display: none; } .page.active { display: block; }
+
+  /* COLOR SWATCH */
+  .color-swatch { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: border 0.15s; }
+  .color-swatch.selected { border-color: #2E7D32 !important; box-shadow: 0 0 0 2px white inset; }
+
+  @media (max-width: 640px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    .container { padding: 14px; }
+    .header { padding: 0 14px; }
+    .tabs-nav { padding: 0 14px; overflow-x: auto; }
+    .cards-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo-block">
+    <div class="logo-icon">📋</div>
+    <div class="logo-text"><h1>Agenda Interna B.U. Progetti Speciali</h1><p>Gestione Pratiche Multiutente</p></div>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-white btn-sm" onclick="window.location.href='dashboard.html'">← Dashboard</button>
+    <button class="btn btn-white btn-sm" onclick="openUserModal()">👤 Nuovo Utente</button>
+    <button class="btn btn-green btn-sm" onclick="openNewTaskModal()">＋ Nuova Pratica</button>
+    <button class="btn btn-red btn-sm" onclick="logout()">Esci</button>
+  </div>
+</div>
+
+<!-- TABS -->
+<nav class="tabs-nav">
+  <button class="tab-btn active" onclick="switchTab('agenda')">📋 Agenda</button>
+  <button class="tab-btn" onclick="switchTab('done')">✅ Lavorate</button>
+  <button class="tab-btn" onclick="switchTab('archived')">🗄 Archivio</button>
+  <button class="tab-btn" onclick="switchTab('users')">👥 Utenti</button>
+</nav>
+
+<!-- ===== AGENDA ===== -->
+<div id="page-agenda" class="page active">
+  <div class="container">
+    <div id="statsRow" class="stats-row"></div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#f44336"></div>Priorità</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#FF9800"></div>Stand By</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#9C27B0"></div>In Lavorazione</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#4CAF50"></div>Lavorata</div>
+    </div>
+    <div class="search-bar">
+      <div class="search-group"><label class="label">Cerca per nome</label><input type="text" class="input" id="searchName" placeholder="Nome pratica..." oninput="renderAgenda()"></div>
+      <div class="search-group"><label class="label">Stato</label>
+        <select class="input" id="searchStatus" onchange="renderAgenda()">
+          <option value="">Tutti gli stati</option><option value="priority">Priorità</option><option value="standby">Stand By</option><option value="wip">In Lavorazione</option>
+        </select>
+      </div>
+      <div class="search-group"><label class="label">Utente</label><select class="input" id="searchUser" onchange="renderAgenda()"><option value="">Tutti gli utenti</option></select></div>
+      <div class="search-group"><label class="label">Data scadenza</label><input type="date" class="input" id="searchDate" oninput="renderAgenda()"></div>
+      <button class="btn btn-gray btn-sm" onclick="clearSearch()">✕ Reset</button>
+    </div>
+    <div class="cards-grid" id="agendaGrid"></div>
+  </div>
+</div>
+
+<!-- ===== LAVORATE ===== -->
+<div id="page-done" class="page">
+  <div class="container">
+    <div class="section-title">✅ Pratiche Lavorate</div>
+    <div class="search-bar">
+      <div class="search-group"><label class="label">Cerca per nome</label><input type="text" class="input" id="doneSearchName" placeholder="Nome pratica..." oninput="renderDone()"></div>
+      <div class="search-group"><label class="label">Utente</label><select class="input" id="doneSearchUser" onchange="renderDone()"><option value="">Tutti gli utenti</option></select></div>
+      <div class="search-group"><label class="label">Data scadenza</label><input type="date" class="input" id="doneSearchDate" oninput="renderDone()"></div>
+      <button class="btn btn-gray btn-sm" onclick="clearDoneSearch()">✕ Reset</button>
+    </div>
+    <div class="cards-grid" id="doneGrid"></div>
+  </div>
+</div>
+
+<!-- ===== ARCHIVIO ===== -->
+<div id="page-archived" class="page">
+  <div class="container">
+    <div class="section-title">🗄 Archivio Pratiche</div>
+    <div class="search-bar">
+      <div class="search-group"><label class="label">Cerca per nome</label><input type="text" class="input" id="archSearchName" placeholder="Nome pratica..." oninput="renderArchived()"></div>
+      <div class="search-group"><label class="label">Utente</label><select class="input" id="archSearchUser" onchange="renderArchived()"><option value="">Tutti gli utenti</option></select></div>
+      <button class="btn btn-gray btn-sm" onclick="clearArchSearch()">✕ Reset</button>
+    </div>
+    <div class="cards-grid" id="archivedGrid"></div>
+  </div>
+</div>
+
+<!-- ===== UTENTI ===== -->
+<div id="page-users" class="page">
+  <div class="container">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px;">
+      <div class="section-title" style="margin:0;border:none;">👥 Gestione Utenti</div>
+      <button class="btn btn-green btn-sm" onclick="openUserModal()">＋ Aggiungi Utente</button>
+    </div>
+    <div class="users-grid" id="usersList"></div>
+  </div>
+</div>
+
+<!-- ===== TASK MODAL ===== -->
+<div class="modal hidden" id="taskOverlay">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div class="modal-title" id="taskModalTitle">Nuova Pratica</div>
+    <div class="mb"><label class="label">Nome Pratica *</label><input type="text" class="input" id="taskName" placeholder="Inserisci nome pratica"></div>
+    <div class="grid-2 mb">
+      <div><label class="label">Stato / Priorità *</label>
+        <select class="input" id="taskStatus"><option value="priority">🔴 Priorità</option><option value="standby">🟠 Stand By</option><option value="wip">🟣 In Lavorazione</option></select>
+      </div>
+      <div><label class="label">Utente assegnato</label><select class="input" id="taskUser"><option value="">— Nessuno —</option></select></div>
+    </div>
+    <div class="grid-2 mb">
+      <div><label class="label">Data Inserimento (automatica)</label><div class="readonly-field" id="taskInsertDate">—</div></div>
+      <div><label class="label">Data Scadenza</label><input type="date" class="input" id="taskDueDate"></div>
+    </div>
+    <div class="mb"><label class="label">Descrizione</label><textarea class="input" id="taskDesc" placeholder="Descrizione della pratica..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-green" onclick="saveTask()">Salva Pratica</button>
+      <button class="btn btn-white" onclick="closeTaskModal()">Annulla</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RIPRISTINO & RIPROGRAMMAZIONE MODAL ===== -->
+<div class="modal hidden" id="rescheduleOverlay">
+  <div class="modal-content" onclick="event.stopPropagation()" style="max-width:580px;">
+    <div class="modal-title">↩️ Ripristino &amp; Riprogrammazione</div>
+
+    <!-- pratica info -->
+    <div class="resch-info">
+      <div class="ri-name" id="reschTaskName">—</div>
+      <div class="ri-sub" id="reschTaskSub">—</div>
+    </div>
+
+    <div class="grid-2 mb">
+      <div><label class="label">Nuovo Stato *</label>
+        <select class="input" id="reschStatus">
+          <option value="priority">🔴 Priorità</option>
+          <option value="standby">🟠 Stand By</option>
+          <option value="wip">🟣 In Lavorazione</option>
+        </select>
+      </div>
+      <div><label class="label">Utente assegnato</label>
+        <select class="input" id="reschUser"><option value="">— Nessuno —</option></select>
+      </div>
+    </div>
+
+    <div class="grid-2 mb">
+      <div><label class="label">Nuova Data Scadenza</label><input type="date" class="input" id="reschDueDate"></div>
+      <div><label class="label">Data Reinserimento</label><div class="readonly-field" id="reschDate">—</div></div>
+    </div>
+
+    <div class="mb">
+      <label class="label">Note Riprogrammazione</label>
+      <textarea class="input" id="reschNotes" placeholder="Motivo del ripristino, aggiornamenti, note operative..."></textarea>
+    </div>
+
+    <!-- storico riprogrammazioni -->
+    <div id="reschHistoryWrap" style="display:none;margin-bottom:16px;">
+      <label class="label" style="margin-bottom:6px;">📋 Storico Riprogrammazioni</label>
+      <div class="history-box" id="reschHistoryList"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-green" onclick="saveReschedule()">✅ Ripristina in Agenda</button>
+      <button class="btn btn-white" onclick="closeRescheduleModal()">Annulla</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ASSEGNA UTENTE MODAL ===== -->
+<div class="modal hidden" id="reassignOverlay">
+  <div class="modal-content" onclick="event.stopPropagation()" style="max-width:420px;">
+    <div class="modal-title">👤 Assegna Pratica</div>
+    <div class="resch-info" style="margin-bottom:20px;">
+      <div class="ri-name" id="reassignTaskName">—</div>
+      <div class="ri-sub" id="reassignTaskSub">—</div>
+    </div>
+    <div class="mb">
+      <label class="label">Assegna a</label>
+      <select class="input" id="reassignUser"><option value="">— Nessuno —</option></select>
+    </div>
+    <div class="mb">
+      <label class="label">Nota assegnazione (opzionale)</label>
+      <textarea class="input" id="reassignNote" style="min-height:60px;" placeholder="Es: passaggio di competenza, nuova responsabilità..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-green" onclick="saveReassign()">✅ Conferma Assegnazione</button>
+      <button class="btn btn-white" onclick="closeReassignModal()">Annulla</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== USER MODAL ===== -->
+<div class="modal hidden" id="userOverlay">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div class="modal-title">Nuovo Utente</div>
+    <div class="mb"><label class="label">Nome Utente *</label><input type="text" class="input" id="userName" placeholder="Nome e Cognome"></div>
+    <div class="mb"><label class="label">Ruolo</label><input type="text" class="input" id="userRole" placeholder="Es: Operatore, Responsabile..."></div>
+    <div class="mb">
+      <label class="label">Colore Avatar</label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;" id="colorPicker"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-green" onclick="saveUser()">Crea Utente</button>
+      <button class="btn btn-white" onclick="closeUserModal()">Annulla</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CONFIRM ===== -->
+<div class="confirm-modal hidden" id="confirmOverlay">
+  <div class="confirm-box">
+    <h3 id="confirmTitle">Sei sicuro?</h3>
+    <p id="confirmMsg">Questa azione non può essere annullata.</p>
+    <div class="confirm-actions">
+      <button class="btn btn-red" id="confirmOk">Conferma</button>
+      <button class="btn btn-white" onclick="closeConfirm()">Annulla</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ======= DATA =======
+const COLORS = ['#4CAF50','#f44336','#FF9800','#9C27B0','#2196F3','#E91E63','#009688','#FF5722','#3F51B5','#795548'];
+let selectedColor = COLORS[0];
+let users = JSON.parse(localStorage.getItem('agp2_users') || '[]');
+let tasks = JSON.parse(localStorage.getItem('agp2_tasks') || '[]');
+let editingTaskId = null;
+let reschedulingTaskId = null;
+let confirmCallback = null;
+
+function saveData() {
+  localStorage.setItem('agp2_users', JSON.stringify(users));
+  localStorage.setItem('agp2_tasks', JSON.stringify(tasks));
+}
+function genId() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function getDaysUntil(d) {
+  if (!d) return null;
+  const t = new Date(); t.setHours(0,0,0,0);
+  const x = new Date(d); x.setHours(0,0,0,0);
+  return Math.round((x-t)/86400000);
+}
+function sortTasks(arr) {
+  return [...arr].sort((a,b) => {
+    const da=getDaysUntil(a.dueDate), db=getDaysUntil(b.dueDate);
+    const ae=da!==null&&da<=3, be=db!==null&&db<=3;
+    if(ae&&!be) return -1; if(!ae&&be) return 1;
+    if(da!==null&&db!==null) return da-db;
+    if(da!==null) return -1; if(db!==null) return 1;
+    return new Date(a.insertDate)-new Date(b.insertDate);
+  });
+}
+
+// ======= TABS =======
+function switchTab(tab) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  document.querySelectorAll('.tab-btn')[['agenda','done','archived','users'].indexOf(tab)].classList.add('active');
+  if(tab==='agenda')   { renderAgenda(); updateStats(); }
+  if(tab==='done')     renderDone();
+  if(tab==='archived') renderArchived();
+  if(tab==='users')    renderUsers();
+}
+
+// ======= STATS =======
+function updateStats() {
+  const a=tasks.filter(t=>t.status!=='done'&&t.status!=='archived');
+  const rows=[
+    {cls:'s-priority',n:a.filter(t=>t.status==='priority').length,l:'Priorità'},
+    {cls:'s-standby', n:a.filter(t=>t.status==='standby').length, l:'Stand By'},
+    {cls:'s-wip',     n:a.filter(t=>t.status==='wip').length,     l:'In Lavorazione'},
+    {cls:'s-done',    n:tasks.filter(t=>t.status==='done').length, l:'Lavorate'},
+  ];
+  document.getElementById('statsRow').innerHTML=rows.map(r=>
+    `<div class="stat-card ${r.cls}"><div class="stat-num">${r.n}</div><div class="stat-label">${r.l}</div></div>`
+  ).join('');
+}
+
+// ======= BUILD CARD =======
+function buildCard(task) {
+  const user=users.find(u=>u.id===task.userId);
+  const days=getDaysUntil(task.dueDate);
+  const isExpiring=days!==null&&days>=0&&days<=3;
+  const isExpired =days!==null&&days<0;
+  const isArchived=task.status==='archived';
+  const isDone    =task.status==='done';
+  const SL={priority:'Priorità',standby:'Stand By',wip:'In Lavorazione',done:'Lavorata',archived:'Archiviata'};
+  const BC={priority:'badge-priority',standby:'badge-standby',wip:'badge-wip',done:'badge-done',archived:'badge-archived'};
+  const cardCls=isArchived?'archived':(isDone?'done':task.status);
+  const expCls =isExpired?'expired':(isExpiring?'expiring':'');
+
+  let dueMeta='';
+  if(task.dueDate) {
+    let cls='',icon='📅',pre='Scade: ';
+    if(isExpired)        {cls='overdue';      icon='🔴';pre='Scaduta il: ';}
+    else if(isExpiring)  {cls='expiring-soon';icon='⚠'; pre='Scade tra '+days+' gg: ';}
+    dueMeta=`<span class="meta-item ${cls}">${icon} ${pre}${new Date(task.dueDate).toLocaleDateString('it-IT')}</span>`;
+  }
+  const userTag=user
+    ?`<span class="user-tag"><span class="user-avatar" style="background:${user.color}">${user.name.charAt(0).toUpperCase()}</span>${escHtml(user.name)}</span>`:'';
+
+  // Nota ultima riprogrammazione
+  let reschStrip='';
+  if(task.history&&task.history.length>0) {
+    const last=task.history[task.history.length-1];
+    reschStrip=`<div class="resch-strip">🔄 <span><strong>Riprogrammata</strong> il ${new Date(last.date).toLocaleDateString('it-IT')}${last.notes?' — '+escHtml(last.notes.substring(0,60))+(last.notes.length>60?'…':''):''}</span></div>`;
+  }
+
+  // Buttons
+  let btns='';
+  if(!isArchived&&!isDone) btns+=`<button class="btn-icon" title="Modifica" onclick="editTask('${task.id}')">✏️</button>`;
+  if(!isArchived&&!isDone) btns+=`<button class="btn-icon" title="Assegna a utente" onclick="openReassign('${task.id}')" style="border-color:#2196F3;color:#1565C0;">👤</button>`;
+  if(!isArchived&&!isDone) btns+=`<button class="btn-icon" title="Segna come Lavorata" onclick="markDone('${task.id}')">✅</button>`;
+  if(!isArchived&&!isDone) btns+=`<button class="btn-icon" title="Archivia" onclick="archiveTask('${task.id}')">🗄</button>`;
+  // RIPRISTINA & RIPROGRAMMA — visibile su LAVORATE e ARCHIVIO
+  if(isDone||isArchived)   btns+=`<button class="btn-icon btn-restore" title="Ripristina &amp; Riprogramma" onclick="openReschedule('${task.id}')">↩️ Ripristina</button>`;
+  btns+=`<button class="btn-icon" title="Elimina" onclick="deleteTask('${task.id}')">🗑</button>`;
+
+  return `<div class="card ${cardCls} ${expCls}" id="card-${task.id}">
+    <div class="card-header">
+      <div><div class="card-title">${escHtml(task.name)}</div><span class="badge ${BC[task.status]}">${SL[task.status]||task.status}</span></div>
+      <div class="card-actions">${btns}</div>
+    </div>
+    ${reschStrip}
+    <div class="card-desc">${escHtml(task.desc||'—')}</div>
+    ${userTag?`<div style="margin-bottom:8px">${userTag}</div>`:''}
+    <div class="card-meta">
+      <span class="meta-item">📅 Inserita: ${new Date(task.insertDate).toLocaleDateString('it-IT')}</span>
+      ${dueMeta}
+      ${task.history&&task.history.length>0?`<span class="meta-item" style="color:#FF9800;">🔄 ${task.history.length} riprogrammazione${task.history.length>1?'i':''}</span>`:''}
+    </div>
+  </div>`;
+}
+
+// ======= RENDERS =======
+function renderAgenda() {
+  const name=((document.getElementById('searchName')||{}).value||'').toLowerCase();
+  const status=(document.getElementById('searchStatus')||{}).value||'';
+  const userId=(document.getElementById('searchUser')||{}).value||'';
+  const date=(document.getElementById('searchDate')||{}).value||'';
+  let arr=tasks.filter(t=>t.status!=='done'&&t.status!=='archived');
+  if(name)   arr=arr.filter(t=>t.name.toLowerCase().includes(name));
+  if(status) arr=arr.filter(t=>t.status===status);
+  if(userId) arr=arr.filter(t=>t.userId===userId);
+  if(date)   arr=arr.filter(t=>t.dueDate===date);
+  arr=sortTasks(arr);
+  document.getElementById('agendaGrid').innerHTML=arr.length?arr.map(buildCard).join(''):
+    `<div class="empty-state"><div class="icon">📋</div><p>Nessuna pratica trovata</p></div>`;
+  updateStats();
+}
+function renderDone() {
+  const name=((document.getElementById('doneSearchName')||{}).value||'').toLowerCase();
+  const userId=(document.getElementById('doneSearchUser')||{}).value||'';
+  const date=(document.getElementById('doneSearchDate')||{}).value||'';
+  let arr=tasks.filter(t=>t.status==='done');
+  if(name)   arr=arr.filter(t=>t.name.toLowerCase().includes(name));
+  if(userId) arr=arr.filter(t=>t.userId===userId);
+  if(date)   arr=arr.filter(t=>t.dueDate===date);
+  arr=sortTasks(arr);
+  document.getElementById('doneGrid').innerHTML=arr.length?arr.map(buildCard).join(''):
+    `<div class="empty-state"><div class="icon">✅</div><p>Nessuna pratica lavorata</p></div>`;
+}
+function renderArchived() {
+  const name=((document.getElementById('archSearchName')||{}).value||'').toLowerCase();
+  const userId=(document.getElementById('archSearchUser')||{}).value||'';
+  let arr=tasks.filter(t=>t.status==='archived');
+  if(name)   arr=arr.filter(t=>t.name.toLowerCase().includes(name));
+  if(userId) arr=arr.filter(t=>t.userId===userId);
+  document.getElementById('archivedGrid').innerHTML=arr.length?arr.map(buildCard).join(''):
+    `<div class="empty-state"><div class="icon">🗄</div><p>Archivio vuoto</p></div>`;
+}
+function renderUsers() {
+  const el=document.getElementById('usersList');
+  if(!users.length){el.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="icon">👥</div><p>Nessun utente creato</p></div>`;return;}
+  el.innerHTML=users.map(u=>{
+    const count=tasks.filter(t=>t.userId===u.id&&t.status!=='archived').length;
+    return `<div class="user-card">
+      <div class="big-avatar" style="background:${u.color}">${u.name.charAt(0).toUpperCase()}</div>
+      <div style="flex:1"><div class="uname">${escHtml(u.name)}</div><div class="urole">${escHtml(u.role||'Utente')}</div><div class="ustats">Pratiche attive: ${count}</div></div>
+      <button class="btn-icon" title="Elimina" onclick="deleteUser('${u.id}')">🗑</button>
+    </div>`;
+  }).join('');
+}
+
+// ======= USER SELECTS =======
+function updateUserSelects() {
+  ['taskUser','searchUser','doneSearchUser','archSearchUser','reschUser','reassignUser'].forEach(id=>{
+    const sel=document.getElementById(id);if(!sel)return;
+    const cur=sel.value;
+    const isFilter=(id!=='taskUser'&&id!=='reschUser');
+    sel.innerHTML=(isFilter?'<option value="">Tutti gli utenti</option>':'<option value="">— Nessuno —</option>')
+      +users.map(u=>`<option value="${u.id}">${escHtml(u.name)}</option>`).join('');
+    sel.value=cur;
+  });
+}
+
+// ======= TASK MODAL =======
+function openNewTaskModal() {
+  editingTaskId=null;
+  document.getElementById('taskModalTitle').textContent='Nuova Pratica';
+  document.getElementById('taskName').value='';
+  document.getElementById('taskStatus').value='priority';
+  document.getElementById('taskDueDate').value='';
+  document.getElementById('taskDesc').value='';
+  document.getElementById('taskInsertDate').textContent=new Date().toLocaleDateString('it-IT');
+  updateUserSelects();
+  document.getElementById('taskUser').value='';
+  document.getElementById('taskOverlay').classList.remove('hidden');
+}
+function editTask(id) {
+  const t=tasks.find(x=>x.id===id);if(!t)return;
+  editingTaskId=id;
+  document.getElementById('taskModalTitle').textContent='Modifica Pratica';
+  document.getElementById('taskName').value=t.name;
+  document.getElementById('taskStatus').value=(t.status==='done'||t.status==='archived')?'priority':t.status;
+  document.getElementById('taskDueDate').value=t.dueDate||'';
+  document.getElementById('taskDesc').value=t.desc||'';
+  document.getElementById('taskInsertDate').textContent=new Date(t.insertDate).toLocaleDateString('it-IT');
+  updateUserSelects();
+  setTimeout(()=>{document.getElementById('taskUser').value=t.userId||'';},30);
+  document.getElementById('taskOverlay').classList.remove('hidden');
+}
+function closeTaskModal(){document.getElementById('taskOverlay').classList.add('hidden');}
+function saveTask() {
+  const name=document.getElementById('taskName').value.trim();
+  if(!name){alert('Il nome è obbligatorio.');return;}
+  const status=document.getElementById('taskStatus').value;
+  const userId=document.getElementById('taskUser').value;
+  const dueDate=document.getElementById('taskDueDate').value;
+  const desc=document.getElementById('taskDesc').value.trim();
+  if(editingTaskId){
+    const t=tasks.find(x=>x.id===editingTaskId);
+    if(t){t.name=name;t.status=status;t.userId=userId;t.dueDate=dueDate;t.desc=desc;}
+  } else {
+    tasks.push({id:genId(),name,status,userId,dueDate,desc,insertDate:new Date().toISOString(),history:[]});
+  }
+  saveData();closeTaskModal();renderAgenda();
+}
+
+// ======= TASK ACTIONS =======
+function markDone(id){const t=tasks.find(x=>x.id===id);if(t){t.status='done';saveData();renderAgenda();}}
+function archiveTask(id){
+  confirm2('Archivia','Vuoi archiviare questa pratica?',()=>{
+    const t=tasks.find(x=>x.id===id);if(t){t.status='archived';saveData();renderAgenda();renderDone();}
+  });
+}
+function deleteTask(id){
+  confirm2('Elimina pratica','Questa azione è irreversibile. Continuare?',()=>{
+    tasks=tasks.filter(x=>x.id!==id);saveData();renderAgenda();renderDone();renderArchived();
+  });
+}
+
+// ======= ASSEGNA A UTENTE =======
+let reassigningTaskId = null;
+function openReassign(id) {
+  const t=tasks.find(x=>x.id===id);if(!t)return;
+  reassigningTaskId=id;
+  const user=users.find(u=>u.id===t.userId);
+  document.getElementById('reassignTaskName').textContent=t.name;
+  document.getElementById('reassignTaskSub').textContent='Attualmente assegnata a: '+(user?user.name:'Nessuno');
+  document.getElementById('reassignNote').value='';
+  updateUserSelects();
+  setTimeout(()=>{document.getElementById('reassignUser').value=t.userId||'';},30);
+  document.getElementById('reassignOverlay').classList.remove('hidden');
+}
+function closeReassignModal(){document.getElementById('reassignOverlay').classList.add('hidden');reassigningTaskId=null;}
+function saveReassign() {
+  const t=tasks.find(x=>x.id===reassigningTaskId);if(!t)return;
+  const newUserId=document.getElementById('reassignUser').value;
+  const note=document.getElementById('reassignNote').value.trim();
+  const oldUser=users.find(u=>u.id===t.userId);
+  const newUser=users.find(u=>u.id===newUserId);
+  if(!t.history) t.history=[];
+  t.history.push({
+    date: new Date().toISOString(),
+    fromStatus: t.status,
+    statusLabel: 'Riassegnazione',
+    dueDate: t.dueDate,
+    userId: newUserId,
+    notes: (note?note+' — ':'')+'Da: '+(oldUser?oldUser.name:'Nessuno')+' → '+(newUser?newUser.name:'Nessuno')
+  });
+  t.userId=newUserId;
+  saveData();closeReassignModal();renderAgenda();
+}
+
+// ======= RIPRISTINO & RIPROGRAMMAZIONE =======
+function openReschedule(id) {
+  const t=tasks.find(x=>x.id===id);if(!t)return;
+  reschedulingTaskId=id;
+
+  // Info box
+  const SL={done:'Lavorata',archived:'Archiviata'};
+  document.getElementById('reschTaskName').textContent=t.name;
+  document.getElementById('reschTaskSub').textContent=
+    'Stato attuale: '+(SL[t.status]||t.status)+
+    (t.dueDate?' | Scadenza precedente: '+new Date(t.dueDate).toLocaleDateString('it-IT'):'');
+
+  // Reset fields
+  document.getElementById('reschStatus').value='priority';
+  document.getElementById('reschDueDate').value=t.dueDate||'';
+  document.getElementById('reschNotes').value='';
+  document.getElementById('reschDate').textContent=new Date().toLocaleDateString('it-IT');
+
+  // User select
+  updateUserSelects();
+  setTimeout(()=>{document.getElementById('reschUser').value=t.userId||'';},30);
+
+  // History
+  const hist=t.history||[];
+  const hw=document.getElementById('reschHistoryWrap');
+  if(hist.length>0) {
+    hw.style.display='block';
+    document.getElementById('reschHistoryList').innerHTML=hist.slice().reverse().map(h=>`
+      <div class="history-entry">
+        <span class="history-date">${new Date(h.date).toLocaleDateString('it-IT')} — </span>
+        <strong>${escHtml(h.statusLabel)}</strong>
+        ${h.dueDate?' | Scadenza: '+new Date(h.dueDate).toLocaleDateString('it-IT'):''}
+        ${h.notes?' | '+escHtml(h.notes):''}
+      </div>`
+    ).join('');
+  } else { hw.style.display='none'; }
+
+  document.getElementById('rescheduleOverlay').classList.remove('hidden');
+}
+function closeRescheduleModal(){document.getElementById('rescheduleOverlay').classList.add('hidden');reschedulingTaskId=null;}
+
+function saveReschedule() {
+  const t=tasks.find(x=>x.id===reschedulingTaskId);if(!t)return;
+  const newStatus=document.getElementById('reschStatus').value;
+  const newDue   =document.getElementById('reschDueDate').value;
+  const newUser  =document.getElementById('reschUser').value;
+  const notes    =document.getElementById('reschNotes').value.trim();
+  const SL={priority:'Priorità',standby:'Stand By',wip:'In Lavorazione'};
+
+  // Aggiungi voce storico
+  if(!t.history) t.history=[];
+  t.history.push({
+    date: new Date().toISOString(),
+    fromStatus: t.status,
+    statusLabel: SL[newStatus]||newStatus,
+    dueDate: newDue,
+    userId: newUser,
+    notes: notes
+  });
+
+  // Aggiorna pratica
+  t.status =newStatus;
+  t.dueDate=newDue;
+  t.userId =newUser;
+  t.insertDate=new Date().toISOString(); // data reinserimento aggiornata
+
+  saveData();
+  closeRescheduleModal();
+  // Ricarica le pagine interessate
+  renderDone();
+  renderArchived();
+  renderAgenda();
+  // Porta su Agenda
+  switchTab('agenda');
+}
+
+// ======= USER MODAL =======
+function buildColorPicker(){
+  document.getElementById('colorPicker').innerHTML=COLORS.map(c=>
+    `<div class="color-swatch ${c===selectedColor?'selected':''}" style="background:${c}" onclick="selectColor('${c}')"></div>`
+  ).join('');
+}
+function selectColor(c){selectedColor=c;buildColorPicker();}
+function openUserModal(){
+  document.getElementById('userName').value='';
+  document.getElementById('userRole').value='';
+  selectedColor=COLORS[Math.floor(Math.random()*COLORS.length)];
+  buildColorPicker();
+  document.getElementById('userOverlay').classList.remove('hidden');
+}
+function closeUserModal(){document.getElementById('userOverlay').classList.add('hidden');}
+function saveUser(){
+  const name=document.getElementById('userName').value.trim();
+  if(!name){alert('Il nome è obbligatorio.');return;}
+  const role=document.getElementById('userRole').value.trim();
+  users.push({id:genId(),name,role,color:selectedColor});
+  saveData();closeUserModal();updateUserSelects();renderUsers();
+}
+function deleteUser(id){
+  confirm2('Elimina utente','Le pratiche assegnate rimarranno senza utente. Continuare?',()=>{
+    tasks.forEach(t=>{if(t.userId===id)t.userId='';});
+    users=users.filter(u=>u.id!==id);
+    saveData();
+    renderUsers();
+    updateUserSelects();
+    renderAgenda();
+    renderDone();
+    renderArchived();
+  });
+}
+
+// ======= CONFIRM =======
+function confirm2(title,msg,cb){
+  document.getElementById('confirmTitle').textContent=title;
+  document.getElementById('confirmMsg').textContent=msg;
+  confirmCallback=cb;
+  // Reassign onclick every time to avoid stale closure issues
+  const btn=document.getElementById('confirmOk');
+  btn.onclick=()=>{
+    const fn=confirmCallback;
+    closeConfirm();
+    if(fn) fn();
+  };
+  document.getElementById('confirmOverlay').classList.remove('hidden');
+}
+function closeConfirm(){document.getElementById('confirmOverlay').classList.add('hidden');confirmCallback=null;}
+
+// Close on backdrop
+['taskOverlay','userOverlay','rescheduleOverlay','reassignOverlay'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)document.getElementById(id).classList.add('hidden');});
+});
+document.getElementById('confirmOverlay').addEventListener('click',e=>{if(e.target.id==='confirmOverlay')closeConfirm();});
+
+// ======= SEARCH RESET =======
+function clearSearch(){['searchName','searchStatus','searchUser','searchDate'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});renderAgenda();}
+function clearDoneSearch(){['doneSearchName','doneSearchUser','doneSearchDate'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});renderDone();}
+function clearArchSearch(){['archSearchName','archSearchUser'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});renderArchived();}
+
+// ======= INIT + DEMO =======
+updateUserSelects();renderAgenda();updateStats();
+
+if(!tasks.length&&!users.length){
+  users.push({id:'u1',name:'Mario Rossi',   role:'Operatore',   color:'#4CAF50'});
+  users.push({id:'u2',name:'Giulia Bianchi',role:'Responsabile',color:'#9C27B0'});
+  users.push({id:'u3',name:'Luca Verdi',    role:'Supervisore', color:'#FF9800'});
+  const fmt=d=>d.toISOString().split('T')[0];
+  const d1=new Date();d1.setDate(d1.getDate()+2);
+  const d2=new Date();d2.setDate(d2.getDate()-1);
+  const d3=new Date();d3.setDate(d3.getDate()+15);
+  const d4=new Date();d4.setDate(d4.getDate()+5);
+  tasks.push({id:'t1',name:'Revisione contratto cliente ABC',status:'priority',userId:'u1',dueDate:fmt(d1),desc:'Verificare clausole di proroga e scadenze contrattuali.',insertDate:new Date().toISOString(),history:[]});
+  tasks.push({id:'t2',name:'Fattura scaduta da gestire',     status:'priority',userId:'u2',dueDate:fmt(d2),desc:'Sollecito pagamento fattura n.2024/089.',insertDate:new Date().toISOString(),history:[]});
+  tasks.push({id:'t3',name:'Analisi report trimestrale',     status:'wip',     userId:'u1',dueDate:fmt(d3),desc:'Elaborazione dati Q3 per presentazione al CDA.',insertDate:new Date().toISOString(),history:[]});
+  tasks.push({id:'t4',name:'Aggiornamento manuale operativo',status:'standby', userId:'u3',dueDate:fmt(d4),desc:'In attesa feedback del team tecnico.',insertDate:new Date().toISOString(),history:[]});
+  tasks.push({id:'t5',name:'Onboarding nuovo collaboratore', status:'wip',     userId:'u2',dueDate:'',     desc:'Predisposizione documentazione e accessi al sistema.',insertDate:new Date().toISOString(),history:[]});
+  // Demo: pratica lavorata con storico riprogrammazione
+  const dOld=new Date();dOld.setDate(dOld.getDate()-10);
+  tasks.push({id:'t6',name:'Pratica completata — da riprogrammare',status:'done',userId:'u3',dueDate:'',desc:'Pratica lavorata: usare il pulsante Ripristina per reinserirla.',insertDate:dOld.toISOString(),
+    history:[{date:dOld.toISOString(),fromStatus:'priority',statusLabel:'Priorità',dueDate:'',notes:'Prima lavorazione completata'}]});
+  saveData();updateUserSelects();renderAgenda();updateStats();
+}
+
+// ===== FIREBASE CONFIG =====
+const firebaseConfig = {
+    apiKey: "AIzaSyAPdXkLXzz4zjScQX3_buEXGi2OytRfH2o",
+    authDomain: "bu-progetti-speciali.firebaseapp.com",
+    databaseURL: "https://bu-progetti-speciali-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "bu-progetti-speciali",
+    storageBucket: "bu-progetti-speciali.firebasestorage.app",
+    messagingSenderId: "86623187511",
+    appId: "1:86623187511:web:2a093d51719b458b4ec5b2"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+// Check autenticazione
+firebase.auth().onAuthStateChanged((user) => {
+    if (!user) {
+        window.location.href = 'index.html';
+    }
+});
+
+// Logout function
+function logout() {
+    firebase.auth().signOut().then(() => {
+        window.location.href = 'index.html';
+    });
+}
+</script>
+</body>
+</html>
