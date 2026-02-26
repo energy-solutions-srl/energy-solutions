@@ -716,7 +716,7 @@
 
         // Gestione accesso opportunità e agenda
         const hasOpportunityAccess = currentUser.accessoOpportunita === true || currentUser.role === 'admin';
-        const hasAgendaAccess = currentUser.role === 'admin'; // Solo admin per ora
+        const hasAgendaAccess = currentUser.accessoAgenda === true || currentUser.role === 'admin';
         
         const btnOpportunita = document.getElementById('btnOpportunita');
         const btnAgenda = document.getElementById('btnAgenda');
@@ -763,6 +763,7 @@
                         <th>🏦 Sabat.</th>
                         <th>☀️ Fotov.</th>
                         <th>📋 Opport.</th>
+                        <th>📅 Agenda</th>
                     </tr>
                 </thead>
                 <tbody>`;
@@ -770,6 +771,7 @@
         allUsers.forEach(user => {
             const sim = user.simulatori || {};
             const hasOpportunita = user.accessoOpportunita === true || user.role === 'admin';
+            const hasAgenda = user.accessoAgenda === true || user.role === 'admin';
             const isAdmin = user.role === 'admin';
             html += `
                 <tr>
@@ -784,6 +786,10 @@
                     <td><input type="checkbox" data-uid="${user.uid}" data-sim="fotovoltaico" ${sim.fotovoltaico ? 'checked' : ''}></td>
                     <td>
                         <input type="checkbox" data-uid="${user.uid}" data-perm="opportunita" ${hasOpportunita ? 'checked' : ''} ${isAdmin ? 'disabled' : ''}>
+                        ${isAdmin ? '<div style="font-size:10px;color:var(--text-muted);margin-top:3px;">Sempre attivo</div>' : ''}
+                    </td>
+                    <td>
+                        <input type="checkbox" data-uid="${user.uid}" data-perm="agenda" ${hasAgenda ? 'checked' : ''} ${isAdmin ? 'disabled' : ''}>
                         ${isAdmin ? '<div style="font-size:10px;color:var(--text-muted);margin-top:3px;">Sempre attivo</div>' : ''}
                     </td>
                 </tr>`;
@@ -802,6 +808,7 @@
         const checkboxes = document.querySelectorAll('#permissionsTable input[type="checkbox"]:not([disabled])');
         const simulatoriUpdates = {};
         const opportunitaUpdates = {};
+        const agendaUpdates = {};
 
         checkboxes.forEach(cb => {
             const uid = cb.dataset.uid;
@@ -810,6 +817,8 @@
                 simulatoriUpdates[uid][cb.dataset.sim] = cb.checked;
             } else if (cb.dataset.perm === 'opportunita') {
                 opportunitaUpdates[uid] = cb.checked;
+            } else if (cb.dataset.perm === 'agenda') {
+                agendaUpdates[uid] = cb.checked;
             }
         });
 
@@ -820,6 +829,9 @@
             });
             Object.keys(opportunitaUpdates).forEach(uid => {
                 promises.push(db.ref(`users/${uid}/accessoOpportunita`).set(opportunitaUpdates[uid]));
+            });
+            Object.keys(agendaUpdates).forEach(uid => {
+                promises.push(db.ref(`users/${uid}/accessoAgenda`).set(agendaUpdates[uid]));
             });
             await Promise.all(promises);
             alert('✅ Permessi salvati con successo!');
