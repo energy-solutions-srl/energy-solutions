@@ -558,6 +558,33 @@ textarea.form-control { min-height: 88px; resize: vertical; line-height: 1.5; }
   .result-coeff-box { width: 100%; }
   .product-tabs { overflow-x: auto; }
 }
+
+.dur-item.orange {
+  border-color: #f97316;
+  color: #c2410c;
+}
+.dur-item.orange .dur-years { color: #ea580c; }
+.dur-item.orange:hover { border-color: #ea580c; background: #fff7ed; }
+.dur-item.orange.sel {
+  border-color: #ea580c;
+  background: #fff7ed;
+  color: #c2410c;
+  font-weight: 700;
+}
+.dur-item.orange.sel .dur-years { color: #ea580c; }
+
+/* Pensilina importo field */
+.pensilina-field {
+  background: #fff7ed;
+  border: 1.5px solid #fed7aa;
+  border-radius: 5px;
+  padding: 14px 16px;
+  margin-top: 4px;
+  display: none;
+}
+.pensilina-field.show { display: block; }
+.pensilina-field .form-label { color: #92400e; }
+
 </style>
 </head>
 <body>
@@ -648,11 +675,17 @@ textarea.form-control { min-height: 88px; resize: vertical; line-height: 1.5; }
               </label>
               <label class="check-opt"><input type="checkbox" id="lf-manutenzione"> MANUTENZIONE ANNUALE (compilare i campi specifici sottostanti)</label>
               <label class="check-opt"><input type="checkbox" id="lf-cer"> Adesione CER (Comunità Energetiche Rinnovabili)</label>
-              <label class="check-opt"><input type="checkbox" id="lf-enerbox"> Installazione ENERBOX per Crediti di Carbonio</label>
+              <label class="check-opt"><input type="checkbox" id="lf-pensilina"> Installazione su Pensilina</label>
               <label class="check-opt"><input type="checkbox" id="lf-monitoring"> Sistema di monitoraggio</label>
               <label class="check-opt"><input type="checkbox" id="lf-nessuno"> nessuno</label>
             </div>
           </div>
+        </div>
+
+        <div id="lf-pensilina-field" class="pensilina-field">
+          <label class="form-label">Installazione su Pensilina — Importo in Euro <span class="req">*</span></label>
+          <input type="text" class="form-control" id="lf-pen-importo" placeholder="Esempio: 15.000" inputmode="numeric">
+          <div class="form-hint">L'importo verrà sommato alla base di calcolo del canone</div>
         </div>
 
         <div id="lf-manutenzione-field" class="manutenzione-field" style="display:none;">
@@ -679,26 +712,39 @@ textarea.form-control { min-height: 88px; resize: vertical; line-height: 1.5; }
       <div class="tab-panel" id="tab-noleggio">
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Prodotto Richiesto <span class="req">*</span></label>
+            <label class="form-label">Modalità di Pagamento <span class="req">*</span></label>
+            <div class="radio-list" style="margin-bottom:20px;">
+              <label class="radio-opt"><input type="radio" name="nol-pag" value="mensile" checked> Mensile</label>
+              <label class="radio-opt"><input type="radio" name="nol-pag" value="trimestrale"> Trimestrale</label>
+            </div>
+            <label class="form-label" style="margin-bottom:10px;">Dilazione Pagamento Fornitore</label>
             <div class="radio-list">
-              <label class="radio-opt"><input type="radio" name="nol-tipo" value="standard" checked> NOLEGGIO a CANONE STANDARD</label>
-              <label class="radio-opt"><input type="radio" name="nol-tipo" value="differenziato"> NOLEGGIO a CANONE DIFFERENZIATO (in base alla produzione stimata di energia green da impianto fotovoltaico)</label>
-              <label class="radio-opt"><input type="radio" name="nol-tipo" value="qualsiasi"> Qualsiasi soluzione</label>
+              <label class="radio-opt"><input type="radio" name="nol-dil" value="avista" checked> A Vista</label>
+              <label class="radio-opt"><input type="radio" name="nol-dil" value="30"> Dilazione 30 giorni</label>
+              <label class="radio-opt"><input type="radio" name="nol-dil" value="60"> Dilazione 60 giorni</label>
+              <label class="radio-opt"><input type="radio" name="nol-dil" value="90"> Dilazione 90 giorni</label>
             </div>
           </div>
           <div class="form-group services-box">
             <div class="form-label" style="margin-bottom:12px; color:#92400e;">Servizi Accessori <span class="req">*</span></div>
             <div class="checkbox-list">
-              <label class="check-opt"><input type="checkbox" id="nol-manutenzione" checked> MANUTENZIONE ANNUALE (compilare i campi specifici sottostanti)</label>
+              <label class="check-opt"><input type="checkbox" id="nol-manutenzione"> MANUTENZIONE ANNUALE (compilare i campi specifici sottostanti)</label>
               <label class="check-opt"><input type="checkbox" id="nol-cer"> Adesione CER (Comunità Energetiche Rinnovabili)</label>
-              <label class="check-opt"><input type="checkbox" id="nol-enerbox"> Installazione ENERBOX per Crediti di Carbonio</label>
+              <label class="check-opt"><input type="checkbox" id="nol-pensilina"> Installazione su Pensilina</label>
               <label class="check-opt"><input type="checkbox" id="nol-monitoring"> Sistema di monitoraggio</label>
               <label class="check-opt"><input type="checkbox" id="nol-nessuno"> nessuno</label>
             </div>
+            <div class="form-hint" style="margin-top:12px;">V.F.L. Fornitore € 1 — Spese istruttoria € 100</div>
           </div>
         </div>
 
-        <div id="manutenzione-field" class="manutenzione-field">
+        <div id="nol-pensilina-field" class="pensilina-field">
+          <label class="form-label">Installazione su Pensilina — Importo in Euro <span class="req">*</span></label>
+          <input type="text" class="form-control" id="nol-pen-importo" placeholder="Esempio: 15.000" inputmode="numeric">
+          <div class="form-hint">L'importo verrà sommato alla base di calcolo del canone</div>
+        </div>
+
+        <div id="nol-manutenzione-field" class="manutenzione-field" style="display:none;">
           <label class="form-label">Manutenzione Annua — Importo preventivo in Euro <span class="req">*</span></label>
           <input type="text" class="form-control" id="nol-man-importo" placeholder="Esempio: 6.000" inputmode="numeric">
           <div class="form-hint">Inserire l'importo SENZA punti e SENZA decimali</div>
@@ -707,20 +753,13 @@ textarea.form-control { min-height: 88px; resize: vertical; line-height: 1.5; }
         <hr class="divider">
 
         <div class="form-group">
-          <label class="form-label" style="margin-bottom:12px;">Durata richiesta in mesi (operazione d'importo &gt;150.000) <span class="req">*</span></label>
-          <div class="duration-grid" style="grid-template-columns: repeat(3, 1fr)">
-            <label class="dur-item"><input type="radio" name="nol-dur" value="48"> 48 <span class="dur-years">anni 4</span></label>
-            <label class="dur-item sel"><input type="radio" name="nol-dur" value="60" checked> 60 <span class="dur-years">anni 5</span></label>
+          <label class="form-label">Durata richiesta in mesi <span class="req">*</span></label>
+          <div class="duration-grid">
+            <label class="dur-item sel"><input type="radio" name="nol-dur" value="48" checked> 48 <span class="dur-years">anni 4</span></label>
+            <label class="dur-item"><input type="radio" name="nol-dur" value="60"> 60 <span class="dur-years">anni 5</span></label>
             <label class="dur-item"><input type="radio" name="nol-dur" value="72"> 72 <span class="dur-years">anni 6</span></label>
             <label class="dur-item"><input type="radio" name="nol-dur" value="84"> 84 <span class="dur-years">anni 7</span></label>
             <label class="dur-item"><input type="radio" name="nol-dur" value="96"> 96 <span class="dur-years">anni 8</span></label>
-            <label class="dur-item"><input type="radio" name="nol-dur" value="108"> 108 <span class="dur-years">anni 9</span></label>
-            <label class="dur-item"><input type="radio" name="nol-dur" value="120"> 120 <span class="dur-years">anni 10</span></label>
-            <label class="dur-item"><input type="radio" name="nol-dur" value="144"> 144 <span class="dur-years">anni 12</span></label>
-            <label class="dur-item"><input type="radio" name="nol-dur" value="180"> 180 <span class="dur-years">anni 15</span></label>
-            <label class="dur-item" style="font-size:11px;"><input type="radio" name="nol-dur" value="qualsiasi"> Qualsiasi</label>
-            <label class="dur-item" style="font-size:11px;"><input type="radio" name="nol-dur" value="piu_lunga"> Più lunga possibile</label>
-            <label class="dur-item" style="font-size:11px;"><input type="radio" name="nol-dur" value="piu_corta"> Più corta possibile</label>
           </div>
         </div>
       </div>
@@ -746,21 +785,50 @@ textarea.form-control { min-height: 88px; resize: vertical; line-height: 1.5; }
 // VR 1%, Tasso Fisso, Assicurazione All-Risk inclusa
 const LF = {
   mensile: {
-    fascia1: { 48: 2.465, 60: 2.059, 72: 1.789, 84: 1.597, 96: 1.455 },  // da €7k a €50k
-    fascia2: { 48: 2.421, 60: 2.013, 72: 1.742, 84: 1.549, 96: 1.406 }   // >€50k
+    fascia1: { 48: 2.465, 60: 2.059, 72: 1.789, 84: 1.597, 96: 1.455, 108: 1.342, 120: 1.248 },  // da €7k a €50k
+    fascia2: { 48: 2.421, 60: 2.013, 72: 1.742, 84: 1.549, 96: 1.406, 108: 1.293, 120: 1.199 }   // >€50k
   },
   trimestrale: {
-    fascia1: { 48: 7.349, 60: 6.136, 72: 5.332, 84: 4.762, 96: 4.337 },
-    fascia2: { 48: 7.221, 60: 6.004, 72: 5.196, 84: 4.622, 96: 4.194 }
+    fascia1: { 48: 7.349, 60: 6.136, 72: 5.332, 84: 4.762, 96: 4.337, 108: 3.998, 120: 3.718 },
+    fascia2: { 48: 7.221, 60: 6.004, 72: 5.196, 84: 4.622, 96: 4.194, 108: 3.858, 120: 3.579 }
   }
 };
 
 
 // NOLEGGIO — coefficienti stimati compatibili con screenshot (5796/300000*1000 ≈ 1.932 a 60m)
 // Struttura analoga a LF ma con durate estese fino a 180m
+// NOLEGGIO FOTOVOLTAICO
+// Fonte: Tabelle_NoleggioFotovoltaico.pdf — BNP Paribas Leasing Solutions
+// V.F.L. Fornitore €1 · Spese istruttoria €100 · Fatturazione ANTICIPATA
 const NOL = {
-  48: 2.350, 60: 1.932, 72: 1.680, 84: 1.500,
-  96: 1.368, 108: 1.260, 120: 1.170, 144: 1.020, 180: 0.870
+  mensile: {
+    fascia1: {
+      avista: { 48: 2.483, 60: 2.072, 72: 1.800, 84: 1.606, 96: 1.462 },
+      30:     { 48: 2.508, 60: 2.093, 72: 1.818, 84: 1.622, 96: 1.477 },
+      60:     { 48: 2.533, 60: 2.113, 72: 1.836, 84: 1.638, 96: 1.491 },
+      90:     { 48: 2.557, 60: 2.134, 72: 1.854, 84: 1.654, 96: 1.506 }
+    },
+    fascia2: {
+      avista: { 48: 2.439, 60: 2.027, 72: 1.753, 84: 1.559, 96: 1.413 },
+      30:     { 48: 2.463, 60: 2.047, 72: 1.771, 84: 1.575, 96: 1.427 },
+      60:     { 48: 2.488, 60: 2.068, 72: 1.788, 84: 1.590, 96: 1.441 },
+      90:     { 48: 2.512, 60: 2.088, 72: 1.806, 84: 1.606, 96: 1.455 }
+    }
+  },
+  trimestrale: {
+    fascia1: {
+      avista: { 48: 7.401, 60: 6.177, 72: 5.364, 84: 4.788, 96: 4.359 },
+      30:     { 48: 7.475, 60: 6.239, 72: 5.418, 84: 4.836, 96: 4.403 },
+      60:     { 48: 7.549, 60: 6.301, 72: 5.471, 84: 4.884, 96: 4.446 },
+      90:     { 48: 7.623, 60: 6.362, 72: 5.525, 84: 4.932, 96: 4.490 }
+    },
+    fascia2: {
+      avista: { 48: 7.275, 60: 6.046, 72: 5.230, 84: 4.649, 96: 4.446 },
+      30:     { 48: 7.348, 60: 6.106, 72: 5.282, 84: 4.695, 96: 4.490 },
+      60:     { 48: 7.421, 60: 6.167, 72: 5.335, 84: 4.742, 96: 4.535 },
+      90:     { 48: 7.493, 60: 6.227, 72: 5.387, 84: 4.788, 96: 4.579 }
+    }
+  }
 };
 
 // =====================================================================
@@ -793,6 +861,12 @@ function calculate() {
   const tab = getTab();
   const resultArea = document.getElementById('result-area');
 
+  // Pensilina: somma all'importo base se flaggata
+  const prefix_pen = tab === 'noleggio' ? 'nol' : tab;
+  const penChk = document.getElementById(`${prefix_pen}-pensilina`);
+  const penImp = penChk?.checked ? parseIt(document.getElementById(`${prefix_pen}-pen-importo`)?.value || '') : 0;
+  const importoCalcolo = importoRaw + penImp;
+
   if (!importoRaw || importoRaw < 7000) {
     resultArea.innerHTML = `
       <div class="no-result">
@@ -804,7 +878,7 @@ function calculate() {
 
   let canone = 0, coeff = 0, periodicita = '', easyPackMensile = 0;
   let coeffDesc = '', extraNote = '', warning = '';
-  const fascia = getFascia(importoRaw);
+  const fascia = getFascia(importoCalcolo);
   const fasciaLabel = fascia === 'fascia1' ? '€ 7k – € 50k' : '> € 50k';
 
   if (tab === 'lf') {
@@ -812,7 +886,7 @@ function calculate() {
     const dur = parseInt(checked('lf-dur') || '48');
     coeff = LF[pag]?.[fascia]?.[dur];
     if (!coeff) { showWarning(resultArea, 'Configurazione non disponibile per LF.'); return; }
-    canone = (importoRaw / 1000) * coeff;
+    canone = (importoCalcolo / 1000) * coeff;
     periodicita = pag;
     coeffDesc = `LF ${pag} · fascia ${fasciaLabel} · ${dur} mesi`;
     if (document.getElementById('lf-easypack')?.checked) {
@@ -823,24 +897,23 @@ function calculate() {
   
 
   } else if (tab === 'noleggio') {
-    const durVal = checked('nol-dur') || '60';
-    const durInt = parseInt(durVal);
-    if (isNaN(durInt)) {
-      resultArea.innerHTML = `<div class="alert">La durata selezionata richiede valutazione specifica da parte di Noleggio Energia. Contattare il proprio agente di riferimento.</div>`;
-      return;
-    }
-    coeff = NOL[durInt];
-    if (!coeff) { showWarning(resultArea, 'Durata non disponibile per il Noleggio standard.'); return; }
-    canone = (importoRaw / 1000) * coeff;
-    periodicita = 'mensile';
-    coeffDesc = `Noleggio Standard · ${durInt} mesi`;
+    const pag = checked('nol-pag') || 'mensile';
+    const dil = checked('nol-dil') || 'avista';
+    const dur = parseInt(checked('nol-dur') || '48');
+    coeff = NOL[pag]?.[fascia]?.[dil]?.[dur];
+    if (!coeff) { showWarning(resultArea, 'Configurazione non disponibile per il Noleggio.'); return; }
+    canone = (importoCalcolo / 1000) * coeff;
+    periodicita = pag;
+    const dilLabel = dil === 'avista' ? 'A Vista' : `Dil. ${dil}gg`;
+    coeffDesc = `Noleggio ${pag} · ${dilLabel} · fascia ${fasciaLabel} · ${dur} mesi`;
 
     const manChecked = document.getElementById('nol-manutenzione')?.checked;
     const manImporto = parseIt(val('nol-man-importo'));
     if (manChecked && manImporto > 0) {
       const manMensile = manImporto / 12;
+      const manRate = periodicita === 'trimestrale' ? manMensile * 3 : manMensile;
       extraNote = ` + Manutenzione € ${fmtEur(manMensile)}/mese`;
-      canone += manMensile;
+      canone += manRate;
     }
   }
 
@@ -864,7 +937,7 @@ function calculate() {
 
   // Numero rate
   const durForRate = tab === 'noleggio'
-    ? parseInt(checked('nol-dur') || '60')
+    ? parseInt(checked('nol-dur') || '48')
     : parseInt(checked('lf-dur') || '48');
   const nRate = periodicita === 'trimestrale' ? Math.ceil(durForRate / 3) : durForRate;
   const totale = canone * nRate;
@@ -887,7 +960,8 @@ function calculate() {
       <div class="result-grid">
         <div class="rg-item">
           <div class="rg-label">Importo finanziato</div>
-          <div class="rg-value">€ ${fmtNum(importoRaw)}</div>
+          <div class="rg-value">€ ${fmtNum(importoCalcolo)}</div>
+          ${penImp > 0 ? '<div style="font-size:10px;color:rgba(255,255,255,0.55);margin-top:3px;">base € ' + fmtNum(importoRaw) + ' + pensilina € ' + fmtNum(penImp) + '</div>' : ''}
         </div>
         <div class="rg-item">
           <div class="rg-label">N° rate</div>
@@ -899,13 +973,13 @@ function calculate() {
         </div>
         <div class="rg-item">
           <div class="rg-label">Maggiorazione</div>
-          <div class="rg-value">+${((totale / importoRaw - 1) * 100).toFixed(1)}%</div>
+          <div class="rg-value">+${((totale / importoCalcolo - 1) * 100).toFixed(1)}%</div>
         </div>
       </div>
     </div>
     <div class="result-note">
         ${tab === 'noleggio' ?
-          `Il Canone di Noleggio espresso dal preventivatore deve essere considerato <strong>indicativo</strong> e soggetto a conferma da parte di Noleggio Energia al momento della formalizzazione dell'offerta commerciale, in quanto dipendente sia dal rating del cliente che da eventuali mutamenti delle condizioni di mercato.<br><br>L'importo del canone <strong>non include</strong> la copertura assicurativa <strong>ALL-RISKS</strong> sui beni oggetto di noleggio; la <strong>MANUTENZIONE</strong> è inclusa solo nel caso in cui vengano selezionate le relative opzioni (inclusione SI/NO e durata del contratto di manutenzione).`
+          `Il Canone di Noleggio espresso dal simulatore deve essere considerato <strong>indicativo</strong> e soggetto a conferma da parte di BNP Paribas Leasing Solutions al momento della formalizzazione dell'offerta commerciale.<br><br>Il canone <strong>non include</strong> la copertura assicurativa <strong>ALL-RISKS</strong>. Spese istruttoria: <strong>€ 100,00</strong>. V.F.L. Fornitore <strong>€ 1</strong>. La fatturazione sarà sempre <strong>ANTICIPATA</strong>.`
           : `Il Canone espresso dal simulatore deve essere considerato <strong>indicativo</strong> e soggetto a conferma da parte di BNP Paribas Leasing Solutions al momento della formalizzazione dell'offerta commerciale, in quanto dipendente sia dal rating del cliente che da eventuali mutamenti delle condizioni di mercato.<br><br>${tab === 'lf' ? 'La <strong>copertura assicurativa All-Risk è inclusa</strong> nel canone. ' : 'Il canone <strong>non include</strong> la copertura assicurativa All-Risk. '}Spese istruttoria: <strong>€ 100,00</strong>. La fatturazione sarà sempre <strong>ANTICIPATA</strong>.`
         }
     </div>`;
@@ -948,6 +1022,23 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Pensilina reveal
+  ['lf', 'nol'].forEach(prefix => {
+    const id = prefix === 'nol' ? 'nol-pensilina' : 'lf-pensilina';
+    const fieldId = prefix === 'nol' ? 'nol-pensilina-field' : 'lf-pensilina-field';
+    const importoId = prefix === 'nol' ? 'nol-pen-importo' : 'lf-pen-importo';
+    const chk = document.getElementById(id);
+    if (chk) {
+      chk.addEventListener('change', () => {
+        const field = document.getElementById(fieldId);
+        if (field) field.classList.toggle('show', chk.checked);
+        calculate();
+      });
+      const imp = document.getElementById(importoId);
+      if (imp) imp.addEventListener('input', () => { formatInputField(imp); calculate(); });
+    }
+  });
+
   // Easy Pack frequency reveal
   ['lf'].forEach(prefix => {
     const chk = document.getElementById(`${prefix}-easypack`);
@@ -964,7 +1055,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const manId = prefix + '-manutenzione';
     const fieldId = prefix + '-manutenzione-field';
     const nessId = prefix + '-nessuno';
-    const others = [manId, prefix+'-cer', prefix+'-enerbox', prefix+'-monitoring'];
+    const others = [manId, prefix+'-cer', prefix+'-pensilina', prefix+'-monitoring'];
 
     const manChk = document.getElementById(manId);
     if (manChk) {
@@ -982,6 +1073,9 @@ document.addEventListener('DOMContentLoaded', () => {
           others.forEach(id => { const el = document.getElementById(id); if (el) el.checked = false; });
           const field = document.getElementById(fieldId);
           if (field) field.style.display = 'none';
+          // nascondi pensilina
+          const penField = document.getElementById(prefix + '-pensilina-field');
+          if (penField) penField.classList.remove('show');
         }
         calculate();
       });
@@ -989,7 +1083,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // All other radios/checkboxes
-  const skipIds = new Set(['lf-easypack','lf-manutenzione','nol-manutenzione','lf-nessuno','nol-nessuno']);
+  const skipIds = new Set(['lf-easypack','lf-manutenzione','nol-manutenzione','lf-nessuno','nol-nessuno','lf-pensilina','nol-pensilina']);
   document.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(el => {
     if (!el.closest('.dur-item') && !skipIds.has(el.id)) {
       el.addEventListener('change', calculate);
