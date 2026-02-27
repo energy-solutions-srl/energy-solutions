@@ -611,7 +611,7 @@ function editTask(id) {
   document.getElementById('taskOverlay').classList.remove('hidden');
 }
 function closeTaskModal(){document.getElementById('taskOverlay').classList.add('hidden');}
-function saveTask() {
+async function saveTask() {
   const name=document.getElementById('taskName').value.trim();
   if(!name){alert('Il nome è obbligatorio.');return;}
   const status=document.getElementById('taskStatus').value;
@@ -624,19 +624,38 @@ function saveTask() {
   } else {
     tasks.push({id:genId(),name,status,userId,dueDate,desc,insertDate:new Date().toISOString(),history:[]});
   }
-  saveTasks();closeTaskModal();renderAgenda();
+  await saveTasks();
+  closeTaskModal();
+  renderAgenda();
 }
 
 // ======= TASK ACTIONS =======
-function markDone(id){const t=tasks.find(x=>x.id===id);if(t){t.status='done';saveTasks();renderAgenda();}}
+async function markDone(id){
+  const t=tasks.find(x=>x.id===id);
+  if(t){
+    t.status='done';
+    await saveTasks();
+    renderAgenda();
+  }
+}
 function archiveTask(id){
-  confirm2('Archivia','Vuoi archiviare questa pratica?',()=>{
-    const t=tasks.find(x=>x.id===id);if(t){t.status='archived';saveTasks();renderAgenda();renderDone();}
+  confirm2('Archivia','Vuoi archiviare questa pratica?',async ()=>{
+    const t=tasks.find(x=>x.id===id);
+    if(t){
+      t.status='archived';
+      await saveTasks();
+      renderAgenda();
+      renderDone();
+    }
   });
 }
-function deleteTask(id){
-  confirm2('Elimina pratica','Questa azione è irreversibile. Continuare?',()=>{
-    tasks=tasks.filter(x=>x.id!==id);saveTasks();renderAgenda();renderDone();renderArchived();
+async function deleteTask(id){
+  confirm2('Elimina pratica','Questa azione è irreversibile. Continuare?',async ()=>{
+    tasks=tasks.filter(x=>x.id!==id);
+    await saveTasks();
+    renderAgenda();
+    renderDone();
+    renderArchived();
   });
 }
 
@@ -654,7 +673,7 @@ function openReassign(id) {
   document.getElementById('reassignOverlay').classList.remove('hidden');
 }
 function closeReassignModal(){document.getElementById('reassignOverlay').classList.add('hidden');reassigningTaskId=null;}
-function saveReassign() {
+async function saveReassign() {
   const t=tasks.find(x=>x.id===reassigningTaskId);if(!t)return;
   const newUserId=document.getElementById('reassignUser').value;
   const note=document.getElementById('reassignNote').value.trim();
@@ -670,7 +689,9 @@ function saveReassign() {
     notes: (note?note+' — ':'')+'Da: '+(oldUser?oldUser.name:'Nessuno')+' → '+(newUser?newUser.name:'Nessuno')
   });
   t.userId=newUserId;
-  saveTasks();closeReassignModal();renderAgenda();
+  await saveTasks();
+  closeReassignModal();
+  renderAgenda();
 }
 
 // ======= RIPRISTINO & RIPROGRAMMAZIONE =======
@@ -714,7 +735,7 @@ function openReschedule(id) {
 }
 function closeRescheduleModal(){document.getElementById('rescheduleOverlay').classList.add('hidden');reschedulingTaskId=null;}
 
-function saveReschedule() {
+async function saveReschedule() {
   const t=tasks.find(x=>x.id===reschedulingTaskId);if(!t)return;
   const newStatus=document.getElementById('reschStatus').value;
   const newDue   =document.getElementById('reschDueDate').value;
@@ -739,7 +760,7 @@ function saveReschedule() {
   t.userId =newUser;
   t.insertDate=new Date().toISOString(); // data reinserimento aggiornata
 
-  saveTasks();
+  await saveTasks();
   closeRescheduleModal();
   // Ricarica le pagine interessate
   renderDone();
@@ -764,12 +785,15 @@ function openUserModal(){
   document.getElementById('userOverlay').classList.remove('hidden');
 }
 function closeUserModal(){document.getElementById('userOverlay').classList.add('hidden');}
-function saveUser(){
+async function saveUser(){
   const name=document.getElementById('userName').value.trim();
   if(!name){alert('Il nome è obbligatorio.');return;}
   const role=document.getElementById('userRole').value.trim();
   users.push({id:genId(),name,role,color:selectedColor});
-  saveUsers();closeUserModal();updateUserSelects();renderUsers();
+  await saveUsers();
+  closeUserModal();
+  updateUserSelects();
+  renderUsers();
 }
 function deleteUser(id){
   confirm2('Elimina utente','Le pratiche assegnate rimarranno senza utente. Continuare?',async ()=>{
