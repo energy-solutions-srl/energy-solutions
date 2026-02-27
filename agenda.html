@@ -651,11 +651,19 @@ function archiveTask(id){
 }
 async function deleteTask(id){
   confirm2('Elimina pratica','Questa azione è irreversibile. Continuare?',async ()=>{
-    tasks=tasks.filter(x=>x.id!==id);
-    await saveTasks();
-    renderAgenda();
-    renderDone();
-    renderArchived();
+    try {
+      // Rimuovi da Firebase
+      await db.ref(`agenda/tasks/${id}`).remove();
+      // Aggiorna array locale
+      tasks = tasks.filter(x => x.id !== id);
+      // Aggiorna UI
+      renderAgenda();
+      renderDone();
+      renderArchived();
+    } catch (error) {
+      console.error('Errore cancellazione pratica:', error);
+      alert('Errore durante la cancellazione. Riprova.');
+    }
   });
 }
 
@@ -795,17 +803,33 @@ async function saveUser(){
   updateUserSelects();
   renderUsers();
 }
-function deleteUser(id){
+async function deleteUser(id){
   confirm2('Elimina utente','Le pratiche assegnate rimarranno senza utente. Continuare?',async ()=>{
-    tasks.forEach(t=>{if(t.userId===id)t.userId='';});
-    users=users.filter(u=>u.id!==id);
-    await saveTasks();
-    await saveUsers();
-    renderUsers();
-    updateUserSelects();
-    renderAgenda();
-    renderDone();
-    renderArchived();
+    try {
+      // Aggiorna pratiche che hanno questo utente
+      const updatedTasks = tasks.filter(t => t.userId === id);
+      for (const task of updatedTasks) {
+        task.userId = '';
+        await db.ref(`agenda/tasks/${task.id}/userId`).set('');
+      }
+      
+      // Rimuovi utente da Firebase
+      await db.ref(`agenda/users/${id}`).remove();
+      
+      // Aggiorna array locale
+      tasks.forEach(t => { if(t.userId === id) t.userId = ''; });
+      users = users.filter(u => u.id !== id);
+      
+      // Aggiorna UI
+      renderUsers();
+      updateUserSelects();
+      renderAgenda();
+      renderDone();
+      renderArchived();
+    } catch (error) {
+      console.error('Errore cancellazione utente:', error);
+      alert('Errore durante la cancellazione. Riprova.');
+    }
   });
 }
 
