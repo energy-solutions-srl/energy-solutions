@@ -839,6 +839,7 @@ const fmtNum = n => new Intl.NumberFormat('it-IT').format(Math.round(n));
 // Parse Italian-formatted number (1.234,56 → 1234.56)
 const parseIt = str => {
   if (!str) return 0;
+  // Formato italiano: 1.234,56 → rimuove punti migliaia, converte virgola decimale
   const cleaned = String(str).replace(/\./g, '').replace(',', '.');
   return parseFloat(cleaned) || 0;
 };
@@ -886,7 +887,8 @@ function calculate() {
     const dur = parseInt(checked('lf-dur') || '48');
     coeff = LF[pag]?.[fascia]?.[dur];
     if (!coeff) { showWarning(resultArea, 'Configurazione non disponibile per LF.'); return; }
-    canone = (importoCalcolo / 1000) * coeff;
+    coeff = +coeff;
+    canone = importoCalcolo * coeff / 1000;
     periodicita = pag;
     coeffDesc = `LF ${pag} · fascia ${fasciaLabel} · ${dur} mesi`;
     if (document.getElementById('lf-easypack')?.checked) {
@@ -902,7 +904,8 @@ function calculate() {
     const dur = parseInt(checked('nol-dur') || '48');
     coeff = NOL[pag]?.[fascia]?.[dil]?.[dur];
     if (!coeff) { showWarning(resultArea, 'Configurazione non disponibile per il Noleggio.'); return; }
-    canone = (importoCalcolo / 1000) * coeff;
+    coeff = +coeff;
+    canone = importoCalcolo * coeff / 1000;
     periodicita = pag;
     const dilLabel = dil === 'avista' ? 'A Vista' : `Dil. ${dil}gg`;
     coeffDesc = `Noleggio ${pag} · ${dilLabel} · fascia ${fasciaLabel} · ${dur} mesi`;
