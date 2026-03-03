@@ -888,7 +888,7 @@ function calculate() {
     coeff = LF[pag]?.[fascia]?.[dur];
     if (!coeff) { showWarning(resultArea, 'Configurazione non disponibile per LF.'); return; }
     coeff = +coeff;
-    canone = importoCalcolo * coeff / 1000;
+    canone = importoCalcolo * coeff / 100;
     periodicita = pag;
     coeffDesc = `LF ${pag} · fascia ${fasciaLabel} · ${dur} mesi`;
     if (document.getElementById('lf-easypack')?.checked) {
@@ -905,7 +905,7 @@ function calculate() {
     coeff = NOL[pag]?.[fascia]?.[dil]?.[dur];
     if (!coeff) { showWarning(resultArea, 'Configurazione non disponibile per il Noleggio.'); return; }
     coeff = +coeff;
-    canone = importoCalcolo * coeff / 1000;
+    canone = importoCalcolo * coeff / 100;
     periodicita = pag;
     const dilLabel = dil === 'avista' ? 'A Vista' : `Dil. ${dil}gg`;
     coeffDesc = `Noleggio ${pag} · ${dilLabel} · fascia ${fasciaLabel} · ${dur} mesi`;
