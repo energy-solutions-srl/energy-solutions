@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archiviati - Energy Solutions</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-database-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-auth-compat.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .btn-green { background: #4CAF50; color: white; }
+        .btn-green:hover { background: #45a049; }
+        .btn-white { background: white; color: #4CAF50; border: 2px solid #4CAF50; }
+        .btn-white:hover { background: #f0f9f4; }
+        .btn-red { background: #f44336; color: white; }
+        .btn-gray { background: #ddd; color: #666; }
+        .card { background: #FAFAFA; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 6px solid #9E9E9E; }
+        .input { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; }
+        .input:focus { outline: none; border-color: #9E9E9E; }
+        .label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px; color: #333; }
+        .mb { margin-bottom: 16px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+        .badge { display: inline-block; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-right: 8px; }
+        .stato-archiviato { background: #F3F4F6; color: #6B7280; }
+        .header { background: linear-gradient(135deg, #757575 0%, #616161 100%); color: white; padding: 20px; margin-bottom: 24px; border-radius: 12px; }
+        .loading { text-align: center; padding: 60px; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; overflow-y: auto; }
+        .modal-content { background: white; border-radius: 16px; padding: 24px; width: 95%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+        @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const firebaseConfig = {
+            apiKey: "AIzaSyAPdXkLXzz4zjScQX3_buEXGi2OytRfH2o",
+            authDomain: "bu-progetti-speciali.firebaseapp.com",
+            databaseURL: "https://bu-progetti-speciali-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "bu-progetti-speciali",
+            storageBucket: "bu-progetti-speciali.firebasestorage.app",
+            messagingSenderId: "86623187511",
+            appId: "1:86623187511:web:2a093d51719b458b4ec5b2"
+        };
+
+        const { useState, useEffect } = React;
+
+        const TIPOLOGIE_INTERVENTO = {
+            'esco': { label: 'ESCO', voci: ['FTV', 'ILLUMINAZIONE', 'CENTRALE TERMICA', 'INFISSI', 'ISOLAMENTO', 'IMPIANTI INTERNI', 'BATTERIA DI ACCUMULO'] },
+            'conto_termico': { label: 'CONTO TERMICO 3.0', voci: ['FTV', 'ILLUMINAZIONE', 'CENTRALE TERMICA', 'INFISSI', 'ISOLAMENTO', 'IMPIANTI INTERNI', 'BATTERIA DI ACCUMULO', 'NZeb'] },
+            'industria_5': { label: 'INDUSTRIA 5.0', voci: ['FTV', 'IMPIANTI INTERNI'] },
+            'agrisolare': { label: 'AGRISOLARE 2026', voci: ['FTV', 'ACCUMULO', 'COLONNETTA RICARICA', 'INTERVENTI IN COPERTURA'] },
+            'cratere_2016': { label: 'CRATERE 2016', voci: ['DEMOLIZIONE E RICOSTRUZIONE', 'RISTRUTTURAZIONE', 'INTERVENTO SOLO IMPIANTI'] },
+            'cratere_2009': { label: 'CRATERE 2009', voci: ['DEMOLIZIONE E RICOSTRUZIONE', 'RISTRUTTURAZIONE', 'INTERVENTO SOLO IMPIANTI'] },
+            'privato': { label: 'PRIVATO', voci: [] }
+        };
+        const COLORI_REGIONI = {
+            'Abruzzo': '#E53935', 'Basilicata': '#8E24AA', 'Calabria': '#00ACC1', 'Campania': '#FB8C00',
+            'Emilia-Romagna': '#D32F2F', 'Friuli-Venezia Giulia': '#1976D2', 'Lazio': '#FFB300',
+            'Liguria': '#0097A7', 'Lombardia': '#388E3C', 'Marche': '#7B1FA2', 'Molise': '#5D4037',
+            'Piemonte': '#C62828', 'Puglia': '#F57C00', 'Sardegna': '#0288D1', 'Sicilia': '#FFA000',
+            'Toscana': '#7CB342', 'Trentino-Alto Adige': '#1565C0', 'Umbria': '#689F38',
+            'Valle d\'Aosta': '#5E35B1', 'Veneto': '#E64A19'
+        };
+
+        function App() {
+            const [initComplete, setInitComplete] = useState(false);
+            const [user, setUser] = useState(null);
+            const [opps, setOpps] = useState([]);
+            const [showDescModal, setShowDescModal] = useState(false);
+            const [selectedDesc, setSelectedDesc] = useState('');
+            const [filters, setFilters] = useState({ 
+                utente: '', 
+                tipologiaCliente: '', 
+                tipologiaIntervento: '',
+                regione: '',
+                dataInizio: '',
+                dataFine: ''
+            });
+
+            useEffect(() => {
+                const init = async () => {
+                    try {
+                        firebase.initializeApp(firebaseConfig);
+                        const db = firebase.database();
+
+                        firebase.auth().onAuthStateChanged(async (firebaseUser) => {
+                            if (firebaseUser) {
+                                try {
+                                    const userSnapshot = await db.ref(`users/${firebaseUser.uid}`).once('value');
+                                    const userData = userSnapshot.val();
+                                    
+                                    if (userData) {
+                                        setUser({ ...userData, id: firebaseUser.uid });
+                                        
+                                        db.ref('opportunities').on('value', snap => {
+                                            const data = snap.val();
+                                            if (data) {
+                                                const allOpps = Object.keys(data).map(k => ({ id: k, ...data[k] }));
+                                                // Solo ARCHIVIATE
+                                                const archived = allOpps.filter(o => o.stato === 'ARCHIVIATO');
+                                                setOpps(archived);
+                                            } else {
+                                                setOpps([]);
+                                            }
+                                        });
+                                    } else {
+                                        window.location.href = 'index.html';
+                                    }
+                                } catch (err) {
+                                    console.error('Errore:', err);
+                                    window.location.href = 'index.html';
+                                }
+                            } else {
+                                window.location.href = 'index.html';
+                            }
+                            setInitComplete(true);
+                        });
+
+                    } catch (error) {
+                        console.error('Errore:', error);
+                        alert('Errore connessione Firebase');
+                        setInitComplete(true);
+                    }
+                };
+                init();
+            }, []);
+
+            const restoreOpp = async (id) => {
+                if (confirm('Ripristinare questa opportunità archiviata?')) {
+                    const db = firebase.database();
+                    await db.ref('opportunities/' + id).update({
+                        stato: 'KO'
+                    });
+                    alert('✅ Opportunità ripristinata a KO');
+                }
+            };
+
+            const deleteOpp = async (id) => {
+                if (confirm('Eliminare DEFINITIVAMENTE questa opportunità?\n\nQuesta azione è irreversibile!')) {
+                    const db = firebase.database();
+                    await db.ref('opportunities/' + id).remove();
+                    alert('✅ Opportunità eliminata');
+                }
+            };
+
+            const canEdit = (opp) => {
+                return user.role === 'admin' || opp.clientId === user.id;
+            };
+
+            const getFilteredOpps = () => {
+                let filtered = (user.role === 'admin' || user.role === 'visualizzatore') ? opps : opps.filter(o => o.clientId === user.id);
+                
+                if (filters.utente) {
+                    filtered = filtered.filter(o => o.agenzia?.toLowerCase().includes(filters.utente.toLowerCase()));
+                }
+                if (filters.tipologiaCliente) {
+                    filtered = filtered.filter(o => o.tipologiaCliente === filters.tipologiaCliente);
+                }
+                if (filters.tipologiaIntervento) {
+                    filtered = filtered.filter(o => o.tipologiaIntervento === filters.tipologiaIntervento);
+                }
+                if (filters.regione) {
+                    filtered = filtered.filter(o => o.regione === filters.regione || o.regioneIntervento === filters.regione);
+                }
+                if (filters.dataInizio) {
+                    filtered = filtered.filter(o => new Date(o.createdAt) >= new Date(filters.dataInizio));
+                }
+                if (filters.dataFine) {
+                    const endDate = new Date(filters.dataFine);
+                    endDate.setHours(23, 59, 59);
+                    filtered = filtered.filter(o => new Date(o.createdAt) <= endDate);
+                }
+                
+                return filtered;
+            };
+
+            if (!initComplete) {
+                return <div className="loading">⏳ Caricamento...</div>;
+            }
+
+            const myArchiviateOpps = getFilteredOpps();
+
+            return (
+                <div style={{minHeight: '100vh'}}>
+                    <div className="header">
+                        <div className="container" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                            <div>
+                                <h1 style={{fontSize: '28px', marginBottom: '4px'}}>📦 ARCHIVIATI</h1>
+                                <p style={{fontSize: '14px', opacity: 0.9}}>Opportunità KO archiviate</p>
+                            </div>
+                            <button className="btn btn-white" onClick={() => window.location.href = 'index.html'}>
+                                ← Torna alle Opportunità
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="container">
+                        <div className="card" style={{background: 'white', borderLeft: '4px solid #9E9E9E', marginBottom: '20px'}}>
+                            <h3 style={{marginBottom: '16px', color: '#616161'}}>🔍 Filtri</h3>
+                            <div className="grid-3">
+                                <div className="mb">
+                                    <label className="label">Utente</label>
+                                    <input className="input" placeholder="Nome utente..." value={filters.utente} onChange={e => setFilters({...filters, utente: e.target.value})} />
+                                </div>
+                                <div className="mb">
+                                    <label className="label">Tipologia Cliente</label>
+                                    <input className="input" placeholder="Es: P.A." value={filters.tipologiaCliente} onChange={e => setFilters({...filters, tipologiaCliente: e.target.value})} />
+                                </div>
+                                <div className="mb">
+                                    <label className="label">Regione</label>
+                                    <input className="input" placeholder="Es: Umbria" value={filters.regione} onChange={e => setFilters({...filters, regione: e.target.value})} />
+                                </div>
+                                <div className="mb">
+                                    <label className="label">Data da</label>
+                                    <input type="date" className="input" value={filters.dataInizio} onChange={e => setFilters({...filters, dataInizio: e.target.value})} />
+                                </div>
+                                <div className="mb">
+                                    <label className="label">Data a</label>
+                                    <input type="date" className="input" value={filters.dataFine} onChange={e => setFilters({...filters, dataFine: e.target.value})} />
+                                </div>
+                            </div>
+                            <button className="btn btn-gray" onClick={() => setFilters({ utente: '', tipologiaCliente: '', tipologiaIntervento: '', regione: '', dataInizio: '', dataFine: '' })}>
+                                🔄 Azzera Filtri
+                            </button>
+                        </div>
+
+                        <div style={{marginBottom: '20px', padding: '16px', background: 'white', borderRadius: '12px', border: '2px solid #E0E0E0'}}>
+                            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+                                <h2 style={{margin: 0, color: '#616161', fontSize: '20px'}}>
+                                    Totale Archiviati: <strong>{myArchiviateOpps.length}</strong>
+                                </h2>
+                                <span style={{fontSize: '13px', color: '#999'}}>
+                                    Le opportunità archiviate rimangono nel database ma non compaiono nella lista principale
+                                </span>
+                            </div>
+                        </div>
+
+                        {myArchiviateOpps.length === 0 ? (
+                            <div className="card" style={{background: 'white', textAlign: 'center', padding: '60px 20px'}}>
+                                <div style={{fontSize: '48px', marginBottom: '16px'}}>📦</div>
+                                <h3 style={{color: '#616161', marginBottom: '8px'}}>Nessuna opportunità archiviata</h3>
+                                <p style={{color: '#999'}}>Le opportunità con stato KO che archivi compariranno qui</p>
+                            </div>
+                        ) : (
+                            myArchiviateOpps.map(o => (
+                                <div className="card" key={o.id}>
+                                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '10px'}}>
+                                        <div style={{flex: 1}}>
+                                            <h3 style={{fontSize: '18px', marginBottom: '4px', color: '#616161', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap'}}>
+                                                <span>🏢 {o.ragioneSociale}</span>
+                                                {(o.regione || o.regioneIntervento) && (
+                                                    <span style={{
+                                                        fontSize: '16px', 
+                                                        color: COLORI_REGIONI[o.regione || o.regioneIntervento] || '#FF9800', 
+                                                        fontWeight: '700',
+                                                        opacity: 0.6
+                                                    }}>
+                                                        {o.regione || o.regioneIntervento}
+                                                    </span>
+                                                )}
+                                            </h3>
+                                            <div style={{fontSize: '12px', color: '#666', marginBottom: '8px', display: 'flex', gap: '12px', flexWrap: 'wrap'}}>
+                                                <span>📅 Creato: {new Date(o.createdAt).toLocaleDateString('it-IT', {day: '2-digit', month: '2-digit', year: 'numeric'})}</span>
+                                                {o.createdBy && (
+                                                    <span style={{color: '#757575', fontWeight: '600'}}>
+                                                        👤 Da: {o.createdBy}
+                                                    </span>
+                                                )}
+                                                {o.archiviataIl && (
+                                                    <span style={{color: '#9E9E9E', fontWeight: '700'}}>
+                                                        📦 Archiviato: {new Date(o.archiviataIl).toLocaleDateString('it-IT', {day: '2-digit', month: '2-digit', year: 'numeric'})}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <span className="badge stato-archiviato" style={{fontSize: '13px', padding: '6px 12px'}}>ARCHIVIATO</span>
+                                    </div>
+
+                                    <div style={{background: '#F5F5F5', padding: '12px', borderRadius: '8px', marginBottom: '10px'}}>
+                                        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '13px'}}>
+                                            <div>
+                                                <div style={{color: '#666', fontSize: '11px'}}>Cliente</div>
+                                                <div style={{fontWeight: '700'}}>{o.tipologiaCliente}</div>
+                                            </div>
+                                            <div>
+                                                <div style={{color: '#666', fontSize: '11px'}}>Importo Presunto</div>
+                                                <div style={{fontWeight: '700', fontSize: '16px', color: '#757575'}}>€{(parseInt(o.importoPresunto) || 0).toLocaleString('it-IT')}</div>
+                                            </div>
+                                            <div>
+                                                <div style={{color: '#666', fontSize: '11px'}}>Tipologia</div>
+                                                <div style={{fontWeight: '600'}}>{TIPOLOGIE_INTERVENTO[o.tipologiaIntervento]?.label}</div>
+                                            </div>
+                                            <div>
+                                                <div style={{color: '#666', fontSize: '11px'}}>Contrattualizzazione</div>
+                                                <div style={{fontWeight: '600'}}>{o.possibileContrattualizzazione}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {o.vociSelezionate && o.vociSelezionate.length > 0 && (
+                                        <div style={{marginBottom: '10px'}}>
+                                            <div style={{color: '#666', fontSize: '11px', marginBottom: '6px', fontWeight: '600'}}>Voci Intervento:</div>
+                                            <div style={{display: 'flex', flexWrap: 'wrap', gap: '4px'}}>
+                                                {o.vociSelezionate.map(v => <span key={v} className="badge" style={{background: '#9E9E9E', color: 'white', fontSize: '11px', padding: '4px 8px'}}>{v}</span>)}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {(canEdit(o) || user.role === 'visualizzatore') && (
+                                        <div style={{display: 'flex', gap: '8px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #e0e0e0', flexWrap: 'wrap'}}>
+                                            {o.descrizioneIntervento && (
+                                                <button className="btn btn-white" style={{padding: '8px 14px', fontSize: '13px'}} onClick={() => { setSelectedDesc(o.descrizioneIntervento); setShowDescModal(true); }}>
+                                                    📄 Descrizione
+                                                </button>
+                                            )}
+                                            {user.role !== 'visualizzatore' && (
+                                                <>
+                                                    <button className="btn btn-green" style={{padding: '8px 14px', fontSize: '13px'}} onClick={() => restoreOpp(o.id)}>
+                                                        ↩️ Ripristina a KO
+                                                    </button>
+                                                    <button className="btn btn-red" style={{padding: '8px 14px', fontSize: '13px'}} onClick={() => deleteOpp(o.id)}>
+                                                        🗑️ Elimina
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    {showDescModal && (
+                        <div className="modal" onClick={() => setShowDescModal(false)}>
+                            <div className="modal-content" onClick={e => e.stopPropagation()}>
+                                <h2 style={{marginBottom: '20px', color: '#616161'}}>📄 Descrizione Intervento</h2>
+                                <div style={{padding: '20px', background: '#f9f9f9', borderRadius: '8px', lineHeight: '1.6', whiteSpace: 'pre-wrap'}}>
+                                    {selectedDesc}
+                                </div>
+                                <button className="btn btn-white" style={{marginTop: '20px'}} onClick={() => setShowDescModal(false)}>Chiudi</button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
