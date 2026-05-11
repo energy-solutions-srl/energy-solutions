@@ -169,8 +169,7 @@
                 stato: '',
                 regione: '',
                 dataInizio: '',
-                dataFine: '',
-                mostraArchiviate: false
+                dataFine: ''
             });
             const [showDescModal, setShowDescModal] = useState(false);
             const [selectedDesc, setSelectedDesc] = useState('');
@@ -887,10 +886,8 @@
             const getFilteredOpps = () => {
                 let filtered = (user.role === 'admin' || user.role === 'visualizzatore') ? opps : opps.filter(o => o.clientId === user.id);
                 
-                // Nascondi archiviate di default
-                if (!filters.mostraArchiviate) {
-                    filtered = filtered.filter(o => o.stato !== 'ARCHIVIATO');
-                }
+                // SEMPRE escludi archiviate dalla lista principale
+                filtered = filtered.filter(o => o.stato !== 'ARCHIVIATO');
                 
                 if (filters.utente) {
                     filtered = filtered.filter(o => o.agenzia?.toLowerCase().includes(filters.utente.toLowerCase()));
@@ -910,6 +907,41 @@
                 }
                 if (filters.stato) {
                     filtered = filtered.filter(o => o.stato === filters.stato);
+                }
+                if (filters.dataInizio) {
+                    filtered = filtered.filter(o => new Date(o.createdAt) >= new Date(filters.dataInizio));
+                }
+                if (filters.dataFine) {
+                    const endDate = new Date(filters.dataFine);
+                    endDate.setHours(23, 59, 59);
+                    filtered = filtered.filter(o => new Date(o.createdAt) <= endDate);
+                }
+                
+                return filtered;
+            };
+
+            const getArchiviateOpps = () => {
+                let filtered = (user.role === 'admin' || user.role === 'visualizzatore') ? opps : opps.filter(o => o.clientId === user.id);
+                
+                // SOLO archiviate
+                filtered = filtered.filter(o => o.stato === 'ARCHIVIATO');
+                
+                // Applica filtri anche agli archiviati
+                if (filters.utente) {
+                    filtered = filtered.filter(o => o.agenzia?.toLowerCase().includes(filters.utente.toLowerCase()));
+                }
+                if (filters.tipologiaCliente) {
+                    filtered = filtered.filter(o => o.tipologiaCliente === filters.tipologiaCliente);
+                }
+                if (filters.ruolo && (user.role === 'admin' || user.role === 'visualizzatore')) {
+                    const usersByRole = users.filter(u => u.role === filters.ruolo).map(u => u.id);
+                    filtered = filtered.filter(o => usersByRole.includes(o.clientId));
+                }
+                if (filters.tipologiaIntervento) {
+                    filtered = filtered.filter(o => o.tipologiaIntervento === filters.tipologiaIntervento);
+                }
+                if (filters.regione) {
+                    filtered = filtered.filter(o => o.regione === filters.regione || o.regioneIntervento === filters.regione);
                 }
                 if (filters.dataInizio) {
                     filtered = filtered.filter(o => new Date(o.createdAt) >= new Date(filters.dataInizio));
@@ -981,6 +1013,7 @@
             // SCHERMATA CAPTCHA
 
             const myOpps = getFilteredOpps();
+            const myArchiviateOpps = getArchiviateOpps();
 
             return (
                 <div style={{minHeight: '100vh'}}>
@@ -1092,21 +1125,7 @@
                                 </div>
                             </div>
                             
-                            <div style={{marginTop: '16px', marginBottom: '16px'}}>
-                                <label style={{display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: '#f5f5f5', padding: '12px', borderRadius: '8px'}}>
-                                    <input 
-                                        type="checkbox" 
-                                        checked={filters.mostraArchiviate}
-                                        onChange={e => setFilters({...filters, mostraArchiviate: e.target.checked})}
-                                        style={{width: '18px', height: '18px', cursor: 'pointer'}}
-                                    />
-                                    <span style={{fontSize: '14px', fontWeight: '600', color: '#666'}}>
-                                        📦 Mostra opportunità archiviate
-                                    </span>
-                                </label>
-                            </div>
-                            
-                            <button className="btn btn-gray" onClick={() => setFilters({ utente: '', tipologiaCliente: '', ruolo: '', tipologiaIntervento: '', stato: '', regione: '', dataInizio: '', dataFine: '', mostraArchiviate: false })}>🔄 Azzera Filtri</button>
+                            <button className="btn btn-gray" onClick={() => setFilters({ utente: '', tipologiaCliente: '', ruolo: '', tipologiaIntervento: '', stato: '', regione: '', dataInizio: '', dataFine: '' })}>🔄 Azzera Filtri</button>
                         </div>
 
                         <h2 style={{margin: '20px 0 16px'}}>Le Mie Opportunità ({myOpps.length})</h2>
@@ -1210,6 +1229,111 @@
                                 )}
                             </div>
                         ))}
+
+                        {/* SEZIONE ARCHIVIATI */}
+                        {myArchiviateOpps.length > 0 && (
+                            <div style={{marginTop: '60px'}}>
+                                <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', paddingBottom: '12px', borderBottom: '3px solid #9E9E9E'}}>
+                                    <h2 style={{margin: 0, color: '#616161', fontSize: '22px'}}>📦 ARCHIVIATI ({myArchiviateOpps.length})</h2>
+                                    <span style={{background: '#F3F4F6', color: '#616161', padding: '6px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: '600'}}>
+                                        Opportunità KO archiviate
+                                    </span>
+                                </div>
+
+                                {myArchiviateOpps.map(o => (
+                                    <div className="card" key={o.id} style={{borderLeft: '6px solid #9E9E9E', padding: '16px', marginBottom: '12px', background: '#FAFAFA'}}>
+                                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '10px'}}>
+                                            <div style={{flex: 1}}>
+                                                <h3 style={{fontSize: '18px', marginBottom: '4px', color: '#616161', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap'}}>
+                                                    <span>🏢 {o.ragioneSociale}</span>
+                                                    {(o.regione || o.regioneIntervento) && (
+                                                        <span style={{
+                                                            fontSize: '16px', 
+                                                            color: COLORI_REGIONI[o.regione || o.regioneIntervento] || '#FF9800', 
+                                                            fontWeight: '700',
+                                                            letterSpacing: '0.5px',
+                                                            opacity: 0.6
+                                                        }}>
+                                                            {o.regione || o.regioneIntervento}
+                                                        </span>
+                                                    )}
+                                                </h3>
+                                                <div style={{fontSize: '12px', color: '#666', marginBottom: '8px', display: 'flex', gap: '12px', flexWrap: 'wrap'}}>
+                                                    <span>📅 {new Date(o.createdAt).toLocaleDateString('it-IT', {day: '2-digit', month: '2-digit', year: 'numeric'})}</span>
+                                                    {o.createdBy && (
+                                                        <span style={{color: '#757575', fontWeight: '600'}}>
+                                                            👤 Creato da: {o.createdBy}
+                                                        </span>
+                                                    )}
+                                                    {o.archiviataIl && (
+                                                        <span style={{color: '#9E9E9E', fontWeight: '600'}}>
+                                                            📦 Archiviato il: {new Date(o.archiviataIl).toLocaleDateString('it-IT', {day: '2-digit', month: '2-digit', year: 'numeric'})}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div style={{textAlign: 'right'}}>
+                                                <span className="badge stato-archiviato" style={{fontSize: '13px', padding: '6px 12px'}}>ARCHIVIATO</span>
+                                                {o.tipoIntervento === 'MULTI INTERVENTO' && (
+                                                    <span className="badge" style={{background: '#E0E0E0', color: '#616161', fontSize: '11px', padding: '4px 8px', marginLeft: '6px', display: 'block', marginTop: '6px'}}>MULTI</span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div style={{background: '#F5F5F5', padding: '12px', borderRadius: '8px', marginBottom: '10px'}}>
+                                            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '13px'}}>
+                                                <div>
+                                                    <div style={{color: '#666', fontSize: '11px', marginBottom: '2px'}}>Cliente</div>
+                                                    <div style={{fontWeight: '700', fontSize: '14px'}}>{o.tipologiaCliente}</div>
+                                                </div>
+                                                <div>
+                                                    <div style={{color: '#666', fontSize: '11px', marginBottom: '2px'}}>Importo Presunto</div>
+                                                    <div style={{fontWeight: '700', fontSize: '16px', color: '#757575'}}>€{(parseInt(o.importoPresunto) || 0).toLocaleString('it-IT')}</div>
+                                                </div>
+                                                <div>
+                                                    <div style={{color: '#666', fontSize: '11px', marginBottom: '2px'}}>Tipologia Intervento</div>
+                                                    <div style={{fontWeight: '600', fontSize: '13px'}}>{TIPOLOGIE_INTERVENTO[o.tipologiaIntervento]?.label}</div>
+                                                </div>
+                                                <div>
+                                                    <div style={{color: '#666', fontSize: '11px', marginBottom: '2px'}}>Contrattualizzazione</div>
+                                                    <div style={{fontWeight: '600', fontSize: '13px'}}>{o.possibileContrattualizzazione}</div>
+                                                </div>
+                                                {(o.tipologiaIntervento === 'cratere_2016' || o.tipologiaIntervento === 'cratere_2009') && o.livelloOperativo && (
+                                                    <div>
+                                                        <div style={{color: '#666', fontSize: '11px', marginBottom: '2px'}}>Livello Operativo</div>
+                                                        <span className="badge" style={{background: '#9E9E9E', color: 'white', fontSize: '12px', padding: '4px 8px'}}>{o.livelloOperativo}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {o.vociSelezionate && o.vociSelezionate.length > 0 && (
+                                            <div style={{marginBottom: '10px'}}>
+                                                <div style={{color: '#666', fontSize: '11px', marginBottom: '6px', fontWeight: '600'}}>Voci Intervento:</div>
+                                                <div style={{display: 'flex', flexWrap: 'wrap', gap: '4px'}}>
+                                                    {o.vociSelezionate.map(v => <span key={v} className="badge" style={{background: '#9E9E9E', color: 'white', fontSize: '11px', padding: '4px 8px'}}>{v}</span>)}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {(canEdit(o) || user.role === 'visualizzatore') && (
+                                            <div style={{display: 'flex', gap: '8px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #e0e0e0', flexWrap: 'wrap'}}>
+                                                {o.descrizioneIntervento && (
+                                                    <button className="btn btn-white" style={{padding: '8px 14px', fontSize: '13px'}} onClick={() => { setSelectedDesc(o.descrizioneIntervento); setShowDescModal(true); }}>📄 Descrizione</button>
+                                                )}
+                                                <button className="btn btn-white" style={{padding: '8px 14px', fontSize: '13px'}} onClick={() => printCardPDF(o)}>🖨️ Stampa</button>
+                                                {user.role !== 'visualizzatore' && (
+                                                    <>
+                                                        <button className="btn btn-white" style={{padding: '8px 14px', fontSize: '13px', borderColor: '#4CAF50', color: '#4CAF50', fontWeight: '700'}} onClick={() => restoreOpp(o.id)}>↩️ Ripristina</button>
+                                                        <button className="btn btn-red" style={{padding: '8px 14px', fontSize: '13px'}} onClick={() => deleteOpp(o.id)}>🗑️ Elimina</button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
 
                         {myOpps.length > 0 && (
                             <div style={{marginTop: '40px'}} id="summary-table-print">
