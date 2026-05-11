@@ -319,65 +319,72 @@
                     return;
                 }
 
-                const db = firebase.database();
-                
-                // Determina chi è il proprietario dell'opportunità
-                let agenziaName, agenziaId, createdByName;
-                
-                if (editOpp) {
-                    // MODIFICA: Mantieni utente originale OPPURE usa quello riassegnato (se admin ha cambiato)
-                    if (user.role === 'admin' && form.assignedUserId && form.assignedUserId !== editOpp.clientId) {
-                        // Admin ha riassegnato a un altro utente
-                        const assignedUser = users.find(u => u.id === form.assignedUserId);
-                        agenziaName = assignedUser?.name || editOpp.agenzia;
-                        agenziaId = form.assignedUserId;
-                        createdByName = editOpp.createdBy; // Mantieni chi l'ha creata originariamente
+                try {
+                    const db = firebase.database();
+                    
+                    // Determina chi è il proprietario dell'opportunità
+                    let agenziaName, agenziaId, createdByName;
+                    
+                    if (editOpp) {
+                        // MODIFICA: Mantieni utente originale OPPURE usa quello riassegnato (se admin ha cambiato)
+                        if (user.role === 'admin' && form.assignedUserId && form.assignedUserId !== editOpp.clientId) {
+                            // Admin ha riassegnato a un altro utente
+                            const assignedUser = users.find(u => u.id === form.assignedUserId);
+                            agenziaName = assignedUser?.name || editOpp.agenzia;
+                            agenziaId = form.assignedUserId;
+                            createdByName = editOpp.createdBy; // Mantieni chi l'ha creata originariamente
+                        } else {
+                            // Mantieni utente originale (anche se admin modifica)
+                            agenziaName = editOpp.agenzia;
+                            agenziaId = editOpp.clientId;
+                            createdByName = editOpp.createdBy;
+                        }
                     } else {
-                        // Mantieni utente originale (anche se admin modifica)
-                        agenziaName = editOpp.agenzia;
-                        agenziaId = editOpp.clientId;
-                        createdByName = editOpp.createdBy;
+                        // NUOVA: Usa utente selezionato (se admin) oppure utente corrente
+                        if (user.role === 'admin' && form.assignedUserId) {
+                            const assignedUser = users.find(u => u.id === form.assignedUserId);
+                            agenziaName = assignedUser?.name || user.name;
+                            agenziaId = form.assignedUserId;
+                        } else {
+                            agenziaName = user.name;
+                            agenziaId = user.id;
+                        }
+                        createdByName = user.username || user.email || user.name;
                     }
-                } else {
-                    // NUOVA: Usa utente selezionato (se admin) oppure utente corrente
-                    if (user.role === 'admin' && form.assignedUserId) {
-                        const assignedUser = users.find(u => u.id === form.assignedUserId);
-                        agenziaName = assignedUser?.name || user.name;
-                        agenziaId = form.assignedUserId;
+                    
+                    const oppData = {
+                        ...form,
+                        agenzia: agenziaName,
+                        clientId: agenziaId,
+                        createdBy: createdByName,
+                        createdAt: editOpp ? editOpp.createdAt : new Date().toISOString()
+                    };
+
+                    // Rimuovi campo temporaneo assignedUserId dai dati salvati
+                    delete oppData.assignedUserId;
+
+                    if (editOpp) {
+                        await db.ref('opportunities/' + editOpp.id).set(oppData);
                     } else {
-                        agenziaName = user.name;
-                        agenziaId = user.id;
+                        await db.ref('opportunities').push(oppData);
                     }
-                    createdByName = user.username || user.email || user.name;
+
+                    setShowForm(false);
+                    setEditOpp(null);
+                    setForm({
+                        ragioneSociale: '', regione: '', provincia: '', indirizzo: '', cap: '', citta: '', telefono: '', tipologiaCliente: '',
+                        nomeReferente: '', ruoloReferente: '', telReferente: '', emailReferente: '',
+                        regioneIntervento: '', provinciaIntervento: '', viaIntervento: '', numeroIntervento: '', capIntervento: '', cittaIntervento: '',
+                        hasTecnico: 'no', regioneStudio: '', provinciaStudio: '', nomeStudioTecnico: '', referenteStudio: '', indirizzoStudio: '', telefonoStudio: '', emailStudio: '',
+                        tipologiaIntervento: '', vociSelezionate: [], livelloOperativo: '', descrizioneIntervento: '', importoPresunto: '', stato: 'CALDA',
+                        possibileContrattualizzazione: 'entro 3 mesi', tipoIntervento: 'SINGOLO'
+                    });
+                    
+                    alert('✅ Opportunità salvata con successo!');
+                } catch (error) {
+                    console.error('Errore salvataggio:', error);
+                    alert('❌ Errore nel salvataggio: ' + error.message);
                 }
-                
-                const oppData = {
-                    ...form,
-                    agenzia: agenziaName,
-                    clientId: agenziaId,
-                    createdBy: createdByName,
-                    createdAt: editOpp ? editOpp.createdAt : new Date().toISOString()
-                };
-
-                // Rimuovi campo temporaneo assignedUserId dai dati salvati
-                delete oppData.assignedUserId;
-
-                if (editOpp) {
-                    await db.ref('opportunities/' + editOpp.id).set(oppData);
-                } else {
-                    await db.ref('opportunities').push(oppData);
-                }
-
-                setShowForm(false);
-                setEditOpp(null);
-                setForm({
-                    ragioneSociale: '', regione: '', provincia: '', indirizzo: '', cap: '', citta: '', telefono: '', tipologiaCliente: '',
-                    nomeReferente: '', ruoloReferente: '', telReferente: '', emailReferente: '',
-                    regioneIntervento: '', provinciaIntervento: '', viaIntervento: '', numeroIntervento: '', capIntervento: '', cittaIntervento: '',
-                    hasTecnico: 'no', regioneStudio: '', provinciaStudio: '', nomeStudioTecnico: '', referenteStudio: '', indirizzoStudio: '', telefonoStudio: '', emailStudio: '',
-                    tipologiaIntervento: '', vociSelezionate: [], livelloOperativo: '', descrizioneIntervento: '', importoPresunto: '', stato: 'CALDA',
-                    possibileContrattualizzazione: 'entro 3 mesi', tipoIntervento: 'SINGOLO'
-                });
             };
 
             const duplicateOpp = async (opp) => {
