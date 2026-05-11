@@ -332,12 +332,12 @@
                             const assignedUser = users.find(u => u.id === form.assignedUserId);
                             agenziaName = assignedUser?.name || editOpp.agenzia;
                             agenziaId = form.assignedUserId;
-                            createdByName = editOpp.createdBy; // Mantieni chi l'ha creata originariamente
+                            createdByName = editOpp.createdBy || editOpp.agenzia || user.username || user.name; // Fallback se createdBy manca
                         } else {
                             // Mantieni utente originale (anche se admin modifica)
                             agenziaName = editOpp.agenzia;
                             agenziaId = editOpp.clientId;
-                            createdByName = editOpp.createdBy;
+                            createdByName = editOpp.createdBy || editOpp.agenzia || user.username || user.name; // Fallback se createdBy manca
                         }
                     } else {
                         // NUOVA: Usa utente selezionato (se admin) oppure utente corrente
