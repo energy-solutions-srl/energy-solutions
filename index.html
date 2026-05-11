@@ -320,13 +320,47 @@
                 }
 
                 const db = firebase.database();
+                
+                // Determina chi è il proprietario dell'opportunità
+                let agenziaName, agenziaId, createdByName;
+                
+                if (editOpp) {
+                    // MODIFICA: Mantieni utente originale OPPURE usa quello riassegnato (se admin ha cambiato)
+                    if (user.role === 'admin' && form.assignedUserId && form.assignedUserId !== editOpp.clientId) {
+                        // Admin ha riassegnato a un altro utente
+                        const assignedUser = users.find(u => u.id === form.assignedUserId);
+                        agenziaName = assignedUser?.name || editOpp.agenzia;
+                        agenziaId = form.assignedUserId;
+                        createdByName = editOpp.createdBy; // Mantieni chi l'ha creata originariamente
+                    } else {
+                        // Mantieni utente originale (anche se admin modifica)
+                        agenziaName = editOpp.agenzia;
+                        agenziaId = editOpp.clientId;
+                        createdByName = editOpp.createdBy;
+                    }
+                } else {
+                    // NUOVA: Usa utente selezionato (se admin) oppure utente corrente
+                    if (user.role === 'admin' && form.assignedUserId) {
+                        const assignedUser = users.find(u => u.id === form.assignedUserId);
+                        agenziaName = assignedUser?.name || user.name;
+                        agenziaId = form.assignedUserId;
+                    } else {
+                        agenziaName = user.name;
+                        agenziaId = user.id;
+                    }
+                    createdByName = user.username || user.email || user.name;
+                }
+                
                 const oppData = {
                     ...form,
-                    agenzia: user.name,
-                    clientId: user.id,
-                    createdBy: user.username || user.email || user.name,
+                    agenzia: agenziaName,
+                    clientId: agenziaId,
+                    createdBy: createdByName,
                     createdAt: editOpp ? editOpp.createdAt : new Date().toISOString()
                 };
+
+                // Rimuovi campo temporaneo assignedUserId dai dati salvati
+                delete oppData.assignedUserId;
 
                 if (editOpp) {
                     await db.ref('opportunities/' + editOpp.id).set(oppData);
@@ -1215,7 +1249,7 @@
                                         {user.role !== 'visualizzatore' && (
                                             <>
                                                 <button className="btn btn-white" style={{padding: '8px 14px', fontSize: '13px'}} onClick={() => duplicateOpp(o)}>📋 Duplica</button>
-                                                <button className="btn btn-white" style={{padding: '8px 14px', fontSize: '13px'}} onClick={() => { setEditOpp(o); setForm({...o, vociSelezionate: o.vociSelezionate || []}); setShowForm(true); }}>✏️ Modifica</button>
+                                                <button className="btn btn-white" style={{padding: '8px 14px', fontSize: '13px'}} onClick={() => { setEditOpp(o); setForm({...o, vociSelezionate: o.vociSelezionate || [], assignedUserId: o.clientId}); setShowForm(true); }}>✏️ Modifica</button>
                                                 {o.stato === 'KO' && (
                                                     <button className="btn btn-gray" style={{padding: '8px 14px', fontSize: '13px'}} onClick={() => archiveOpp(o.id)}>📦 Archivia</button>
                                                 )}
@@ -1444,6 +1478,38 @@
                             <div className="modal-content" onClick={e => e.stopPropagation()}>
                                 <h2 style={{marginBottom: '20px', color: '#2E7D32'}}>{editOpp ? 'Modifica' : 'Nuova'} Opportunità</h2>
                                 <form onSubmit={saveOpp}>
+                                    {user.role === 'admin' && (
+                                        <div style={{background: '#FFF3E0', padding: '16px', borderRadius: '8px', marginBottom: '24px', border: '2px solid #FF9800'}}>
+                                            <div className="mb" style={{marginBottom: '8px'}}>
+                                                <label className="label" style={{color: '#E65100', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                                                    <span>👤 Assegna Opportunità a:</span>
+                                                    {editOpp && editOpp.agenzia && (
+                                                        <span style={{fontSize: '12px', fontWeight: 'normal', color: '#666'}}>
+                                                            (Attuale: {editOpp.agenzia})
+                                                        </span>
+                                                    )}
+                                                </label>
+                                                <select 
+                                                    className="input" 
+                                                    value={form.assignedUserId || ''} 
+                                                    onChange={e => setForm({...form, assignedUserId: e.target.value})}
+                                                    style={{borderColor: '#FF9800', fontWeight: '600'}}
+                                                >
+                                                    <option value="">-- Seleziona Utente --</option>
+                                                    {users.filter(u => u.role !== 'visualizzatore').map(u => (
+                                                        <option key={u.id} value={u.id}>
+                                                            {u.name} ({u.role === 'admin' ? 'Admin' : u.role === 'agenzia' ? 'Agenzia' : u.role === 'diretto' ? 'Diretto' : 'Interno'})
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <div style={{fontSize: '11px', color: '#E65100', marginTop: '6px', fontStyle: 'italic'}}>
+                                                    {editOpp ? 
+                                                        '⚠️ Cambia utente solo se vuoi riassegnare questa opportunità. Lasciando invariato, l\'utente originale sarà mantenuto.' : 
+                                                        '💡 Lascia vuoto per assegnare a te stesso'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                     <div className="section-title">📋 Dati Azienda</div>
                                     <div className="mb">
                                         <label className="label">Ragione Sociale *</label>
