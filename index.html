@@ -1005,9 +1005,16 @@
                             <button 
                                 className="btn btn-white" 
                                 onClick={() => window.location.href = 'archiviati.html'}
-                                style={{background: '#F5F5F5', color: '#616161', borderColor: '#9E9E9E'}}
+                                style={{
+                                    background: '#9E9E9E', 
+                                    color: 'white', 
+                                    borderColor: '#757575',
+                                    fontSize: '15px',
+                                    fontWeight: '700',
+                                    padding: '14px 28px'
+                                }}
                             >
-                                📦 Archiviati
+                                📦 ARCHIVIATI
                             </button>
                             {user.role === 'admin' && (
                                 <>
